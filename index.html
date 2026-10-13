@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2545">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PCLE MMM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SUIVI_PCLE-MMM</title>
+<style>
+:root{--bg:#eef1f3;--card:#fff;--tx:#1a232c;--mu:#6b7884;--ln:#d9dee2;--sl:#dde2e6;--gc:#b7881a;--dep:#c4543b;--pose:#2f8f63;--sx:#2f6f9f;--fb:#8a5fb0;--ec:#e08a1e}
+@media(prefers-color-scheme:dark){:root{--bg:#10171e;--card:#1a2530;--tx:#e8edf1;--mu:#8fa0ad;--ln:#2b3946;--sl:#2f3d4a;--gc:#d9a928;--dep:#e0705a;--pose:#4cb485;--sx:#5aa0d2;--fb:#b08ad4;--ec:#f0a23a}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;padding:0 0 env(safe-area-inset-bottom,0px)}
+main{max-width:760px;margin:0 auto;padding:0 12px 24px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top,0px) + 10px) 0 8px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+h1{font-size:18px;margin:0;letter-spacing:.3px}
+h2{font-size:15px;margin:0 0 10px}
+.mu{color:var(--mu)}
+#st{font-size:12px;color:var(--mu)}
+select{font:inherit;color:var(--tx);border:1px solid var(--ln);background:var(--card);border-radius:10px;padding:8px 12px;min-height:44px;width:100%;font-weight:600}
+button,input{font:inherit;color:var(--tx);border:1px solid var(--ln);background:var(--card);border-radius:8px;padding:8px 12px;min-height:42px}
+nav{display:flex;gap:6px}
+nav button{flex:1;font-weight:600}
+nav button[aria-pressed=true]{background:var(--sx);border-color:var(--sx);color:#fff}
+.seg{display:flex;gap:4px;background:var(--sl);padding:3px;border-radius:10px;margin:12px 0}
+.seg button{flex:1;border:0;background:transparent;min-height:38px;border-radius:8px;font-size:13px;padding:4px 6px}
+.seg button[aria-pressed=true]{background:var(--card);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+input[type=search]{width:100%;margin:12px 0 4px}
+.tg{display:flex;align-items:center;gap:8px;min-height:42px}
+.tg input{width:20px;height:20px;min-height:0;margin:0}
+.lg{font-size:12px;color:var(--mu);margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:12px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
+.kpi b{font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.rings{display:flex;justify-content:space-around;gap:10px}
+.ring{text-align:center;width:46%;font-size:13px;color:var(--mu)}
+.row{margin:12px 0}
+.rl{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:5px}
+.rl b{font-variant-numeric:tabular-nums}
+.bar,.sb{height:12px;border-radius:6px;background:var(--sl);overflow:hidden;display:flex}
+.big{height:20px;border-radius:10px}
+.bar i,.sb i{display:block;height:100%}
+.bar i{background-image:repeating-linear-gradient(90deg,transparent 0 6px,rgba(0,0,0,.22) 6px 8px)}
+.lg2{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu);margin-bottom:6px}
+.lg2 i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.lg2 i.o{background:var(--sl)}
+.chart{display:flex;align-items:flex-end;gap:3px;height:110px;border-bottom:1px solid var(--ln)}
+.col{flex:1;display:flex;flex-direction:column;height:100%;align-items:center;font-size:10px;color:var(--mu)}
+.stk{flex:1;width:100%;display:flex;flex-direction:column;justify-content:flex-end}
+.stk span{display:block;width:100%;border-radius:2px 2px 0 0}
+.sp{padding:10px 0;border-top:1px solid var(--ln);cursor:pointer}
+.sp .rl{margin-bottom:6px}
+.qc{cursor:pointer}
+.chips em{font-style:normal;font-size:11px;min-width:22px;display:inline-block;text-align:center;border:1px solid var(--fb);border-radius:4px;margin-left:3px;padding:1px 4px;color:var(--mu)}
+.chips em.on{background:var(--fb);color:#fff}
+.tl{font-size:12px;margin-top:5px}
+.nc{font-size:12px;margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(196,84,59,.14);color:var(--dep);font-weight:600}
+.nb{font-size:11px;font-weight:700;color:var(--dep);margin-right:6px}
+.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"▾";float:right;color:var(--mu)}
+details[open] summary::after{content:"▴"}
+details .in{margin-top:8px;border-top:1px solid var(--ln);padding-top:2px}
+dialog{border:1px solid var(--ln);border-radius:14px;background:var(--card);color:var(--tx);width:min(560px,94vw);max-height:88vh;overflow:auto;padding:0}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.dh{position:sticky;top:0;background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--ln)}
+.db{padding:14px}
+.tb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tb th,.tb td{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:right}
+.tb th:first-child,.tb td:first-child{text-align:left;color:var(--mu)}
+.df{color:var(--gc);font-weight:600}
+.th{font-weight:600;margin:12px 0 2px;font-size:14px}
+.tk{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln)}
+.ck{flex:none;width:22px;height:22px;border:2px solid var(--ln);border-radius:5px;display:grid;place-items:center;font-size:14px;color:#fff}
+.ck.on{background:var(--pose);border-color:var(--pose)}
+.ck.ec{background:var(--ec);border-color:var(--ec)}
+.ck.an{background:var(--mu);border-color:var(--mu)}
+</style>
+</head>
+<body>
+<main>
+<div class="top">
+<header><div><h1>SUIVI_PCLE-MMM</h1><div id="st"></div></div><span style="display:flex;gap:6px"><button id="inst" type="button" style="display:none;font-weight:600">📲 Installer</button><button id="rf" type="button">Actualiser</button></span></header>
+<nav><button type="button" data-t="syn" aria-pressed="true">Synthèse</button><button type="button" data-t="ch" aria-pressed="false">Chantiers</button><button type="button" data-t="qa" aria-pressed="false" id="nqa">Qualité</button></nav>
+</div>
+<div id="v"></div>
+</main>
+<dialog id="dlg"></dialog>
+<script>
+const SUPABASE_URL = "https://thbqkeugjvsxbryfnzuo.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_2-Ij-nrTPeK6rB-kSD-QTg_b42zNakq";
+
+const TYPES = ['GC','DEPOSE','POSE'];
+const TC = {GC:'--gc',DEPOSE:'--dep',POSE:'--pose'};
+const TL = {GC:'Génie civil',DEPOSE:'Dépose',POSE:'Pose'};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const key = s => String(s || '').trim().toUpperCase();
+const pc = (v,t) => t ? Math.round(v/t*100) : 0;
+const nf = n => (Math.round(n*10)/10).toLocaleString('fr-FR');
+let D = null, tab = 'syn', sub = 'glob', qf = 'nc', sel = 'all', last = 0;
+
+async function fetchAll(table, cols){
+  let out = [], from = 0; const step = 1000;
+  for(;;){
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${cols}&order=id.asc`, {
+      headers:{apikey:SUPABASE_ANON_KEY, 'Range-Unit':'items', Range:`${from}-${from+step-1}`}
+    });
+    if(!r.ok) throw new Error(`${table} : erreur ${r.status}`);
+    const a = await r.json();
+    out = out.concat(a);
+    if(a.length < step) break;
+    from += step;
+  }
+  return out;
+}
+
+/* ---------- Calculs : T terminé, E en cours, A annulé, F à faire ---------- */
+const eff = r => r.Fait ? 'T' : r.etat === 'EN_COURS' ? 'E' : r.etat === 'ANNULE' ? 'A' : 'F';
+
+function agg(rows){
+  const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0};
+  rows.forEach(r => {
+    const e = eff(r); o[e]++;
+    if(r.conforme === false && r.nc_levee !== true) o.nc++;
+    if(e !== 'A'){ o.w++; o.v += e === 'T' ? 1 : e === 'E' ? (+r.pct_avancement || 0) / 100 : 0; }
+  });
+  o.p = o.w ? Math.round(o.v / o.w * 100) : 0;
+  return o;
+}
+
+function aggF(rows){
+  const o = {n:rows.length, fo:0, be:0, ma:0, mp:0, mr:0};
+  rows.forEach(r => {
+    if(r.date_fouille) o.fo++;
+    if(r.date_beton) o.be++;
+    if(r.date_matage) o.ma++;
+    o.mp += +r.m3_prevu || 0;
+    o.mr += +r.m3_reel || 0;
+  });
+  o.d = o.fo + o.be + o.ma;
+  o.p = o.n ? Math.round(o.d / (3 * o.n) * 100) : 0;
+  return o;
+}
+
+function stats(sx, bl){
+  const ch = {}, act = {}, all = sx.filter(r => TYPES.includes(key(r.type)));
+  const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], bl:[], s:{}});
+  const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], b:null});
+  const add = (d,i) => { if(!d) return; (act[d] = act[d] || [0,0])[i]++; };
+  all.forEach(r => { const c = get(r.Chantier); c.rows.push(r); sp(c, r.Support).rows.push(r); if(r.Fait) add(r.date_fait, 0); });
+  bl.forEach(r => { const c = get(r.chantier); c.bl.push(r); sp(c, r.support).b = r; add(r.date_fouille,1); add(r.date_beton,1); add(r.date_matage,1); });
+  return {ch:Object.values(ch).sort((a,b) => a.name.localeCompare(b.name,'fr')), act, all, bl};
+}
+
+/* ---------- Composants visuels ---------- */
+const pbar = (p,c,h='') => `<div class="bar ${h}"><i style="width:${Math.min(100,p)}%;background-color:var(${c})"></i></div>`;
+const row = (l,v,t,c,h='') => `<div class="row"><div class="rl"><span>${l}</span><b>${v} / ${t} · ${pc(v,t)} %</b></div>${pbar(pc(v,t),c,h)}</div>`;
+const stk = a => { const n = a.n || 1, s = (k,c) => a[k] ? `<i style="width:${a[k]/n*100}%;background:var(${c})"></i>` : ''; return `<div class="sb">${s('T','--pose')}${s('E','--ec')}${s('A','--mu')}</div>`; };
+const legend = () => `<div class="lg2"><span><i style="background:var(--pose)"></i>Terminé</span><span><i style="background:var(--ec)"></i>En cours</span><span><i style="background:var(--mu)"></i>Annulé</span><span><i class="o"></i>À faire</span></div>`;
+const sg = (at, opts, cur) => `<div class="seg">${opts.map(([k,l]) => `<button type="button" data-${at}="${k}" aria-pressed="${k === cur}">${l}</button>`).join('')}</div>`;
+const kpi = (l,v,s,c) => `<div class="kpi" style="border-left:4px solid var(${c})"><span class="mu">${l}</span><b>${v}</b><span class="mu tl" style="margin:0">${s}</span></div>`;
+const ring = (p,c,l) => `<div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--sl)" stroke-width="12"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(${c})" stroke-width="12" stroke-linecap="round" stroke-dasharray="${p*2.513} 251.3" transform="rotate(-90 50 50)"/><text x="50" y="57" text-anchor="middle" font-size="22" font-weight="700" fill="var(--tx)">${p}%</text></svg>${l}</div>`;
+
+function vAct(act){
+  const days = []; let tx = 0, tf = 0;
+  for(let i = 13; i >= 0; i--){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const a = act[k] || [0,0];
+    tx += a[0]; tf += a[1];
+    days.push([d.getDate(), a[0], a[1]]);
+  }
+  const m = Math.max(1, ...days.map(d => d[1] + d[2]));
+  const cols = days.map(d => `<div class="col"><div class="stk"><span style="height:${d[2]/m*100}%;background:var(--fb)"></span><span style="height:${d[1]/m*100}%;background:var(--sx)"></span></div>${d[0]}</div>`).join('');
+  return `<div class="card"><h2>Activité des 14 derniers jours</h2><div class="chart">${cols}</div>
+  <div class="mu tl"><span style="color:var(--sx)">■</span> ${tx} tâches SUTX terminées &nbsp; <span style="color:var(--fb)">■</span> ${tf} étapes FBM</div></div>`;
+}
+
+/* ---------- Onglet Synthèse (sous-menus + choix du chantier) ---------- */
+function scope(){
+  const c = sel === 'all' ? null : D.ch.find(x => x.k === sel);
+  if(!c) sel = 'all';
+  return c ? {c, rows:c.rows, bl:c.bl} : {c:null, rows:D.all, bl:D.bl};
+}
+
+function actOf(rows, bl){
+  const a = {}, add = (d,i) => { if(!d) return; (a[d] = a[d] || [0,0])[i]++; };
+  rows.forEach(r => { if(r.Fait) add(r.date_fait, 0); });
+  bl.forEach(r => { add(r.date_fouille,1); add(r.date_beton,1); add(r.date_matage,1); });
+  return a;
+}
+
+function vSyn(){
+  const S = scope(), a = agg(S.rows), f = aggF(S.bl);
+  const pick = `<select id="selc"><option value="all">🏗️ Tous les chantiers</option>${D.ch.map(c => `<option value="${esc(c.k)}"${c.k === sel ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`;
+  const s = pick + sg('sub', [['glob','Vue d\'ensemble'],['sutx','SUTX'],['fbm','FBM']], sub);
+  const L = S.c ? supList(S.c) : null, nok = L ? L.filter(x => x.ok).length : 0;
+  const sup = L ? `<div class="card"><h2>Supports · ${nok} / ${L.length} terminés</h2>${L.map(x => sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}</div>` : '';
+  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T} terminées / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} étapes / ${3*f.n}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc, 'à traiter', '--dep')}</div>
+    <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX')}${ring(f.p,'--fb','Avancement FBM')}</div></div>
+    ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.bl));
+  if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`
+    + (sup || `<div class="card"><h2>Par chantier</h2>${legend()}${D.ch.filter(c => c.rows.length).map(c => { const x = agg(c.rows); return `<div class="row"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`);
+  return s + `<div class="card"><h2>Étapes</h2>${row('Fouille', f.fo, f.n, '--fb')}${row('Béton', f.be, f.n, '--fb')}${row('Matage', f.ma, f.n, '--fb')}</div>
+    <div class="card"><h2>Volume béton</h2><div class="rl"><span>Réel / prévu (m³)</span><b>${nf(f.mr)} / ${nf(f.mp)}</b></div>${pbar(pc(f.mr, f.mp),'--fb','big')}</div>`
+    + (sup || `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => c.bl.length).map(c => { const x = aggF(c.bl); return `<div class="row"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${pbar(x.p,'--fb')}<div class="mu tl">Fouille ${x.fo}/${x.n} · Béton ${x.be}/${x.n} · Matage ${x.ma}/${x.n}</div></div>`; }).join('')}</div>`);
+}
+
+/* ---------- Onglet Chantiers ---------- */
+function supList(c){
+  return Object.values(c.s).map(p => {
+    const a = agg(p.rows), fd = p.b ? [p.b.date_fouille, p.b.date_beton, p.b.date_matage].filter(Boolean).length : 0;
+    return {p, a, ok:(a.n + (p.b ? 3 : 0)) > 0 && a.T + a.A === a.n && (!p.b || fd === 3)};
+  }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
+}
+
+const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${x.a.nc ? '<span class="nb">⚠️ NC</span>' : ''}${x.p.b ? [x.p.b.date_fouille, x.p.b.date_beton, x.p.b.date_matage].map((d,i) => `<em class="${d ? 'on' : ''}">${'FBM'[i]}</em>`).join('') : ''}</span></div>
+  ${x.a.n ? stk(x.a) : ''}
+  <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
+
+function fill(){
+  const q = key($('#q').value);
+  const list = D.ch.filter(c => key(c.name).includes(q) || Object.values(c.s).some(p => key(p.name).includes(q)));
+  $('#list').innerHTML = list.length ? list.map(c => {
+    const a = agg(c.rows), f = aggF(c.bl), L = supList(c), byS = !!q && !key(c.name).includes(q), nok = L.filter(x => x.ok).length;
+    let shown = $('#rest').checked ? L.filter(x => !x.ok) : L;
+    if(byS) shown = shown.filter(x => key(x.p.name).includes(q));
+    return `<details class="card"${byS ? ' open' : ''}><summary>
+      <div class="rl"><b>${esc(c.name)}</b><span class="mu" style="margin-right:18px">${a.nc ? '<span class="nb">⚠️ ' + a.nc + ' NC</span>' : ''}<span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>
+      ${stk(a)}<div style="height:6px"></div>${pbar(f.p,'--fb')}</summary>
+      <div class="in"><button type="button" data-go="${esc(c.k)}" style="width:100%;margin:10px 0;font-weight:600">📊 Synthèse de ce chantier</button>${legend()}${TYPES.filter(t => c.rows.some(r => key(r.type) === t)).map(t => { const y = agg(c.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${y.T}/${y.w} · ${y.p} %</b></div>${stk(y)}</div>`; }).join('')}
+      ${f.n ? row('Fouille', f.fo, f.n, '--fb') + row('Béton', f.be, f.n, '--fb') + row('Matage', f.ma, f.n, '--fb') : ''}
+      <h2 style="margin-top:16px">Supports : ${nok} / ${L.length} terminés</h2>
+      ${shown.map(x => sRow(x, c.k)).join('') || '<div class="mu">Aucun support à afficher.</div>'}</div></details>`;
+  }).join('') : '<div class="card mu">Aucun chantier trouvé.</div>';
+}
+
+/* ---------- Onglet Qualité (NC / en cours / annulées) ---------- */
+const dt = d => d ? new Date(d.length > 10 ? d : d + 'T00:00:00').toLocaleDateString('fr-FR') : '—';
+const qrow = r => { const e = eff(r), who = [r.prenom, r.nom].filter(Boolean).join(' ');
+  return `<div class="card qc" role="button" tabindex="0" data-c="${esc(key(r.Chantier))}" data-s="${esc(key(r.Support))}">
+    <div class="rl"><b>${esc(r.Tache)}</b>${e === 'E' ? `<span class="pill" style="background:var(--ec)">${r.pct_avancement ?? 0} %</span>` : e === 'A' ? '<span class="pill" style="background:var(--mu)">Annulé</span>' : ''}</div>
+    <div class="mu tl" style="margin:0 0 6px">${esc(r.Chantier)} › ${esc(r.Support)} · ${TL[key(r.type)]}</div>
+    ${e === 'E' ? pbar(+r.pct_avancement || 0, '--ec') : ''}
+    ${r.explication && e !== 'T' ? `<div class="tl">${esc(r.explication)}</div>` : ''}
+    ${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ ${esc(r.nc_description)}</div>`) : ''}
+    ${r.pend_prov ? `<div class="nc" style="background:rgba(20,150,150,.14);color:var(--sx)">🔧 Provisoires : ${esc(r.pend_prov_depose || 0)} déposés / ${esc(r.pend_prov)} posés</div>` : ''}
+    <div class="mu tl">${esc(who) || '—'} · ${dt(r.updated_at)}</div></div>`; };
+
+function vQa(){
+  const prov = r => (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0);
+  const L = {nc:D.all.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), lv:D.all.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
+  const T = {nc:'Non-conformités ouvertes', ec:'Tâches en cours', pv:'Pendules provisoires à déposer', lv:'Non-conformités levées', an:'Tâches annulées'};
+  const rows = L[qf].slice().sort((a,b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+  return sg('qf', [['nc','⚠️ ' + L.nc.length],['ec','🟠 ' + L.ec.length],['pv','🔧 ' + L.pv.length],['lv','✅ ' + L.lv.length],['an','🚫 ' + L.an.length]], qf)
+    + `<h2 class="mu" style="margin:0 0 8px">${T[qf]}</h2>`
+    + (rows.map(qrow).join('') || '<div class="card mu">Rien à signaler.</div>');
+}
+
+function show(){
+  if(!D) return;
+  const n = D.all.filter(r => r.conforme === false && r.nc_levee !== true).length;
+  $('#nqa').textContent = 'Qualité' + (n ? ' (' + n + ')' : '');
+  document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === tab));
+  if(tab === 'syn') $('#v').innerHTML = vSyn();
+  else if(tab === 'qa') $('#v').innerHTML = vQa();
+  else {
+    $('#v').innerHTML = '<input id="q" type="search" placeholder="Filtrer un chantier ou un support"><label class="tg"><input id="rest" type="checkbox"> Supports restants seulement</label><div class="lg">Pastilles FBM : F fouille, B béton, M matage (remplie = faite). Touche un support pour voir son détail.</div><div id="list"></div>';
+    $('#q').addEventListener('input', fill); $('#rest').addEventListener('change', fill); fill();
+  }
+}
+
+/* ---------- Fenêtre support ---------- */
+const dlg = $('#dlg');
+const vv = v => (v === null || v === undefined || v === '') ? '—' : (typeof v === 'number' ? v.toLocaleString('fr-FR', {maximumFractionDigits:3}) : esc(v));
+const df = (a,b) => a != null && b != null && a !== '' && b !== '' && String(a) !== String(b);
+const PAIRS = [['I','i','i_reel'],['ECH','ech','ech_reel'],['AR','ar','ar_reel'],['ENC','enc','enc_reel'],['A','af','a_reel'],['B','b','b_reel'],['H','h','h_reel'],['F','f','f_reel'],['P','p','p_reel'],['SUP','sup','sup_reel']];
+
+function task(r){
+  const e = eff(r), x = [];
+  if(e === 'E') x.push(`🟠 En cours ${r.pct_avancement ?? 0} %`);
+  if(e === 'A') x.push('🚫 Annulé');
+  if(+r.qt_prevu > 1) x.push(`Quantité ${r.qt_realisee ?? 0} / ${r.qt_prevu}`);
+  if(r.date_fait) x.push('Fait le ' + dt(r.date_fait));
+  const rl = key(r.type) === 'POSE' && /appareil tendeur|chaise de relevage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
+  if(r.hauteur != null) x.push((rl ? 'R1 ' : 'Hauteur ') + vv(r.hauteur));
+  if(r.desaxement != null) x.push((rl ? 'R2 ' : 'Désaxement ') + vv(r.desaxement));
+  if(r.prevu1 || r.prevu2){
+    const a = esc(r.prevu1 || '—'), b = esc(r.prevu2 || '—');
+    const pend = String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('pendulage');
+    x.push(pend ? `🎯 Prévu : ${a} ronds · ${b} plats` : rl ? `🎯 Prévu : R1 ${a} · R2 ${b}` : `🎯 Prévu : H ${a} · D ${b}`);
+  }
+  if(r.pend_prov) x.push('🔧 Provisoires : ' + esc(r.pend_prov) + ' posés · ' + esc(r.pend_prov_depose || 0) + ' déposés');
+  if(r.brh) x.push('BRH');
+  if(r.explication && e !== 'T') x.push(esc(r.explication));
+  if(r.Observation) x.push(esc(r.Observation));
+  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
+}
+
+function openSup(ck, sk){
+  const c = D.ch.find(x => x.k === ck), p = c && c.s[sk];
+  if(!p) return;
+  const b = p.b;
+  const cotes = b
+    ? `<table class="tb"><tr><th></th><th>Prévu</th><th>Réel</th></tr>${PAIRS.map(([l,a,r]) => `<tr><td>${l}</td><td>${vv(b[a])}</td><td class="${df(b[a],b[r]) ? 'df' : ''}">${vv(b[r])}</td></tr>`).join('')}</table>`
+    : '<div class="mu">Pas de fiche FBM pour ce support.</div>';
+  const beton = b ? `<h2 style="margin-top:16px">Béton et dates</h2>
+    <div class="rl"><span>Béton m³ : prévu / réel</span><b>${vv(b.m3_prevu)} / ${vv(b.m3_reel)}</b></div>
+    <div class="rl"><span>Type de béton</span><b>${vv(b.type_beton)}</b></div>
+    <div class="rl"><span>Slump</span><b>${vv(b.slump)}</b></div>
+    <div class="rl"><span>BL béton</span><b>${vv(b.bl_beton)}</b></div>
+    <div class="rl"><span>Fouille</span><b>${dt(b.date_fouille)}</b></div>
+    <div class="rl"><span>Béton</span><b>${dt(b.date_beton)}</b></div>
+    <div class="rl"><span>Matage</span><b>${dt(b.date_matage)}</b></div>` : '';
+  const tk = p.rows.length ? TYPES.map(t => {
+    const L = p.rows.filter(r => key(r.type) === t);
+    return L.length ? `<div class="th" style="color:var(${TC[t]})">${TL[t]}</div>` + L.map(task).join('') : '';
+  }).join('') : '<div class="mu">Aucune tâche SUTX.</div>';
+  dlg.innerHTML = `<div class="dh"><div><b>${esc(p.name)}</b><div class="mu tl" style="margin:0">${esc(c.name)}</div></div><button type="button" id="dx">Fermer</button></div>
+    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}</div>`;
+  dlg.showModal();
+  $('#dx').onclick = () => dlg.close();
+}
+
+/* ---------- Chargement et événements ---------- */
+async function load(){
+  $('#st').textContent = 'Chargement…';
+  try{
+    const [sx, bl] = await Promise.all([
+      fetchAll('suivi_sutx_v2', 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at'),
+      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
+    ]);
+    D = stats(sx, bl); last = Date.now();
+    $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    show();
+  }catch(e){
+    $('#st').textContent = 'Erreur de chargement';
+    $('#v').innerHTML = `<div class="card">Lecture impossible : ${esc(e.message)}<br><span class="mu">Vérifie la connexion, la lecture autorisée (RLS) sur blindage et suivi_sutx_v2, et que les colonnes etat, pct_avancement, explication, conforme et nc_description existent.</span></div>`;
+  }
+}
+
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.t; show(); window.scrollTo(0,0); }));
+$('#rf').addEventListener('click', load);
+$('#v').addEventListener('change', e => { if(e.target.id === 'selc'){ sel = e.target.value; show(); } });
+$('#v').addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if(g){ sel = g.dataset.go; tab = 'syn'; sub = 'glob'; show(); window.scrollTo(0,0); return; }
+  const b = e.target.closest('[data-sub],[data-qf]');
+  if(b){ if(b.dataset.sub) sub = b.dataset.sub; if(b.dataset.qf) qf = b.dataset.qf; show(); return; }
+  const r = e.target.closest('[data-s]'); if(r) openSup(r.dataset.c, r.dataset.s);
+});
+$('#v').addEventListener('keydown', e => { const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
+dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
+document.addEventListener('visibilitychange', () => { if(!document.hidden && Date.now() - last > 300000) load(); });
+load();
+
+/* Installation (Android / PC) + service worker */
+let invitation = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); invitation = e; $('#inst').style.display = ''; });
+window.addEventListener('appinstalled', () => { invitation = null; $('#inst').style.display = 'none'; });
+$('#inst').addEventListener('click', async () => { if(!invitation) return; invitation.prompt(); await invitation.userChoice; invitation = null; $('#inst').style.display = 'none'; });
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
