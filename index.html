@@ -288,6 +288,13 @@ const vv = v => (v === null || v === undefined || v === '') ? '—' : (typeof v 
 const df = (a,b) => a != null && b != null && a !== '' && b !== '' && String(a) !== String(b);
 const PAIRS = [['I','i','i_reel'],['ECH','ech','ech_reel'],['AR','ar','ar_reel'],['ENC','enc','enc_reel'],['A','af','a_reel'],['B','b','b_reel'],['H','h','h_reel'],['F','f','f_reel'],['P','p','p_reel'],['SUP','sup','sup_reel']];
 
+function sousHtml(r){
+  const mods = (D.mod || []).filter(m => m.actif !== false && key(m.tache) === key(r.Tache)).sort((a,b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
+  if(!mods.length) return '';
+  const sm = D.sidx.get(String(r.id)) || new Map();
+  return `<div class="tl" style="margin-top:6px">${mods.map(m => { const st = sm.get(String(m.id)); return `<div style="${st === 'NON_CONCERNE' ? 'opacity:.55' : ''}">${st === 'FAIT' ? '☑' : st === 'NON_CONCERNE' ? '⊘' : '☐'} ${esc(m.libelle)}${st === 'NON_CONCERNE' ? ' (N/C)' : ''}</div>`; }).join('')}</div>`;
+}
+
 function task(r){
   const e = eff(r), x = [];
   if(e === 'E') x.push(`🟠 En cours ${r.pct_avancement ?? 0} %`);
@@ -306,7 +313,7 @@ function task(r){
   if(r.brh) x.push('BRH');
   if(r.explication && e !== 'T') x.push(esc(r.explication));
   if(r.Observation) x.push(esc(r.Observation));
-  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
+  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
 }
 
 function openSup(ck, sk){
@@ -342,7 +349,11 @@ async function load(){
       fetchAll('suivi_sutx_v2', 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at'),
       fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
     ]);
+    const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
+    const suivi = await fetchAll('sous_travaux_suivi', 'id,tache_id,modele_id,statut').catch(() => []);
     D = stats(sx, bl); last = Date.now();
+    D.mod = mod; D.sidx = new Map();
+    suivi.forEach(x => { const k = String(x.tache_id); if(!D.sidx.has(k)) D.sidx.set(k, new Map()); D.sidx.get(k).set(String(x.modele_id), x.statut); });
     $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
     show();
   }catch(e){
