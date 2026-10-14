@@ -91,8 +91,8 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 <body>
 <main>
 <div class="top">
-<header><div><h1>SUIVI_PCLE-MMM</h1><div id="st"></div></div><span style="display:flex;gap:6px"><button id="inst" type="button" style="display:none;font-weight:600">📲 Installer</button><button id="rf" type="button">Actualiser</button></span></header>
-<nav><button type="button" data-t="syn" aria-pressed="true">Synthèse</button><button type="button" data-t="ch" aria-pressed="false">Chantiers</button><button type="button" data-t="qa" aria-pressed="false" id="nqa">Qualité</button></nav>
+<header><div><h1>SUIVI_PCLE-MMM</h1><div id="st"></div></div><span style="display:flex;gap:6px"><button id="adm" type="button" style="font-weight:600">🔐 Admin</button><button id="inst" type="button" style="display:none;font-weight:600">📲 Installer</button><button id="rf" type="button">Actualiser</button></span></header>
+<nav><button type="button" data-t="syn" aria-pressed="true">Synthèse</button><button type="button" data-t="ch" aria-pressed="false">Chantiers</button><button type="button" data-t="qa" aria-pressed="false" id="nqa">Qualité</button><button type="button" data-t="adm" aria-pressed="false" id="nadm" style="display:none">Admin</button></nav>
 </div>
 <div id="v"></div>
 </main>
@@ -110,6 +110,7 @@ const key = s => String(s || '').trim().toUpperCase();
 const pc = (v,t) => t ? Math.round(v/t*100) : 0;
 const nf = n => (Math.round(n*10)/10).toLocaleString('fr-FR');
 let D = null, tab = 'syn', sub = 'glob', qf = 'nc', sel = 'all', last = 0;
+let ADM = null, vp = '7', supOuvert = null;
 
 async function fetchAll(table, cols){
   let out = [], from = 0; const step = 1000;
@@ -127,25 +128,30 @@ async function fetchAll(table, cols){
 }
 
 /* ---------- Calculs : T terminé, E en cours, A annulé, F à faire ---------- */
-const eff = r => r.Fait ? 'T' : r.etat === 'EN_COURS' ? 'E' : r.etat === 'ANNULE' ? 'A' : 'F';
+const eff = r => r.Fait ? 'T' : r.admin_etat === 'TERMINE' ? 'T' : r.etat === 'EN_COURS' ? 'E' : r.etat === 'ANNULE' ? 'A' : r.admin_etat === 'EN_COURS' ? 'E' : r.admin_etat === 'ANNULE' ? 'A' : 'F';
+const viaAdmin = r => !r.Fait && (r.admin_etat === 'TERMINE' || (!!r.admin_etat && r.etat !== 'EN_COURS' && r.etat !== 'ANNULE'));
+const pctOf = r => r.etat === 'EN_COURS' ? (+r.pct_avancement || 0) : (+r.admin_pct || 0);
 
 function agg(rows){
-  const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0};
+  const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0, adm:0};
   rows.forEach(r => {
-    const e = eff(r); o[e]++;
+    const e = eff(r); o[e]++; if(viaAdmin(r)) o.adm++;
     if(r.conforme === false && r.nc_levee !== true) o.nc++;
-    if(e !== 'A'){ o.w++; o.v += e === 'T' ? 1 : e === 'E' ? (+r.pct_avancement || 0) / 100 : 0; }
+    if(e !== 'A'){ o.w++; o.v += e === 'T' ? 1 : e === 'E' ? pctOf(r) / 100 : 0; }
   });
   o.p = o.w ? Math.round(o.v / o.w * 100) : 0;
   return o;
 }
 
 function aggF(rows){
-  const o = {n:rows.length, fo:0, be:0, ma:0, mp:0, mr:0};
+  const o = {n:rows.length, fo:0, be:0, ma:0, mp:0, mr:0, ad:0};
   rows.forEach(r => {
-    if(r.date_fouille) o.fo++;
-    if(r.date_beton) o.be++;
-    if(r.date_matage) o.ma++;
+    if(r.date_fouille || r.admin_date_fouille) o.fo++;
+    if(r.date_beton || r.admin_date_beton) o.be++;
+    if(r.date_matage || r.admin_date_matage) o.ma++;
+    if(!r.date_fouille && r.admin_date_fouille) o.ad++;
+    if(!r.date_beton && r.admin_date_beton) o.ad++;
+    if(!r.date_matage && r.admin_date_matage) o.ad++;
     o.mp += +r.m3_prevu || 0;
     o.mr += +r.m3_reel || 0;
   });
@@ -208,7 +214,7 @@ function vSyn(){
   const s = pick + sg('sub', [['glob','Vue d\'ensemble'],['sutx','SUTX'],['fbm','FBM']], sub);
   const L = S.c ? supList(S.c) : null, nok = L ? L.filter(x => x.ok).length : 0;
   const sup = L ? `<div class="card"><h2>Supports · ${nok} / ${L.length} terminés</h2>${L.map(x => sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}</div>` : '';
-  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T} terminées / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} étapes / ${3*f.n}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc, 'à traiter', '--dep')}</div>
+  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T} terminées / ${a.w}${a.adm ? ' · ' + a.adm + ' 📌' : ''}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} étapes / ${3*f.n}${f.ad ? ' · ' + f.ad + ' 📌' : ''}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc, 'à traiter', '--dep')}</div>
     <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX')}${ring(f.p,'--fb','Avancement FBM')}</div></div>
     ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.bl));
   if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`
@@ -221,12 +227,12 @@ function vSyn(){
 /* ---------- Onglet Chantiers ---------- */
 function supList(c){
   return Object.values(c.s).map(p => {
-    const a = agg(p.rows), fd = p.b ? [p.b.date_fouille, p.b.date_beton, p.b.date_matage].filter(Boolean).length : 0;
+    const a = agg(p.rows), fd = p.b ? [p.b.date_fouille || p.b.admin_date_fouille, p.b.date_beton || p.b.admin_date_beton, p.b.date_matage || p.b.admin_date_matage].filter(Boolean).length : 0;
     return {p, a, ok:(a.n + (p.b ? 3 : 0)) > 0 && a.T + a.A === a.n && (!p.b || fd === 3)};
   }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
 }
 
-const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${x.a.nc ? '<span class="nb">⚠️ NC</span>' : ''}${x.p.b ? [x.p.b.date_fouille, x.p.b.date_beton, x.p.b.date_matage].map((d,i) => `<em class="${d ? 'on' : ''}">${'FBM'[i]}</em>`).join('') : ''}</span></div>
+const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${x.a.nc ? '<span class="nb">⚠️ NC</span>' : ''}${x.p.b ? [x.p.b.date_fouille || x.p.b.admin_date_fouille, x.p.b.date_beton || x.p.b.admin_date_beton, x.p.b.date_matage || x.p.b.admin_date_matage].map((d,i) => `<em class="${d ? 'on' : ''}">${'FBM'[i]}</em>`).join('') : ''}</span></div>
   ${x.a.n ? stk(x.a) : ''}
   <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
 
@@ -251,9 +257,9 @@ function fill(){
 const dt = d => d ? new Date(d.length > 10 ? d : d + 'T00:00:00').toLocaleDateString('fr-FR') : '—';
 const qrow = r => { const e = eff(r), who = [r.prenom, r.nom].filter(Boolean).join(' ');
   return `<div class="card qc" role="button" tabindex="0" data-c="${esc(key(r.Chantier))}" data-s="${esc(key(r.Support))}">
-    <div class="rl"><b>${esc(r.Tache)}</b>${e === 'E' ? `<span class="pill" style="background:var(--ec)">${r.pct_avancement ?? 0} %</span>` : e === 'A' ? '<span class="pill" style="background:var(--mu)">Annulé</span>' : ''}</div>
+    <div class="rl"><b>${esc(r.Tache)}</b>${e === 'E' ? `<span class="pill" style="background:var(--ec)">${pctOf(r)} %</span>` : e === 'A' ? '<span class="pill" style="background:var(--mu)">Annulé</span>' : ''}</div>
     <div class="mu tl" style="margin:0 0 6px">${esc(r.Chantier)} › ${esc(r.Support)} · ${TL[key(r.type)]}</div>
-    ${e === 'E' ? pbar(+r.pct_avancement || 0, '--ec') : ''}
+    ${e === 'E' ? pbar(pctOf(r), '--ec') : ''}
     ${r.explication && e !== 'T' ? `<div class="tl">${esc(r.explication)}</div>` : ''}
     ${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ ${esc(r.nc_description)}</div>`) : ''}
     ${r.pend_prov ? `<div class="nc" style="background:rgba(20,150,150,.14);color:var(--sx)">🔧 Provisoires : ${esc(r.pend_prov_depose || 0)} déposés / ${esc(r.pend_prov)} posés</div>` : ''}
@@ -269,6 +275,99 @@ function vQa(){
     + (rows.map(qrow).join('') || '<div class="card mu">Rien à signaler.</div>');
 }
 
+/* ---------- Mode admin : déclarations + veille ---------- */
+const jour = () => { const d = new Date(); if(d.getHours() < 6) d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+const nz = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+async function verifAdmin(email){
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/app_bob?email=eq.${encodeURIComponent(email)}&select=nom,prenom,admin`, {headers:{apikey:SUPABASE_ANON_KEY}});
+    if(!r.ok) return null;
+    const a = await r.json();
+    return a[0] && a[0].admin === true ? {email, nom:a[0].nom || '', prenom:a[0].prenom || ''} : null;
+  }catch(e){ return null; }
+}
+
+function majAdminUI(){
+  $('#adm').textContent = ADM ? '🔓 ' + (ADM.prenom || 'Admin') : '🔐 Admin';
+  $('#nadm').style.display = ADM ? '' : 'none';
+  if(!ADM && tab === 'adm') tab = 'syn';
+}
+
+async function connexionAdmin(){
+  if(ADM){
+    if(confirm('Quitter le mode admin ?')){ ADM = null; localStorage.removeItem('pcle_adm'); majAdminUI(); show(); }
+    return;
+  }
+  const email = (prompt('Email administrateur :', localStorage.getItem('pcle_adm') || localStorage.getItem('emailSutx') || '') || '').trim().toLowerCase();
+  if(!email) return;
+  const a = await verifAdmin(email);
+  if(!a){ alert("Accès refusé : cet email n'est pas administrateur."); return; }
+  ADM = a; localStorage.setItem('pcle_adm', email); majAdminUI(); show();
+}
+
+async function patchTable(table, id, patch){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {method:'PATCH', headers:{apikey:SUPABASE_ANON_KEY, 'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify(patch)});
+  if(!r.ok) throw new Error(table + ' : erreur ' + r.status);
+}
+
+function rafraichirApres(){
+  const sc = dlg.scrollTop;
+  show();
+  if(supOuvert && dlg.open){ openSup(supOuvert.ck, supOuvert.sk); dlg.scrollTop = sc; }
+}
+
+async function adminTache(id, val){
+  const r = D.all.find(x => String(x.id) === String(id));
+  if(!r || !ADM) return;
+  const [etat, pct] = val.split(':');
+  const patch = val === 'CLEAR'
+    ? {admin_etat:null, admin_pct:null, admin_le:null, admin_par:null}
+    : {admin_etat:etat, admin_pct:pct ? +pct : null, admin_le:jour(), admin_par:(ADM.prenom + ' ' + ADM.nom).trim()};
+  try{ await patchTable('suivi_sutx_v2', id, patch); Object.assign(r, patch); }
+  catch(e){ alert('Mise à jour impossible : ' + e.message); }
+  rafraichirApres();
+}
+
+async function adminFbm(id, col, val){
+  const b = D.bl.find(x => String(x.id) === String(id));
+  if(!b || !ADM) return;
+  const par = (ADM.prenom + ' ' + ADM.nom).trim();
+  const patch = {[col]: val || null, admin_par: par, admin_maj_le: new Date().toISOString()};
+  const mot = col.includes('fouille') ? 'fouille' : col.includes('beton') ? 'beton' : 'matage';
+  const c = supOuvert && D.ch.find(x => x.k === supOuvert.ck), p = c && c.s[supOuvert.sk];
+  const miroir = (p ? p.rows : []).filter(r => key(r.type) === 'GC' && !r.Fait && nz(r.Tache).includes(mot));
+  const pm = val ? {admin_etat:'TERMINE', admin_pct:null, admin_le:val, admin_par:par} : {admin_etat:null, admin_pct:null, admin_le:null, admin_par:null};
+  try{
+    await patchTable('blindage', id, patch); Object.assign(b, patch);
+    for(const r of miroir){ await patchTable('suivi_sutx_v2', r.id, pm); Object.assign(r, pm); }
+  }catch(e){ alert('Mise à jour impossible : ' + e.message); }
+  rafraichirApres();
+}
+
+function vAdm(){
+  const d0 = new Date(); if(vp !== 'all') d0.setDate(d0.getDate() - (+vp));
+  const lim = vp === 'all' ? '' : d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0') + '-' + String(d0.getDate()).padStart(2,'0');
+  const okP = d => !!d && (!lim || String(d) >= lim);
+  const conf = r => r.Fait || (r.admin_etat !== 'TERMINE' && !!r.etat);
+  const T = D.all.filter(r => r.admin_etat && okP(r.admin_le));
+  const F = [];
+  D.ch.forEach(c => Object.values(c.s).forEach(p => { if(!p.b) return;
+    [['Fouille','date_fouille','admin_date_fouille'],['Béton','date_beton','admin_date_beton'],['Matage','date_matage','admin_date_matage']].forEach(([l,re,ad]) => {
+      if(p.b[ad] && okP(p.b[ad])) F.push({c, p, l, date:p.b[ad], conf:!!p.b[re]});
+    });
+  }));
+  const nc = T.filter(conf).length + F.filter(x => x.conf).length, tot = T.length + F.length;
+  const items = [
+    ...T.map(r => ({date:r.admin_le, ck:key(r.Chantier), sk:key(r.Support), ch:r.Chantier, su:r.Support, titre:r.Tache,
+      etat:r.admin_etat === 'TERMINE' ? '✅ Terminé' : r.admin_etat === 'ANNULE' ? '🚫 Annulé' : '🟠 ' + (r.admin_pct ?? 0) + ' %', conf:conf(r)})),
+    ...F.map(x => ({date:x.date, ck:x.c.k, sk:x.p.k, ch:x.c.name, su:x.p.name, titre:'FBM · ' + x.l, etat:'✅ Fait', conf:x.conf}))
+  ].sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  return sg('vp', [['7','7 jours'],['30','30 jours'],['all','Tout']], vp)
+    + `<div class="kpis">${kpi('Tâches SUTX', T.length, 'déclarées par moi', '--sx')}${kpi('Étapes FBM', F.length, 'déclarées par moi', '--fb')}${kpi('À confirmer', tot - nc, 'par le terrain', '--ec')}${kpi('Confirmées', nc, 'par le terrain', '--pose')}</div>`
+    + (items.map(i => `<div class="card qc" role="button" tabindex="0" data-c="${esc(i.ck)}" data-s="${esc(i.sk)}"><div class="rl"><b>${esc(i.titre)}</b><span class="pill" style="background:${i.conf ? 'var(--pose)' : 'var(--ec)'}">${i.conf ? 'confirmé' : 'à confirmer'}</span></div><div class="mu tl" style="margin:0">${esc(i.ch)} › ${esc(i.su)}</div><div class="tl">${i.etat} · déclaré le ${dt(i.date)}</div></div>`).join('') || '<div class="card mu">Aucune déclaration sur cette période.</div>');
+}
+
 function show(){
   if(!D) return;
   const n = D.all.filter(r => r.conforme === false && r.nc_levee !== true).length;
@@ -276,6 +375,7 @@ function show(){
   document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === tab));
   if(tab === 'syn') $('#v').innerHTML = vSyn();
   else if(tab === 'qa') $('#v').innerHTML = vQa();
+  else if(tab === 'adm' && ADM) $('#v').innerHTML = vAdm();
   else {
     $('#v').innerHTML = '<input id="q" type="search" placeholder="Filtrer un chantier ou un support"><label class="tg"><input id="rest" type="checkbox"> Supports restants seulement</label><div class="lg">Pastilles FBM : F fouille, B béton, M matage (remplie = faite). Touche un support pour voir son détail.</div><div id="list"></div>';
     $('#q').addEventListener('input', fill); $('#rest').addEventListener('change', fill); fill();
@@ -295,10 +395,21 @@ function sousHtml(r){
   return `<div class="tl" style="margin-top:6px">${mods.map(m => { const st = sm.get(String(m.id)); return `<div style="${st === 'NON_CONCERNE' ? 'opacity:.55' : ''}">${st === 'FAIT' ? '☑' : st === 'NON_CONCERNE' ? '⊘' : '☐'} ${esc(m.libelle)}${st === 'NON_CONCERNE' ? ' (N/C)' : ''}</div>`; }).join('')}</div>`;
 }
 
+function adminSel(r){
+  return `<select data-adm="t" data-id="${r.id}" style="margin-top:6px;min-height:36px;font-size:13px;width:100%"><option value="">📌 Déclarer l'avancement…</option><option value="TERMINE">✅ Terminé</option><option value="EN_COURS:25">🟠 En cours 25 %</option><option value="EN_COURS:50">🟠 En cours 50 %</option><option value="EN_COURS:75">🟠 En cours 75 %</option><option value="ANNULE">🚫 Annulé</option><option value="CLEAR">↩︎ Retirer ma déclaration</option></select>`;
+}
+
+function stepRow(b, l, real, adm, col){
+  if(real) return `<div class="rl"><span>${l}</span><b>${dt(real)} ✔</b></div>`;
+  if(ADM) return `<div class="rl"><span>${l}${adm ? ' 📌' : ''}</span><input type="date" data-adm="f" data-id="${b.id}" data-col="${col}" value="${esc(adm || '')}" style="min-height:36px;padding:4px 8px"></div>`;
+  return `<div class="rl"><span>${l}</span><b>${adm ? dt(adm) + ' 📌 admin' : '—'}</b></div>`;
+}
+
 function task(r){
   const e = eff(r), x = [];
-  if(e === 'E') x.push(`🟠 En cours ${r.pct_avancement ?? 0} %`);
+  if(e === 'E') x.push(`🟠 En cours ${pctOf(r)} %`);
   if(e === 'A') x.push('🚫 Annulé');
+  if(viaAdmin(r)) x.push('📌 déclaré par ' + esc(r.admin_par || 'admin') + ' le ' + dt(r.admin_le));
   if(+r.qt_prevu > 1) x.push(`Quantité ${r.qt_realisee ?? 0} / ${r.qt_prevu}`);
   if(r.date_fait) x.push('Fait le ' + dt(r.date_fait));
   const rl = key(r.type) === 'POSE' && /appareil tendeur|chaise de relevage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
@@ -313,10 +424,11 @@ function task(r){
   if(r.brh) x.push('BRH');
   if(r.explication && e !== 'T') x.push(esc(r.explication));
   if(r.Observation) x.push(esc(r.Observation));
-  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
+  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && !r.Fait ? adminSel(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
 }
 
 function openSup(ck, sk){
+  supOuvert = {ck, sk};
   const c = D.ch.find(x => x.k === ck), p = c && c.s[sk];
   if(!p) return;
   const b = p.b;
@@ -328,16 +440,16 @@ function openSup(ck, sk){
     <div class="rl"><span>Type de béton</span><b>${vv(b.type_beton)}</b></div>
     <div class="rl"><span>Slump</span><b>${vv(b.slump)}</b></div>
     <div class="rl"><span>BL béton</span><b>${vv(b.bl_beton)}</b></div>
-    <div class="rl"><span>Fouille</span><b>${dt(b.date_fouille)}</b></div>
-    <div class="rl"><span>Béton</span><b>${dt(b.date_beton)}</b></div>
-    <div class="rl"><span>Matage</span><b>${dt(b.date_matage)}</b></div>` : '';
+    ${stepRow(b, 'Fouille', b.date_fouille, b.admin_date_fouille, 'admin_date_fouille')}
+    ${stepRow(b, 'Béton', b.date_beton, b.admin_date_beton, 'admin_date_beton')}
+    ${stepRow(b, 'Matage', b.date_matage, b.admin_date_matage, 'admin_date_matage')}` : '';
   const tk = p.rows.length ? TYPES.map(t => {
     const L = p.rows.filter(r => key(r.type) === t);
     return L.length ? `<div class="th" style="color:var(${TC[t]})">${TL[t]}</div>` + L.map(task).join('') : '';
   }).join('') : '<div class="mu">Aucune tâche SUTX.</div>';
   dlg.innerHTML = `<div class="dh"><div><b>${esc(p.name)}</b><div class="mu tl" style="margin:0">${esc(c.name)}</div></div><button type="button" id="dx">Fermer</button></div>
     <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}</div>`;
-  dlg.showModal();
+  if(!dlg.open) dlg.showModal();
   $('#dx').onclick = () => dlg.close();
 }
 
@@ -346,8 +458,8 @@ async function load(){
   $('#st').textContent = 'Chargement…';
   try{
     const [sx, bl] = await Promise.all([
-      fetchAll('suivi_sutx_v2', 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at'),
-      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
+      fetchAll('suivi_sutx_v2', 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at,admin_etat,admin_pct,admin_le,admin_par'),
+      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
     ]);
     const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
     const suivi = await fetchAll('sous_travaux_suivi', 'id,tache_id,modele_id,statut').catch(() => []);
@@ -368,12 +480,20 @@ $('#v').addEventListener('change', e => { if(e.target.id === 'selc'){ sel = e.ta
 $('#v').addEventListener('click', e => {
   const g = e.target.closest('[data-go]');
   if(g){ sel = g.dataset.go; tab = 'syn'; sub = 'glob'; show(); window.scrollTo(0,0); return; }
-  const b = e.target.closest('[data-sub],[data-qf]');
-  if(b){ if(b.dataset.sub) sub = b.dataset.sub; if(b.dataset.qf) qf = b.dataset.qf; show(); return; }
+  const b = e.target.closest('[data-sub],[data-qf],[data-vp]');
+  if(b){ if(b.dataset.sub) sub = b.dataset.sub; if(b.dataset.qf) qf = b.dataset.qf; if(b.dataset.vp) vp = b.dataset.vp; show(); return; }
   const r = e.target.closest('[data-s]'); if(r) openSup(r.dataset.c, r.dataset.s);
 });
 $('#v').addEventListener('keydown', e => { const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
 dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
+dlg.addEventListener('change', e => {
+  const el = e.target;
+  if(!ADM || !el.dataset) return;
+  if(el.dataset.adm === 't' && el.value) adminTache(el.dataset.id, el.value);
+  if(el.dataset.adm === 'f') adminFbm(el.dataset.id, el.dataset.col, el.value);
+});
+$('#adm').addEventListener('click', connexionAdmin);
+{ const dej = localStorage.getItem('pcle_adm'); if(dej) verifAdmin(dej).then(a => { if(a){ ADM = a; majAdminUI(); if(D) show(); } }); }
 document.addEventListener('visibilitychange', () => { if(!document.hidden && Date.now() - last > 300000) load(); });
 load();
 
