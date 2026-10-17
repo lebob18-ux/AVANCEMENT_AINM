@@ -162,13 +162,17 @@ function aggF(rows){
 }
 
 function stats(sx, bl){
-  const ch = {}, act = {}, all = sx.filter(r => TYPES.includes(key(r.type)) && !isFBM(r));
-  const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], bl:[], s:{}});
-  const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], b:null});
+  const ch = {}, act = {}, qa = sx.filter(r => TYPES.includes(key(r.type)));
+  const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], bl:[], s:{}});
+  const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], b:null});
   const add = (d,i) => { if(!d) return; (act[d] = act[d] || [0,0])[i]++; };
-  all.forEach(r => { const c = get(r.Chantier); c.rows.push(r); sp(c, r.Support).rows.push(r); if(r.Fait) add(r.date_fait, 0); });
+  qa.forEach(r => {
+    const c = get(r.Chantier), p = sp(c, r.Support);
+    if(isFBM(r)){ c.fb.push(r); p.fb.push(r); }
+    else { c.rows.push(r); p.rows.push(r); if(r.Fait) add(r.date_fait, 0); }
+  });
   bl.forEach(r => { const c = get(r.chantier); c.bl.push(r); sp(c, r.support).b = r; add(r.date_fouille,1); add(r.date_beton,1); add(r.date_matage,1); });
-  return {ch:Object.values(ch).sort((a,b) => a.name.localeCompare(b.name,'fr')), act, all, bl};
+  return {ch:Object.values(ch).sort((a,b) => a.name.localeCompare(b.name,'fr')), act, all:qa.filter(r => !isFBM(r)), qa, fb:qa.filter(isFBM), bl};
 }
 
 /* ---------- Composants visuels ---------- */
@@ -199,7 +203,7 @@ function vAct(act){
 function scope(){
   const c = sel === 'all' ? null : D.ch.find(x => x.k === sel);
   if(!c) sel = 'all';
-  return c ? {c, rows:c.rows, bl:c.bl} : {c:null, rows:D.all, bl:D.bl};
+  return c ? {c, rows:c.rows, bl:c.bl, fb:c.fb} : {c:null, rows:D.all, bl:D.bl, fb:D.fb};
 }
 
 function actOf(rows, bl){
