@@ -131,7 +131,7 @@ async function fetchAll(table, cols){
 const eff = r => r.Fait ? 'T' : r.admin_etat === 'TERMINE' ? 'T' : r.etat === 'EN_COURS' ? 'E' : r.etat === 'ANNULE' ? 'A' : r.admin_etat === 'EN_COURS' ? 'E' : r.admin_etat === 'ANNULE' ? 'A' : 'F';
 const viaAdmin = r => !r.Fait && (r.admin_etat === 'TERMINE' || (!!r.admin_etat && r.etat !== 'EN_COURS' && r.etat !== 'ANNULE'));
 const pctOf = r => r.etat === 'EN_COURS' ? (+r.pct_avancement || 0) : (+r.admin_pct || 0);
-
+const isFBM = r => key(r.type) === 'GC' && /fouille|beton|matage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
 function agg(rows){
   const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0, adm:0};
   rows.forEach(r => {
@@ -161,7 +161,7 @@ function aggF(rows){
 }
 
 function stats(sx, bl){
-  const ch = {}, act = {}, all = sx.filter(r => TYPES.includes(key(r.type)));
+  const ch = {}, act = {}, all = sx.filter(r => TYPES.includes(key(r.type)) && !isFBM(r));
   const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], bl:[], s:{}});
   const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], b:null});
   const add = (d,i) => { if(!d) return; (act[d] = act[d] || [0,0])[i]++; };
@@ -329,28 +329,14 @@ async function adminTache(id, val){
   rafraichirApres();
 }
 
-async function adminFbm(id, col, val){
-  const b = D.bl.find(x => String(x.id) === String(id));
-  if(!b || !ADM) return;
-  const par = (ADM.prenom + ' ' + ADM.nom).trim();
-  const patch = {[col]: val || null, admin_par: par, admin_maj_le: new Date().toISOString()};
-  const mot = col.includes('fouille') ? 'fouille' : col.includes('beton') ? 'beton' : 'matage';
-  const c = supOuvert && D.ch.find(x => x.k === supOuvert.ck), p = c && c.s[supOuvert.sk];
-  const miroir = (p ? p.rows : []).filter(r => key(r.type) === 'GC' && !r.Fait && nz(r.Tache).includes(mot));
-  const pm = val ? {admin_etat:'TERMINE', admin_pct:null, admin_le:val, admin_par:par} : {admin_etat:null, admin_pct:null, admin_le:null, admin_par:null};
-  try{
-    await patchTable('blindage', id, patch); Object.assign(b, patch);
-    for(const r of miroir){ await patchTable('suivi_sutx_v2', r.id, pm); Object.assign(r, pm); }
-  }catch(e){ alert('Mise à jour impossible : ' + e.message); }
-  rafraichirApres();
-}
+
 
 function vAdm(){
   const d0 = new Date(); if(vp !== 'all') d0.setDate(d0.getDate() - (+vp));
   const lim = vp === 'all' ? '' : d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0') + '-' + String(d0.getDate()).padStart(2,'0');
   const okP = d => !!d && (!lim || String(d) >= lim);
   const conf = r => r.Fait || (r.admin_etat !== 'TERMINE' && !!r.etat);
-  const T = D.all.filter(r => r.admin_etat && okP(r.admin_le));
+  const T = D.all.filter(r => r.admin_etat === 'TERMINE' && okP(r.admin_le));
   const F = [];
   D.ch.forEach(c => Object.values(c.s).forEach(p => { if(!p.b) return;
     [['Fouille','date_fouille','admin_date_fouille'],['Béton','date_beton','admin_date_beton'],['Matage','date_matage','admin_date_matage']].forEach(([l,re,ad]) => {
@@ -395,9 +381,7 @@ function sousHtml(r){
   return `<div class="tl" style="margin-top:6px">${mods.map(m => { const st = sm.get(String(m.id)); return `<div style="${st === 'NON_CONCERNE' ? 'opacity:.55' : ''}">${st === 'FAIT' ? '☑' : st === 'NON_CONCERNE' ? '⊘' : '☐'} ${esc(m.libelle)}${st === 'NON_CONCERNE' ? ' (N/C)' : ''}</div>`; }).join('')}</div>`;
 }
 
-function adminSel(r){
-  return `<select data-adm="t" data-id="${r.id}" style="margin-top:6px;min-height:36px;font-size:13px;width:100%"><option value="">📌 Déclarer l'avancement…</option><option value="TERMINE">✅ Terminé</option><option value="EN_COURS:25">🟠 En cours 25 %</option><option value="EN_COURS:50">🟠 En cours 50 %</option><option value="EN_COURS:75">🟠 En cours 75 %</option><option value="ANNULE">🚫 Annulé</option><option value="CLEAR">↩︎ Retirer ma déclaration</option></select>`;
-}
+
 
 function stepRow(b, l, real, adm, col){
   if(real) return `<div class="rl"><span>${l}</span><b>${dt(real)} ✔</b></div>`;
@@ -489,7 +473,7 @@ dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
 dlg.addEventListener('change', e => {
   const el = e.target;
   if(!ADM || !el.dataset) return;
-  if(el.dataset.adm === 't' && el.value) adminTache(el.dataset.id, el.value);
+  if(el.dataset.adm === 't') adminTache(el.dataset.id, el.checked ? 'TERMINE' : 'CLEAR');
   if(el.dataset.adm === 'f') adminFbm(el.dataset.id, el.dataset.col, el.value);
 });
 $('#adm').addEventListener('click', connexionAdmin);
