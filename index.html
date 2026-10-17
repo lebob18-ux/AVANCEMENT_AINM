@@ -132,6 +132,7 @@ const eff = r => r.Fait ? 'T' : r.admin_etat === 'TERMINE' ? 'T' : r.etat === 'E
 const viaAdmin = r => !r.Fait && (r.admin_etat === 'TERMINE' || (!!r.admin_etat && r.etat !== 'EN_COURS' && r.etat !== 'ANNULE'));
 const pctOf = r => r.etat === 'EN_COURS' ? (+r.pct_avancement || 0) : (+r.admin_pct || 0);
 const isFBM = r => key(r.type) === 'GC' && /fouille|beton|matage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
+  const ncOf = rows => rows.filter(r => r.conforme === false && r.nc_levee !== true).length;
 function agg(rows){
   const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0, adm:0};
   rows.forEach(r => {
@@ -214,7 +215,7 @@ function vSyn(){
   const s = pick + sg('sub', [['glob','Vue d\'ensemble'],['sutx','SUTX'],['fbm','FBM']], sub);
   const L = S.c ? supList(S.c) : null, nok = L ? L.filter(x => x.ok).length : 0;
   const sup = L ? `<div class="card"><h2>Supports · ${nok} / ${L.length} terminés</h2>${L.map(x => sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}</div>` : '';
-  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T} terminées / ${a.w}${a.adm ? ' · ' + a.adm + ' 📌' : ''}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} étapes / ${3*f.n}${f.ad ? ' · ' + f.ad + ' 📌' : ''}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc, 'à traiter', '--dep')}</div>
+  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T} terminées / ${a.w}${a.adm ? ' · ' + a.adm + ' 📌' : ''}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} étapes / ${3*f.n}${f.ad ? ' · ' + f.ad + ' 📌' : ''}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb), 'à traiter', '--dep')}</div>
     <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX')}${ring(f.p,'--fb','Avancement FBM')}</div></div>
     ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.bl));
   if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`
@@ -232,7 +233,7 @@ function supList(c){
   }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
 }
 
-const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${x.a.nc ? '<span class="nb">⚠️ NC</span>' : ''}${x.p.b ? [x.p.b.date_fouille || x.p.b.admin_date_fouille, x.p.b.date_beton || x.p.b.admin_date_beton, x.p.b.date_matage || x.p.b.admin_date_matage].map((d,i) => `<em class="${d ? 'on' : ''}">${'FBM'[i]}</em>`).join('') : ''}</span></div>
+const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb)) ? '<span class="nb">⚠️ NC</span>' : ''}${x.p.b ? [x.p.b.date_fouille || x.p.b.admin_date_fouille, x.p.b.date_beton || x.p.b.admin_date_beton, x.p.b.date_matage || x.p.b.admin_date_matage].map((d,i) => `<em class="${d ? 'on' : ''}">${'FBM'[i]}</em>`).join('') : ''}</span></div>
   ${x.a.n ? stk(x.a) : ''}
   <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
 
@@ -244,7 +245,7 @@ function fill(){
     let shown = $('#rest').checked ? L.filter(x => !x.ok) : L;
     if(byS) shown = shown.filter(x => key(x.p.name).includes(q));
     return `<details class="card"${byS ? ' open' : ''}><summary>
-      <div class="rl"><b>${esc(c.name)}</b><span class="mu" style="margin-right:18px">${a.nc ? '<span class="nb">⚠️ ' + a.nc + ' NC</span>' : ''}<span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>
+      <div class="rl"><b>${esc(c.name)}</b><span class="mu" style="margin-right:18px">${(a.nc + ncOf(c.fb)) ? '<span class="nb">⚠️ ' + (a.nc + ncOf(c.fb)) + ' NC</span>' : ''}<span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>
       ${stk(a)}<div style="height:6px"></div>${pbar(f.p,'--fb')}</summary>
       <div class="in"><button type="button" data-go="${esc(c.k)}" style="width:100%;margin:10px 0;font-weight:600">📊 Synthèse de ce chantier</button>${legend()}${TYPES.filter(t => c.rows.some(r => key(r.type) === t)).map(t => { const y = agg(c.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${y.T}/${y.w} · ${y.p} %</b></div>${stk(y)}</div>`; }).join('')}
       ${f.n ? row('Fouille', f.fo, f.n, '--fb') + row('Béton', f.be, f.n, '--fb') + row('Matage', f.ma, f.n, '--fb') : ''}
@@ -267,7 +268,7 @@ const qrow = r => { const e = eff(r), who = [r.prenom, r.nom].filter(Boolean).jo
 
 function vQa(){
   const prov = r => (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0);
-  const L = {nc:D.all.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), lv:D.all.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
+  const L = {nc:D.qa.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), lv:D.qa.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
   const T = {nc:'Non-conformités ouvertes', ec:'Tâches en cours', pv:'Pendules provisoires à déposer', lv:'Non-conformités levées', an:'Tâches annulées'};
   const rows = L[qf].slice().sort((a,b) => String(b.updated_at).localeCompare(String(a.updated_at)));
   return sg('qf', [['nc','⚠️ ' + L.nc.length],['ec','🟠 ' + L.ec.length],['pv','🔧 ' + L.pv.length],['lv','✅ ' + L.lv.length],['an','🚫 ' + L.an.length]], qf)
@@ -329,7 +330,15 @@ async function adminTache(id, val){
   rafraichirApres();
 }
 
-
+async function adminFbm(id, col, val){
+  const b = D.bl.find(x => String(x.id) === String(id));
+  if(!b || !ADM) return;
+  const par = (ADM.prenom + ' ' + ADM.nom).trim();
+  const patch = {[col]: val || null, admin_par: par, admin_maj_le: new Date().toISOString()};
+  try{ await patchTable('blindage', id, patch); Object.assign(b, patch); }
+  catch(e){ alert('Mise à jour impossible : ' + e.message); }
+  rafraichirApres();
+}
 
 function vAdm(){
   const d0 = new Date(); if(vp !== 'all') d0.setDate(d0.getDate() - (+vp));
@@ -356,7 +365,7 @@ function vAdm(){
 
 function show(){
   if(!D) return;
-  const n = D.all.filter(r => r.conforme === false && r.nc_levee !== true).length;
+  const n = ncOf(D.qa);
   $('#nqa').textContent = 'Qualité' + (n ? ' (' + n + ')' : '');
   document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === tab));
   if(tab === 'syn') $('#v').innerHTML = vSyn();
@@ -381,7 +390,9 @@ function sousHtml(r){
   return `<div class="tl" style="margin-top:6px">${mods.map(m => { const st = sm.get(String(m.id)); return `<div style="${st === 'NON_CONCERNE' ? 'opacity:.55' : ''}">${st === 'FAIT' ? '☑' : st === 'NON_CONCERNE' ? '⊘' : '☐'} ${esc(m.libelle)}${st === 'NON_CONCERNE' ? ' (N/C)' : ''}</div>`; }).join('')}</div>`;
 }
 
-
+function adminSel(r){
+  return `<label class="tg" style="margin-top:4px"><input type="checkbox" data-adm="t" data-id="${r.id}"${r.admin_etat === 'TERMINE' ? ' checked' : ''}> 📌 Terminé (déclaré admin)</label>`;
+}
 
 function stepRow(b, l, real, adm, col){
   if(real) return `<div class="rl"><span>${l}</span><b>${dt(real)} ✔</b></div>`;
@@ -431,8 +442,9 @@ function openSup(ck, sk){
     const L = p.rows.filter(r => key(r.type) === t);
     return L.length ? `<div class="th" style="color:var(${TC[t]})">${TL[t]}</div>` + L.map(task).join('') : '';
   }).join('') : '<div class="mu">Aucune tâche SUTX.</div>';
+  const fbn = p.fb.filter(r => r.conforme === false).map(r => `<div class="tk"><span class="ck"></span><div><b>${esc(r.Tache)}</b>${r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`}</div></div>`).join('');
   dlg.innerHTML = `<div class="dh"><div><b>${esc(p.name)}</b><div class="mu tl" style="margin:0">${esc(c.name)}</div></div><button type="button" id="dx">Fermer</button></div>
-    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}</div>`;
+    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}${fbn ? '<div class="th">Non-conformités Fouille / Béton / Matage</div>' + fbn : ''}</div>`;
   if(!dlg.open) dlg.showModal();
   $('#dx').onclick = () => dlg.close();
 }
