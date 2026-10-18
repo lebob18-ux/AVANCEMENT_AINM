@@ -140,6 +140,41 @@ const pctOf = r => r.etat === 'EN_COURS' ? (+r.pct_avancement || 0) : (+r.admin_
 const isFBM = r => key(r.type) === 'GC' && /fouille|beton|matage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
 const ncOf = rows => rows.filter(r => r.conforme === false && r.nc_levee !== true).length;
 
+/* ---------- FKT : tâches « RELEVER CAT », seules les définitives comptent ---------- */
+const isFKT = r => /relever\s*cat/.test(String((r.type || '') + ' ' + (r.Tache || '')).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
+function adminFktOf(r){ try{ return r.admin_fkt ? JSON.parse(r.admin_fkt) : null; }catch(e){ return null; } }
+/* s : 'T' terrain, 'A' saisi par moi · def : définitive · prov : provisoire seulement */
+function fktOf(r){
+  const f = key(r.fkt_etat), a = adminFktOf(r);
+  if(f === 'DEFINITIVE') return {s:'T', def:true, prov:false, num:r.fkt_num || ''};
+  if(a && a.etat === 'DEFINITIVE') return {s:'A', def:true, prov:false, num:a.num || ''};
+  if(f === 'PROVISOIRE') return {s:'T', def:false, prov:true, num:r.fkt_num || ''};
+  return {s:null, def:false, prov:false, num:''};
+}
+function aggK(rows){
+  const o = {n:0, T:0, A:0, P:0, none:0};
+  rows.filter(r => isFKT(r) && eff(r) !== 'A').forEach(r => { const k = fktOf(r); o.n++; if(k.def){ if(k.s === 'T') o.T++; else o.A++; } else if(k.prov) o.P++; else o.none++; });
+  o.d = o.T + o.A; o.p = o.n ? Math.round(o.d / o.n * 100) : 0;
+  return o;
+}
+function fktChip(r){
+  const k = fktOf(r);
+  if(k.def) return `<div class="nc" style="background:${k.s === 'A' ? 'rgba(14,154,167,.15)' : 'rgba(183,136,26,.15)'};color:var(${k.s === 'A' ? '--ad' : '--gc'})">📄 FKT définitive${k.num ? ' n° ' + esc(k.num) : ''}${k.s === 'A' ? ' · saisie par moi 📌' : ' · terrain'}</div>`;
+  if(k.prov) return `<div class="nc" style="background:rgba(107,120,132,.15);color:var(--mu)">📄 FKT provisoire${k.num ? ' n° ' + esc(k.num) : ''} · définitive à obtenir</div>`;
+  const d = r.date_fait || r.admin_le, late = eff(r) === 'T' && d && (Date.now() - new Date(String(d).slice(0,10) + 'T00:00:00')) > 4 * 86400000;
+  return `<div class="nc"${late ? '' : ' style="background:rgba(107,120,132,.15);color:var(--mu)"'}>📄 Pas de FKT${late ? ' · délai de 4 jours dépassé' : ''}</div>`;
+}
+function fktBlock(r){
+  const k = fktOf(r);
+  let h = fktChip(r);
+  if(ADM && !(k.def && k.s === 'T')){
+    const on = k.def && k.s === 'A';
+    h += `<label class="tg" style="margin-top:2px"><input type="checkbox" data-adm="k" data-id="${r.id}"${on ? ' checked' : ''}> 📌 FKT définitive reçue</label>`;
+    if(on) h += `<input type="text" data-adm="kn" data-id="${r.id}" value="${esc(k.num)}" placeholder="N° de FKT" style="min-height:36px;padding:4px 8px;width:100%">`;
+  }
+  return h;
+}
+
 function agg(rows){
   const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0, adm:0, Ta:0};
   rows.forEach(r => {
@@ -195,7 +230,7 @@ function stats(sx, bl){
 const pbar = (p,c,h='') => `<div class="bar ${h}"><i style="width:${Math.min(100,p)}%;background-color:var(${c})"></i></div>`;
 const row = (l,v,t,c,h='') => `<div class="row"><div class="rl"><span>${l}</span><b>${v} / ${t} · ${pc(v,t)} %</b></div>${pbar(pc(v,t),c,h)}</div>`;
 const stk = a => { const n = a.n || 1, s = (v,c) => v ? `<i style="width:${v/n*100}%;background:var(${c})"></i>` : ''; return `<div class="sb">${s(a.T - (a.Ta || 0),'--pose')}${s(a.Ta || 0,'--ad')}${s(a.E,'--ec')}${s(a.A,'--mu')}</div>`; };
-const dbar = (t,a,n,h='') => `<div class="bar ${h}"><i style="width:${n ? t/n*100 : 0}%;background-color:var(--fb)"></i><i style="width:${n ? a/n*100 : 0}%;background-color:var(--ad)"></i></div>`;
+const dbar = (t,a,n,h='',c='--fb') => `<div class="bar ${h}"><i style="width:${n ? t/n*100 : 0}%;background-color:var(${c})"></i><i style="width:${n ? a/n*100 : 0}%;background-color:var(--ad)"></i></div>`;
 const rowF = (l,x) => `<div class="row"><div class="rl"><span>${l}</span><b>${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %</b></div>${dbar(x.T, x.A, x.n)}<div class="mu tl">${x.T} relevé(s) terrain · ${x.A} saisi(s) par moi</div></div>`;
 const legend = () => `<div class="lg2"><span><i style="background:var(--pose)"></i>Terminé (terrain)</span><span><i style="background:var(--ad)"></i>Terminé par moi</span><span><i style="background:var(--ec)"></i>En cours</span><span><i style="background:var(--mu)"></i>Annulé</span><span><i class="o"></i>À faire</span></div>`;
 const sg = (at, opts, cur) => `<div class="seg">${opts.map(([k,l]) => `<button type="button" data-${at}="${k}" aria-pressed="${k === cur}">${l}</button>`).join('')}</div>`;
@@ -243,8 +278,10 @@ function vSyn(){
   const sup = L ? `<div class="card"><h2>Supports · ${nok} / ${L.length} terminés</h2>${L.map(x => sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}</div>` : '';
   const parC = `<div class="card"><h2>Par chantier</h2><div class="lg">Touche un chantier pour le détailler.</div>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b><span style="color:var(--sx)">SUTX ${x.p} %</span> · <span style="color:var(--fb)">FBM ${y.p} %</span></b></div>${stk(x)}<div style="height:6px"></div>${dbar(y.dT, y.dA, y.tot)}</div>`; }).join('')}</div>`;
   const lgd = `<div class="lg2" style="justify-content:center;margin:10px 0 0"><span><i style="background:var(--sx)"></i>Terrain SUTX</span><span><i style="background:var(--fb)"></i>Terrain FBM</span><span><i style="background:var(--ad)"></i>Saisi par moi</span></div>`;
+  const K = aggK(S.rows), fktCard = K.n ? `<div class="card"><h2>FKT définitives</h2><div class="rl"><span>${K.d} / ${K.n}</span><b>${K.p} %</b></div>${dbar(K.T, K.A, K.n, 'big', '--gc')}<div class="mu tl"><span style="color:var(--gc)">■</span> ${K.T} terrain · <span style="color:var(--ad)">■</span> ${K.A} saisie(s) par moi · ${K.P} provisoire(s) · ${K.none} sans FKT</div></div>` : '';
   if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.dT} terrain · ${f.dA} par moi / ${f.tot} étapes`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb), 'à traiter', '--dep')}</div>
     <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX',a.pA)}${ring(f.p,'--fb','Avancement FBM',f.pA)}</div>${lgd}</div>
+    ${fktCard}
     ${S.c ? '' : parC}
     ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.ps));
   if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %${x.Ta ? ' · ' + x.Ta + ' par moi' : ''}</b></div>${stk(x)}</div>`; }).join('')}</div>`
@@ -307,6 +344,7 @@ const qrow = r => { const e = eff(r), who = [r.prenom, r.nom].filter(Boolean).jo
     <div class="rl"><b>${esc(r.Tache)}</b>${e === 'E' ? `<span class="pill" style="background:var(--ec)">${pctOf(r)} %</span>` : e === 'A' ? '<span class="pill" style="background:var(--mu)">Annulé</span>' : ''}</div>
     <div class="mu tl" style="margin:0 0 6px">${esc(r.Chantier)} › ${esc(r.Support)} · ${TL[key(r.type)]}</div>
     ${e === 'E' ? pbar(pctOf(r), '--ec') : ''}
+    ${isFKT(r) ? fktChip(r) : ''}
     ${r.explication && e !== 'T' ? `<div class="tl">${esc(r.explication)}</div>` : ''}
     ${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ ${esc(r.nc_description)}</div>`) : ''}
     ${r.pend_prov ? `<div class="nc" style="background:rgba(20,150,150,.14);color:var(--sx)">🔧 Provisoires : ${esc(r.pend_prov_depose || 0)} déposés / ${esc(r.pend_prov)} posés</div>` : ''}
@@ -314,10 +352,10 @@ const qrow = r => { const e = eff(r), who = [r.prenom, r.nom].filter(Boolean).jo
 
 function vQa(){
   const prov = r => (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0);
-  const L = {nc:D.qa.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), lv:D.qa.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
-  const T = {nc:'Non-conformités ouvertes', ec:'Tâches en cours', pv:'Pendules provisoires à déposer', lv:'Non-conformités levées', an:'Tâches annulées'};
+  const L = {nc:D.qa.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), fk:D.all.filter(r => isFKT(r) && eff(r) === 'T' && !fktOf(r).def), lv:D.qa.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
+  const T = {nc:'Non-conformités ouvertes', ec:'Tâches en cours', pv:'Pendules provisoires à déposer', fk:'FKT définitive à obtenir (tâches terminées)', lv:'Non-conformités levées', an:'Tâches annulées'};
   const rows = L[qf].slice().sort((a,b) => String(b.updated_at).localeCompare(String(a.updated_at)));
-  return sg('qf', [['nc','⚠️ ' + L.nc.length],['ec','🟠 ' + L.ec.length],['pv','🔧 ' + L.pv.length],['lv','✅ ' + L.lv.length],['an','🚫 ' + L.an.length]], qf)
+  return sg('qf', [['nc','⚠️ ' + L.nc.length],['ec','🟠 ' + L.ec.length],['pv','🔧 ' + L.pv.length],['fk','📄 ' + L.fk.length],['lv','✅ ' + L.lv.length],['an','🚫 ' + L.an.length]], qf)
     + `<h2 class="mu" style="margin:0 0 8px">${T[qf]}</h2>`
     + (rows.map(qrow).join('') || '<div class="card mu">Rien à signaler.</div>');
 }
@@ -420,6 +458,21 @@ async function adminTache(id, val){
   rafraichirApres();
 }
 
+const SQL_FKT = "Colonne admin_fkt absente. Dans Supabase > SQL Editor, exécute :\n\nalter table suivi_sutx_v2 add column if not exists admin_fkt text;\nalter table suivi_sutx_v2 add column if not exists fkt_etat text;\nalter table suivi_sutx_v2 add column if not exists fkt_num text;\nnotify pgrst, 'reload schema';\n\nPuis actualise l'app.";
+
+/* FKT définitive reçue (+ N°), saisie par l'admin uniquement pour les définitives */
+async function adminFkt(id, on, num){
+  const r = D.qa.find(x => String(x.id) === String(id));
+  if(!r || !ADM) return;
+  if(!D.hasFkt){ alert(SQL_FKT); rafraichirApres(); return; }
+  const cur = adminFktOf(r) || {};
+  const v = on ? {etat:'DEFINITIVE', num:num === null ? (cur.num || '') : String(num).trim(), le:cur.le || jour(), par:(ADM.prenom + ' ' + ADM.nom).trim()} : null;
+  const patch = {admin_fkt:v ? JSON.stringify(v) : null};
+  try{ await patchTable('suivi_sutx_v2', r.id, patch); Object.assign(r, patch); }
+  catch(e){ alert('Mise à jour impossible : ' + e.message); }
+  rafraichirApres();
+}
+
 /* Date FBM saisie par l'admin : marque aussi la tâche Fouille/Béton/Matage correspondante */
 async function adminFbm(id, col, val){
   const b = D.bl.find(x => String(x.id) === String(id));
@@ -455,14 +508,16 @@ function vAdm(){
       F.push({c, p, l:STEPS[st][0], date:r.admin_le, conf:!!r.Fait || !!(p.b && p.b['date_' + st])});
     });
   }));
-  const nc = T.filter(conf).length + F.filter(x => x.conf).length, tot = T.length + F.length;
+  const K = D.qa.filter(isFKT).map(r => ({r, a:adminFktOf(r)})).filter(x => x.a && x.a.etat === 'DEFINITIVE' && okP(x.a.le)).map(x => ({...x, conf:key(x.r.fkt_etat) === 'DEFINITIVE'}));
+  const nc = T.filter(conf).length + F.filter(x => x.conf).length + K.filter(x => x.conf).length, tot = T.length + F.length + K.length;
   const items = [
     ...T.map(r => ({date:r.admin_le, ck:key(r.Chantier), sk:key(r.Support), ch:r.Chantier, su:r.Support, titre:r.Tache,
       etat:r.admin_etat === 'TERMINE' ? '✅ Terminé' : r.admin_etat === 'ANNULE' ? '🚫 Annulé' : '🟠 ' + (r.admin_pct ?? 0) + ' %', conf:conf(r)})),
-    ...F.map(x => ({date:x.date, ck:x.c.k, sk:x.p.k, ch:x.c.name, su:x.p.name, titre:'FBM · ' + x.l, etat:'✅ Fait', conf:x.conf}))
+    ...F.map(x => ({date:x.date, ck:x.c.k, sk:x.p.k, ch:x.c.name, su:x.p.name, titre:'FBM · ' + x.l, etat:'✅ Fait', conf:x.conf})),
+    ...K.map(x => ({date:x.a.le, ck:key(x.r.Chantier), sk:key(x.r.Support), ch:x.r.Chantier, su:x.r.Support, titre:'FKT définitive' + (x.a.num ? ' n° ' + x.a.num : '') + ' · ' + x.r.Tache, etat:'✅ Reçue', conf:x.conf}))
   ].sort((a,b) => String(b.date).localeCompare(String(a.date)));
   return sg('vp', [['7','7 jours'],['30','30 jours'],['all','Tout']], vp)
-    + `<div class="kpis">${kpi('Tâches SUTX', T.length, 'déclarées par moi', '--sx')}${kpi('Étapes FBM', F.length, 'déclarées par moi', '--fb')}${kpi('À confirmer', tot - nc, 'par le terrain', '--ec')}${kpi('Confirmées', nc, 'par le terrain', '--pose')}</div>`
+    + `<div class="kpis">${kpi('Tâches SUTX', T.length, 'déclarées par moi', '--sx')}${kpi('Étapes FBM', F.length, 'déclarées par moi', '--fb')}${kpi('FKT définitives', K.length, 'déclarées par moi', '--gc')}${kpi('À confirmer', tot - nc, 'par le terrain', '--ec')}${kpi('Confirmées', nc, 'par le terrain', '--pose')}</div>`
     + (items.map(i => `<div class="card qc" role="button" tabindex="0" data-c="${esc(i.ck)}" data-s="${esc(i.sk)}"><div class="rl"><b>${esc(i.titre)}</b><span class="pill" style="background:${i.conf ? 'var(--pose)' : 'var(--ec)'}">${i.conf ? 'confirmé' : 'à confirmer'}</span></div><div class="mu tl" style="margin:0">${esc(i.ch)} › ${esc(i.su)}</div><div class="tl">${i.etat} · déclaré le ${dt(i.date)}</div></div>`).join('') || '<div class="card mu">Aucune déclaration sur cette période.</div>');
 }
 
@@ -553,7 +608,7 @@ function task(r){
   if(r.brh) x.push('BRH');
   if(r.explication && e !== 'T') x.push(esc(r.explication));
   if(r.Observation) x.push(esc(r.Observation));
-  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && !r.Fait ? adminSel(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
+  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && !r.Fait ? adminSel(r) : ''}${isFKT(r) ? fktBlock(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
 }
 
 function openSup(ck, sk){
@@ -587,15 +642,16 @@ async function load(){
   $('#st').textContent = 'Chargement…';
   try{
     const SXC = 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at,admin_etat,admin_pct,admin_le,admin_par';
-    const getSx = () => fetchAll('suivi_sutx_v2', SXC + ',admin_sous').then(a => [a, true]).catch(() => fetchAll('suivi_sutx_v2', SXC).then(a => [a, false]));
-    const [[sx, hasSous], bl] = await Promise.all([
-      getSx(),
+    const probe = c => fetch(`${SUPABASE_URL}/rest/v1/suivi_sutx_v2?select=${c}&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? c : null).catch(() => null);
+    const have = (await Promise.all(['admin_sous','admin_fkt','fkt_etat','fkt_num'].map(probe))).filter(Boolean);
+    const [sx, bl] = await Promise.all([
+      fetchAll('suivi_sutx_v2', SXC + have.map(c => ',' + c).join('')),
       fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
     ]);
     const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
     const suivi = await fetchAll('sous_travaux_suivi', 'id,tache_id,modele_id,statut').catch(() => []);
     D = stats(sx, bl); last = Date.now();
-    D.mod = mod; D.hasSous = hasSous; D.sidx = new Map();
+    D.mod = mod; D.hasSous = have.includes('admin_sous'); D.hasFkt = have.includes('admin_fkt'); D.sidx = new Map();
     suivi.forEach(x => { const k = String(x.tache_id); if(!D.sidx.has(k)) D.sidx.set(k, new Map()); D.sidx.get(k).set(String(x.modele_id), x.statut); });
     $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
     show();
@@ -626,6 +682,8 @@ dlg.addEventListener('change', e => {
   if(!ADM || !el.dataset) return;
   if(el.dataset.adm === 't') adminTache(el.dataset.id, el.checked ? 'TERMINE' : 'CLEAR');
   if(el.dataset.adm === 'f') adminFbm(el.dataset.id, el.dataset.col, el.value);
+  if(el.dataset.adm === 'k') adminFkt(el.dataset.id, el.checked, null);
+  if(el.dataset.adm === 'kn') adminFkt(el.dataset.id, true, el.value);
 });
 $('#adm').addEventListener('click', connexionAdmin);
 { const dej = localStorage.getItem('pcle_adm'); if(dej) verifAdmin(dej).then(a => { if(a){ ADM = a; majAdminUI(); if(D) show(); } }); }
