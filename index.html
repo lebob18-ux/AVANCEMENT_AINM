@@ -14,8 +14,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SUIVI_PCLE-MMM</title>
 <style>
-:root{--bg:#eef1f3;--card:#fff;--tx:#1a232c;--mu:#6b7884;--ln:#d9dee2;--sl:#dde2e6;--gc:#b7881a;--dep:#c4543b;--pose:#2f8f63;--sx:#2f6f9f;--fb:#8a5fb0;--ec:#e08a1e}
-@media(prefers-color-scheme:dark){:root{--bg:#10171e;--card:#1a2530;--tx:#e8edf1;--mu:#8fa0ad;--ln:#2b3946;--sl:#2f3d4a;--gc:#d9a928;--dep:#e0705a;--pose:#4cb485;--sx:#5aa0d2;--fb:#b08ad4;--ec:#f0a23a}}
+:root{--bg:#eef1f3;--card:#fff;--tx:#1a232c;--mu:#6b7884;--ln:#d9dee2;--sl:#dde2e6;--gc:#b7881a;--dep:#c4543b;--pose:#2f8f63;--sx:#2f6f9f;--fb:#8a5fb0;--ec:#e08a1e;--ad:#0e9aa7}
+@media(prefers-color-scheme:dark){:root{--bg:#10171e;--card:#1a2530;--tx:#e8edf1;--mu:#8fa0ad;--ln:#2b3946;--sl:#2f3d4a;--gc:#d9a928;--dep:#e0705a;--pose:#4cb485;--sx:#5aa0d2;--fb:#b08ad4;--ec:#f0a23a;--ad:#3cc4d0}}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;padding:0 0 env(safe-area-inset-bottom,0px)}
@@ -63,6 +63,7 @@ input[type=search]{width:100%;margin:12px 0 4px}
 .qc{cursor:pointer}
 .chips em{font-style:normal;font-size:11px;min-width:22px;display:inline-block;text-align:center;border:1px solid var(--fb);border-radius:4px;margin-left:3px;padding:1px 4px;color:var(--mu)}
 .chips em.on{background:var(--fb);color:#fff}
+.chips em.ad{background:var(--ad);border-color:var(--ad);color:#fff}
 .tl{font-size:12px;margin-top:5px}
 .nc{font-size:12px;margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(196,84,59,.14);color:var(--dep);font-weight:600}
 .nb{font-size:11px;font-weight:700;color:var(--dep);margin-right:6px}
@@ -86,6 +87,11 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .ck.on{background:var(--pose);border-color:var(--pose)}
 .ck.ec{background:var(--ec);border-color:var(--ec)}
 .ck.an{background:var(--mu);border-color:var(--mu)}
+.fl{cursor:pointer;border-radius:8px;padding:4px 6px;margin:8px 0}
+.fl.on{background:var(--sl)}
+.fl small{color:var(--fb);font-weight:700}
+.ss{padding:8px 4px;min-height:36px;cursor:pointer;border-radius:6px}
+.ss:active{background:var(--sl)}
 </style>
 </head>
 <body>
@@ -110,7 +116,7 @@ const key = s => String(s || '').trim().toUpperCase();
 const pc = (v,t) => t ? Math.round(v/t*100) : 0;
 const nf = n => (Math.round(n*10)/10).toLocaleString('fr-FR');
 let D = null, tab = 'syn', sub = 'glob', qf = 'nc', sel = 'all', last = 0;
-let ADM = null, vp = '7', supOuvert = null;
+let ADM = null, vp = '7', supOuvert = null, cf = {}, OPEN = new Set();
 
 async function fetchAll(table, cols){
   let out = [], from = 0; const step = 1000;
@@ -132,35 +138,45 @@ const eff = r => r.Fait ? 'T' : r.admin_etat === 'TERMINE' ? 'T' : r.etat === 'E
 const viaAdmin = r => !r.Fait && (r.admin_etat === 'TERMINE' || (!!r.admin_etat && r.etat !== 'EN_COURS' && r.etat !== 'ANNULE'));
 const pctOf = r => r.etat === 'EN_COURS' ? (+r.pct_avancement || 0) : (+r.admin_pct || 0);
 const isFBM = r => key(r.type) === 'GC' && /fouille|beton|matage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
-  const ncOf = rows => rows.filter(r => r.conforme === false && r.nc_levee !== true).length;
+const ncOf = rows => rows.filter(r => r.conforme === false && r.nc_levee !== true).length;
+
 function agg(rows){
-  const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0, adm:0};
+  const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0, adm:0, Ta:0};
   rows.forEach(r => {
-    const e = eff(r); o[e]++; if(viaAdmin(r)) o.adm++;
+    const e = eff(r); o[e]++; if(viaAdmin(r)) o.adm++; if(e === 'T' && viaAdmin(r)) o.Ta++;
     if(r.conforme === false && r.nc_levee !== true) o.nc++;
     if(e !== 'A'){ o.w++; o.v += e === 'T' ? 1 : e === 'E' ? pctOf(r) / 100 : 0; }
   });
   o.p = o.w ? Math.round(o.v / o.w * 100) : 0;
+  o.pA = o.w ? Math.min(o.p, Math.round(o.Ta / o.w * 100)) : 0;
   return o;
 }
 
-function aggF(rows){
-  const o = {n:rows.length, fo:0, be:0, ma:0, mp:0, mr:0, ad:0};
-  rows.forEach(r => {
-    if(r.date_fouille || r.admin_date_fouille) o.fo++;
-    if(r.date_beton || r.admin_date_beton) o.be++;
-    if(r.date_matage || r.admin_date_matage) o.ma++;
-    if(!r.date_fouille && r.admin_date_fouille) o.ad++;
-    if(!r.date_beton && r.admin_date_beton) o.ad++;
-    if(!r.date_matage && r.admin_date_matage) o.ad++;
-    o.mp += +r.m3_prevu || 0;
-    o.mr += +r.m3_reel || 0;
+const STEPK = ['fouille','beton','matage'];
+const stepsOf = p => p.b ? STEPK : STEPK.filter(k => p.fb.some(r => nz(r.Tache).includes(k)));
+/* 'T' = relevé terrain, 'A' = saisi par l'admin, null = pas fait */
+function stepState(p, k){
+  const b = p.b, tk = p.fb.filter(r => nz(r.Tache).includes(k));
+  if((b && b['date_' + k]) || tk.some(r => r.Fait)) return 'T';
+  if((b && b['admin_date_' + k]) || tk.some(r => r.admin_etat === 'TERMINE')) return 'A';
+  return null;
+}
+const fbmSups = c => Object.values(c.s).filter(p => p.b || p.fb.length);
+function aggF(ps){
+  const o = {n:ps.length, mp:0, mr:0, d:0, dT:0, dA:0, tot:0, s:{fouille:{T:0,A:0,n:0}, beton:{T:0,A:0,n:0}, matage:{T:0,A:0,n:0}}};
+  ps.forEach(p => {
+    if(p.b){ o.mp += +p.b.m3_prevu || 0; o.mr += +p.b.m3_reel || 0; }
+    stepsOf(p).forEach(k => { const x = o.s[k], st = stepState(p, k); x.n++; o.tot++; if(st === 'T'){ x.T++; o.dT++; } else if(st === 'A'){ x.A++; o.dA++; } });
   });
-  o.d = o.fo + o.be + o.ma;
-  o.p = o.n ? Math.round(o.d / (3 * o.n) * 100) : 0;
+  o.d = o.dT + o.dA;
+  o.p = o.tot ? Math.round(o.d / o.tot * 100) : 0;
+  o.pA = o.tot ? Math.min(o.p, Math.round(o.dA / o.tot * 100)) : 0;
   return o;
 }
 
+/* rows = tâches SUTX hors Fouille/Béton/Matage (comptées dans SUTX)
+   fb   = tâches Fouille/Béton/Matage (affichées mais non comptées dans SUTX)
+   D.all = SUTX seul · D.qa = tout (pour les NC) · D.fb = FBM seul */
 function stats(sx, bl){
   const ch = {}, act = {}, qa = sx.filter(r => TYPES.includes(key(r.type)));
   const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], bl:[], s:{}});
@@ -178,11 +194,13 @@ function stats(sx, bl){
 /* ---------- Composants visuels ---------- */
 const pbar = (p,c,h='') => `<div class="bar ${h}"><i style="width:${Math.min(100,p)}%;background-color:var(${c})"></i></div>`;
 const row = (l,v,t,c,h='') => `<div class="row"><div class="rl"><span>${l}</span><b>${v} / ${t} · ${pc(v,t)} %</b></div>${pbar(pc(v,t),c,h)}</div>`;
-const stk = a => { const n = a.n || 1, s = (k,c) => a[k] ? `<i style="width:${a[k]/n*100}%;background:var(${c})"></i>` : ''; return `<div class="sb">${s('T','--pose')}${s('E','--ec')}${s('A','--mu')}</div>`; };
-const legend = () => `<div class="lg2"><span><i style="background:var(--pose)"></i>Terminé</span><span><i style="background:var(--ec)"></i>En cours</span><span><i style="background:var(--mu)"></i>Annulé</span><span><i class="o"></i>À faire</span></div>`;
+const stk = a => { const n = a.n || 1, s = (v,c) => v ? `<i style="width:${v/n*100}%;background:var(${c})"></i>` : ''; return `<div class="sb">${s(a.T - (a.Ta || 0),'--pose')}${s(a.Ta || 0,'--ad')}${s(a.E,'--ec')}${s(a.A,'--mu')}</div>`; };
+const dbar = (t,a,n,h='') => `<div class="bar ${h}"><i style="width:${n ? t/n*100 : 0}%;background-color:var(--fb)"></i><i style="width:${n ? a/n*100 : 0}%;background-color:var(--ad)"></i></div>`;
+const rowF = (l,x) => `<div class="row"><div class="rl"><span>${l}</span><b>${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %</b></div>${dbar(x.T, x.A, x.n)}<div class="mu tl">${x.T} relevé(s) terrain · ${x.A} saisi(s) par moi</div></div>`;
+const legend = () => `<div class="lg2"><span><i style="background:var(--pose)"></i>Terminé (terrain)</span><span><i style="background:var(--ad)"></i>Terminé par moi</span><span><i style="background:var(--ec)"></i>En cours</span><span><i style="background:var(--mu)"></i>Annulé</span><span><i class="o"></i>À faire</span></div>`;
 const sg = (at, opts, cur) => `<div class="seg">${opts.map(([k,l]) => `<button type="button" data-${at}="${k}" aria-pressed="${k === cur}">${l}</button>`).join('')}</div>`;
 const kpi = (l,v,s,c) => `<div class="kpi" style="border-left:4px solid var(${c})"><span class="mu">${l}</span><b>${v}</b><span class="mu tl" style="margin:0">${s}</span></div>`;
-const ring = (p,c,l) => `<div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--sl)" stroke-width="12"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(${c})" stroke-width="12" stroke-linecap="round" stroke-dasharray="${p*2.513} 251.3" transform="rotate(-90 50 50)"/><text x="50" y="57" text-anchor="middle" font-size="22" font-weight="700" fill="var(--tx)">${p}%</text></svg>${l}</div>`;
+const ring = (p,c,l,pa=0) => `<div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--sl)" stroke-width="12"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(${c})" stroke-width="12" stroke-dasharray="${(p-pa)*2.513} 251.3" transform="rotate(-90 50 50)"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--ad)" stroke-width="12" stroke-dasharray="${pa*2.513} 251.3" stroke-dashoffset="${-(p-pa)*2.513}" transform="rotate(-90 50 50)"/><text x="50" y="57" text-anchor="middle" font-size="22" font-weight="700" fill="var(--tx)">${p}%</text></svg>${l}</div>`;
 
 function vAct(act){
   const days = []; let tx = 0, tf = 0;
@@ -203,57 +221,81 @@ function vAct(act){
 function scope(){
   const c = sel === 'all' ? null : D.ch.find(x => x.k === sel);
   if(!c) sel = 'all';
-  return c ? {c, rows:c.rows, bl:c.bl, fb:c.fb} : {c:null, rows:D.all, bl:D.bl, fb:D.fb};
+  return c ? {c, rows:c.rows, bl:c.bl, fb:c.fb, ps:fbmSups(c)} : {c:null, rows:D.all, bl:D.bl, fb:D.fb, ps:D.ch.flatMap(fbmSups)};
 }
 
-function actOf(rows, bl){
-  const a = {}, add = (d,i) => { if(!d) return; (a[d] = a[d] || [0,0])[i]++; };
-  rows.forEach(r => { if(r.Fait) add(r.date_fait, 0); });
-  bl.forEach(r => { add(r.date_fouille,1); add(r.date_beton,1); add(r.date_matage,1); });
+function actOf(rows, ps){
+  const a = {}, add = (d,i) => { if(!d) return; const k = String(d).slice(0,10); (a[k] = a[k] || [0,0])[i]++; };
+  rows.forEach(r => { if(r.Fait) add(r.date_fait, 0); else if(r.admin_etat === 'TERMINE') add(r.admin_le, 0); });
+  ps.forEach(p => STEPK.forEach(k => {
+    let d = p.b && (p.b['date_' + k] || p.b['admin_date_' + k]);
+    if(!d){ const r = p.fb.find(r => nz(r.Tache).includes(k) && (r.Fait || r.admin_etat === 'TERMINE')); if(r) d = r.Fait ? r.date_fait : r.admin_le; }
+    add(d, 1);
+  }));
   return a;
 }
 
 function vSyn(){
-  const S = scope(), a = agg(S.rows), f = aggF(S.bl);
-  const pick = `<select id="selc"><option value="all">🏗️ Tous les chantiers</option>${D.ch.map(c => `<option value="${esc(c.k)}"${c.k === sel ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`;
+  const S = scope(), a = agg(S.rows), f = aggF(S.ps);
+  const pick = S.c ? `<button type="button" data-pick="all" style="width:100%;font-weight:600;margin:4px 0 0">← Tous les chantiers · ${esc(S.c.name)}</button>` : '';
   const s = pick + sg('sub', [['glob','Vue d\'ensemble'],['sutx','SUTX'],['fbm','FBM']], sub);
   const L = S.c ? supList(S.c) : null, nok = L ? L.filter(x => x.ok).length : 0;
   const sup = L ? `<div class="card"><h2>Supports · ${nok} / ${L.length} terminés</h2>${L.map(x => sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}</div>` : '';
-  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T} terminées / ${a.w}${a.adm ? ' · ' + a.adm + ' 📌' : ''}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} étapes / ${3*f.n}${f.ad ? ' · ' + f.ad + ' 📌' : ''}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb), 'à traiter', '--dep')}</div>
-    <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX')}${ring(f.p,'--fb','Avancement FBM')}</div></div>
-    ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.bl));
-  if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`
-    + (sup || `<div class="card"><h2>Par chantier</h2>${legend()}${D.ch.filter(c => c.rows.length).map(c => { const x = agg(c.rows); return `<div class="row"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`);
-  return s + `<div class="card"><h2>Étapes</h2>${row('Fouille', f.fo, f.n, '--fb')}${row('Béton', f.be, f.n, '--fb')}${row('Matage', f.ma, f.n, '--fb')}</div>
+  const parC = `<div class="card"><h2>Par chantier</h2><div class="lg">Touche un chantier pour le détailler.</div>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b><span style="color:var(--sx)">SUTX ${x.p} %</span> · <span style="color:var(--fb)">FBM ${y.p} %</span></b></div>${stk(x)}<div style="height:6px"></div>${dbar(y.dT, y.dA, y.tot)}</div>`; }).join('')}</div>`;
+  const lgd = `<div class="lg2" style="justify-content:center;margin:10px 0 0"><span><i style="background:var(--sx)"></i>Terrain SUTX</span><span><i style="background:var(--fb)"></i>Terrain FBM</span><span><i style="background:var(--ad)"></i>Saisi par moi</span></div>`;
+  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.dT} terrain · ${f.dA} par moi / ${f.tot} étapes`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb), 'à traiter', '--dep')}</div>
+    <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX',a.pA)}${ring(f.p,'--fb','Avancement FBM',f.pA)}</div>${lgd}</div>
+    ${S.c ? '' : parC}
+    ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.ps));
+  if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %${x.Ta ? ' · ' + x.Ta + ' par moi' : ''}</b></div>${stk(x)}</div>`; }).join('')}</div>`
+    + (sup || `<div class="card"><h2>Par chantier</h2>${legend()}${D.ch.filter(c => c.rows.length).map(c => { const x = agg(c.rows); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`);
+  return s + `<div class="card"><h2>Étapes</h2>${rowF('Fouille', f.s.fouille)}${rowF('Béton', f.s.beton)}${rowF('Matage', f.s.matage)}${lgd}</div>
     <div class="card"><h2>Volume béton</h2><div class="rl"><span>Réel / prévu (m³)</span><b>${nf(f.mr)} / ${nf(f.mp)}</b></div>${pbar(pc(f.mr, f.mp),'--fb','big')}</div>`
-    + (sup || `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => c.bl.length).map(c => { const x = aggF(c.bl); return `<div class="row"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${pbar(x.p,'--fb')}<div class="mu tl">Fouille ${x.fo}/${x.n} · Béton ${x.be}/${x.n} · Matage ${x.ma}/${x.n}</div></div>`; }).join('')}</div>`);
+    + (sup || `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => fbmSups(c).length).map(c => { const x = aggF(fbmSups(c)), q = k => x.s[k].T + x.s[k].A; return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${dbar(x.dT, x.dA, x.tot)}<div class="mu tl">Fouille ${q('fouille')}/${x.s.fouille.n} · Béton ${q('beton')}/${x.s.beton.n} · Matage ${q('matage')}/${x.s.matage.n}</div></div>`; }).join('')}</div>`);
 }
 
 /* ---------- Onglet Chantiers ---------- */
 function supList(c){
   return Object.values(c.s).map(p => {
-    const a = agg(p.rows), fd = p.b ? [p.b.date_fouille || p.b.admin_date_fouille, p.b.date_beton || p.b.admin_date_beton, p.b.date_matage || p.b.admin_date_matage].filter(Boolean).length : 0;
-    return {p, a, ok:(a.n + (p.b ? 3 : 0)) > 0 && a.T + a.A === a.n && (!p.b || fd === 3)};
+    const a = agg(p.rows), st = stepsOf(p), fd = st.filter(k => stepState(p, k)).length;
+    return {p, a, ok:(a.n + st.length) > 0 && a.T + a.A === a.n && fd === st.length};
   }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
 }
 
-const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb)) ? '<span class="nb">⚠️ NC</span>' : ''}${x.p.b ? [x.p.b.date_fouille || x.p.b.admin_date_fouille, x.p.b.date_beton || x.p.b.admin_date_beton, x.p.b.date_matage || x.p.b.admin_date_matage].map((d,i) => `<em class="${d ? 'on' : ''}">${'FBM'[i]}</em>`).join('') : ''}</span></div>
+const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb)) ? '<span class="nb">⚠️ NC</span>' : ''}${stepsOf(x.p).length ? STEPK.map((k,i) => { const st = stepState(x.p, k); return `<em class="${st === 'T' ? 'on' : st === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : ''}</span></div>
   ${x.a.n ? stk(x.a) : ''}
   <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
+
+const STEPS = {fouille:['Fouille'], beton:['Béton'], matage:['Matage']};
+function supMatch(p, f){
+  if(!f) return true;
+  const todo = f.m === 'todo';
+  if(STEPS[f.k]){ if(!stepsOf(p).includes(f.k)) return false; return (stepState(p, f.k) !== null) !== todo; }
+  const L = p.rows.filter(r => key(r.type) === f.k);
+  if(!L.length) return false;
+  const fin = L.every(r => { const e = eff(r); return e === 'T' || e === 'A'; });
+  return fin !== todo;
+}
+const frow = (c, k, label, right, bar) => { const f = cf[c.k], on = !!f && f.k === k; return `<div class="row fl${on ? ' on' : ''}" role="button" tabindex="0" data-cf="${k}" data-cc="${esc(c.k)}"><div class="rl"><span>${label}${on ? ' <small>· ' + (f.m === 'todo' ? 'à faire' : 'faits') + '</small>' : ''}</span><b>${right}</b></div>${bar}</div>`; };
 
 function fill(){
   const q = key($('#q').value);
   const list = D.ch.filter(c => key(c.name).includes(q) || Object.values(c.s).some(p => key(p.name).includes(q)));
   $('#list').innerHTML = list.length ? list.map(c => {
-    const a = agg(c.rows), f = aggF(c.bl), L = supList(c), byS = !!q && !key(c.name).includes(q), nok = L.filter(x => x.ok).length;
-    let shown = $('#rest').checked ? L.filter(x => !x.ok) : L;
+    const a = agg(c.rows), f = aggF(fbmSups(c)), L = supList(c), byS = !!q && !key(c.name).includes(q), nok = L.filter(x => x.ok).length;
+    const fc = cf[c.k];
+    let shown = L.filter(x => supMatch(x.p, fc));
+    if($('#rest').checked) shown = shown.filter(x => !x.ok);
     if(byS) shown = shown.filter(x => key(x.p.name).includes(q));
-    return `<details class="card"${byS ? ' open' : ''}><summary>
+    const fl = fc ? (STEPS[fc.k] ? STEPS[fc.k][0] : TL[fc.k]) + ' ' + (fc.m === 'todo' ? 'à faire' : 'faits') : '';
+    const steps = [['fouille','Fouille'],['beton','Béton'],['matage','Matage']];
+    return `<details class="card" data-k="${esc(c.k)}"${byS || OPEN.has(c.k) ? ' open' : ''}><summary>
       <div class="rl"><b>${esc(c.name)}</b><span class="mu" style="margin-right:18px">${(a.nc + ncOf(c.fb)) ? '<span class="nb">⚠️ ' + (a.nc + ncOf(c.fb)) + ' NC</span>' : ''}<span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>
-      ${stk(a)}<div style="height:6px"></div>${pbar(f.p,'--fb')}</summary>
-      <div class="in"><button type="button" data-go="${esc(c.k)}" style="width:100%;margin:10px 0;font-weight:600">📊 Synthèse de ce chantier</button>${legend()}${TYPES.filter(t => c.rows.some(r => key(r.type) === t)).map(t => { const y = agg(c.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${y.T}/${y.w} · ${y.p} %</b></div>${stk(y)}</div>`; }).join('')}
-      ${f.n ? row('Fouille', f.fo, f.n, '--fb') + row('Béton', f.be, f.n, '--fb') + row('Matage', f.ma, f.n, '--fb') : ''}
+      ${stk(a)}<div style="height:6px"></div>${dbar(f.dT, f.dA, f.tot)}</summary>
+      <div class="in"><button type="button" data-go="${esc(c.k)}" style="width:100%;margin:10px 0;font-weight:600">📊 Synthèse de ce chantier</button>${legend()}<div class="lg">Touche une ligne pour ne lister que les supports « à faire », puis « faits », puis tout.</div>${TYPES.filter(t => c.rows.some(r => key(r.type) === t)).map(t => { const y = agg(c.rows.filter(r => key(r.type) === t)); return frow(c, t, `<span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span>`, `${y.T}/${y.w} · ${y.p} %`, stk(y)); }).join('')}
+      ${steps.filter(([k]) => f.s[k].n).map(([k,l]) => { const x = f.s[k]; return frow(c, k, l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, dbar(x.T, x.A, x.n)); }).join('')}
       <h2 style="margin-top:16px">Supports : ${nok} / ${L.length} terminés</h2>
+      ${fc ? `<div class="lg"><b>Filtre : ${esc(fl)}</b> · ${shown.length} support(s)</div>` : ''}
       ${shown.map(x => sRow(x, c.k)).join('') || '<div class="mu">Aucun support à afficher.</div>'}</div></details>`;
   }).join('') : '<div class="card mu">Aucun chantier trouvé.</div>';
 }
@@ -312,8 +354,10 @@ async function connexionAdmin(){
 }
 
 async function patchTable(table, id, patch){
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {method:'PATCH', headers:{apikey:SUPABASE_ANON_KEY, 'Content-Type':'application/json', Prefer:'return=minimal'}, body:JSON.stringify(patch)});
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {method:'PATCH', headers:{apikey:SUPABASE_ANON_KEY, 'Content-Type':'application/json', Prefer:'return=representation'}, body:JSON.stringify(patch)});
   if(!r.ok) throw new Error(table + ' : erreur ' + r.status);
+  const a = await r.json().catch(() => []);
+  if(!Array.isArray(a) || !a.length) throw new Error(table + ' : aucune ligne modifiée (droit UPDATE / RLS à vérifier)');
 }
 
 function rafraichirApres(){
@@ -322,25 +366,74 @@ function rafraichirApres(){
   if(supOuvert && dlg.open){ openSup(supOuvert.ck, supOuvert.sk); dlg.scrollTop = sc; }
 }
 
-async function adminTache(id, val){
-  const r = D.all.find(x => String(x.id) === String(id));
+/* Pour Fouille/Béton/Matage : recopie l'état dans la date FBM (si le terrain n'a pas déjà saisi la sienne) */
+async function syncFbm(r, on, par){
+  if(!isFBM(r)) return;
+  const c = D.ch.find(x => x.k === key(r.Chantier)), p = c && c.s[key(r.Support)], b = p && p.b;
+  const t = nz(r.Tache), col = t.includes('fouille') ? 'fouille' : t.includes('beton') ? 'beton' : 'matage';
+  if(b && !b['date_' + col]){
+    const bp = {['admin_date_' + col]: on ? jour() : null, admin_par: par, admin_maj_le: new Date().toISOString()};
+    await patchTable('blindage', b.id, bp); Object.assign(b, bp);
+  }
+}
+
+const SQL_SOUS = "Colonne admin_sous absente. Dans Supabase > SQL Editor, exécute :\n\nalter table suivi_sutx_v2 add column if not exists admin_sous text;\nnotify pgrst, 'reload schema';\n\nPuis actualise l'app.";
+
+/* Enregistre les sous-tâches saisies par l'admin et en déduit l'état de la tâche */
+async function adminSave(r, sous){
+  const par = (ADM.prenom + ' ' + ADM.nom).trim(), e = Object.keys(sous).length ? sousEtat(r, sous) : {etat:null, pct:null};
+  const patch = {admin_sous:Object.keys(sous).length ? JSON.stringify(sous) : null, admin_etat:e.etat, admin_pct:e.pct, admin_le:e.etat ? jour() : null, admin_par:e.etat ? par : null};
+  try{ await patchTable('suivi_sutx_v2', r.id, patch); Object.assign(r, patch); await syncFbm(r, e.etat === 'TERMINE', par); }
+  catch(ex){ alert('Mise à jour impossible : ' + ex.message); }
+  rafraichirApres();
+}
+
+async function adminSous(tid, mid){
+  const r = D.qa.find(x => String(x.id) === String(tid));
   if(!r || !ADM) return;
-  const [etat, pct] = val.split(':');
+  if(!D.hasSous){ alert(SQL_SOUS); return; }
+  const m = modsOf(r).find(x => String(x.id) === String(mid));
+  if(!m) return;
+  const cur = sousState(r, m);
+  if(cur === 'T' || cur === 'N') return;
+  const sous = adminSousOf(r);
+  if(cur === null) sous[m.id] = 'FAIT'; else if(cur === 'A') sous[m.id] = 'NON_CONCERNE'; else delete sous[m.id];
+  await adminSave(r, sous);
+}
+
+/* Coche « Terminé » : sur une tâche à sous-tâches, coche / décoche toutes celles qui ne viennent pas du terrain */
+async function adminTache(id, val){
+  const r = D.qa.find(x => String(x.id) === String(id));
+  if(!r || !ADM) return;
+  if(modsOf(r).length){
+    if(!D.hasSous){ alert(SQL_SOUS); rafraichirApres(); return; }
+    const sous = {};
+    if(val !== 'CLEAR') modsOf(r).forEach(m => { const st = sousState(r, m); if(st === null || st === 'A') sous[m.id] = 'FAIT'; else if(st === 'AN') sous[m.id] = 'NON_CONCERNE'; });
+    return adminSave(r, sous);
+  }
+  const par = (ADM.prenom + ' ' + ADM.nom).trim();
   const patch = val === 'CLEAR'
     ? {admin_etat:null, admin_pct:null, admin_le:null, admin_par:null}
-    : {admin_etat:etat, admin_pct:pct ? +pct : null, admin_le:jour(), admin_par:(ADM.prenom + ' ' + ADM.nom).trim()};
-  try{ await patchTable('suivi_sutx_v2', id, patch); Object.assign(r, patch); }
+    : {admin_etat:'TERMINE', admin_pct:null, admin_le:jour(), admin_par:par};
+  try{ await patchTable('suivi_sutx_v2', id, patch); Object.assign(r, patch); await syncFbm(r, val !== 'CLEAR', par); }
   catch(e){ alert('Mise à jour impossible : ' + e.message); }
   rafraichirApres();
 }
 
+/* Date FBM saisie par l'admin : marque aussi la tâche Fouille/Béton/Matage correspondante */
 async function adminFbm(id, col, val){
   const b = D.bl.find(x => String(x.id) === String(id));
   if(!b || !ADM) return;
   const par = (ADM.prenom + ' ' + ADM.nom).trim();
   const patch = {[col]: val || null, admin_par: par, admin_maj_le: new Date().toISOString()};
-  try{ await patchTable('blindage', id, patch); Object.assign(b, patch); }
-  catch(e){ alert('Mise à jour impossible : ' + e.message); }
+  const mot = col.includes('fouille') ? 'fouille' : col.includes('beton') ? 'beton' : 'matage';
+  const c = supOuvert && D.ch.find(x => x.k === supOuvert.ck), p = c && c.s[supOuvert.sk];
+  const miroir = (p ? p.fb : []).filter(r => !r.Fait && nz(r.Tache).includes(mot));
+  const pm = val ? {admin_etat:'TERMINE', admin_pct:null, admin_le:val, admin_par:par} : {admin_etat:null, admin_pct:null, admin_le:null, admin_par:null};
+  try{
+    await patchTable('blindage', id, patch); Object.assign(b, patch);
+    for(const r of miroir){ await patchTable('suivi_sutx_v2', r.id, pm); Object.assign(r, pm); }
+  }catch(e){ alert('Mise à jour impossible : ' + e.message); }
   rafraichirApres();
 }
 
@@ -349,11 +442,17 @@ function vAdm(){
   const lim = vp === 'all' ? '' : d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0') + '-' + String(d0.getDate()).padStart(2,'0');
   const okP = d => !!d && (!lim || String(d) >= lim);
   const conf = r => r.Fait || (r.admin_etat !== 'TERMINE' && !!r.etat);
-  const T = D.all.filter(r => r.admin_etat === 'TERMINE' && okP(r.admin_le));
+  const T = D.all.filter(r => ['TERMINE','EN_COURS'].includes(r.admin_etat) && okP(r.admin_le));
   const F = [];
-  D.ch.forEach(c => Object.values(c.s).forEach(p => { if(!p.b) return;
-    [['Fouille','date_fouille','admin_date_fouille'],['Béton','date_beton','admin_date_beton'],['Matage','date_matage','admin_date_matage']].forEach(([l,re,ad]) => {
+  D.ch.forEach(c => Object.values(c.s).forEach(p => {
+    if(p.b) [['Fouille','date_fouille','admin_date_fouille'],['Béton','date_beton','admin_date_beton'],['Matage','date_matage','admin_date_matage']].forEach(([l,re,ad]) => {
       if(p.b[ad] && okP(p.b[ad])) F.push({c, p, l, date:p.b[ad], conf:!!p.b[re]});
+    });
+    p.fb.forEach(r => {
+      if(r.admin_etat !== 'TERMINE' || !okP(r.admin_le)) return;
+      const t = nz(r.Tache), st = t.includes('fouille') ? 'fouille' : t.includes('beton') ? 'beton' : 'matage';
+      if(p.b && p.b['admin_date_' + st]) return;
+      F.push({c, p, l:STEPS[st][0], date:r.admin_le, conf:!!r.Fait || !!(p.b && p.b['date_' + st])});
     });
   }));
   const nc = T.filter(conf).length + F.filter(x => x.conf).length, tot = T.length + F.length;
@@ -377,7 +476,7 @@ function show(){
   else if(tab === 'adm' && ADM) $('#v').innerHTML = vAdm();
   else {
     $('#v').innerHTML = '<input id="q" type="search" placeholder="Filtrer un chantier ou un support"><label class="tg"><input id="rest" type="checkbox"> Supports restants seulement</label><div class="lg">Pastilles FBM : F fouille, B béton, M matage (remplie = faite). Touche un support pour voir son détail.</div><div id="list"></div>';
-    $('#q').addEventListener('input', fill); $('#rest').addEventListener('change', fill); fill();
+    $('#q').addEventListener('input', fill); $('#rest').addEventListener('change', fill); $('#list').addEventListener('toggle', e => { const d = e.target; if(!d.dataset || !d.dataset.k) return; if(d.open) OPEN.add(d.dataset.k); else OPEN.delete(d.dataset.k); }, true); fill();
   }
 }
 
@@ -387,15 +486,46 @@ const vv = v => (v === null || v === undefined || v === '') ? '—' : (typeof v 
 const df = (a,b) => a != null && b != null && a !== '' && b !== '' && String(a) !== String(b);
 const PAIRS = [['I','i','i_reel'],['ECH','ech','ech_reel'],['AR','ar','ar_reel'],['ENC','enc','enc_reel'],['A','af','a_reel'],['B','b','b_reel'],['H','h','h_reel'],['F','f','f_reel'],['P','p','p_reel'],['SUP','sup','sup_reel']];
 
+function modsOf(r){
+  return (D.mod || []).filter(m => m.actif !== false && key(m.tache) === key(r.Tache)).sort((a,b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
+}
+function adminSousOf(r){ try{ return r.admin_sous ? JSON.parse(r.admin_sous) : {}; }catch(e){ return {}; } }
+/* T/N = relevé terrain (fait / non concerné) · A/AN = saisi par moi · null = pas fait */
+function sousState(r, m){
+  const st = (D.sidx.get(String(r.id)) || new Map()).get(String(m.id));
+  if(st === 'FAIT') return 'T';
+  if(st === 'NON_CONCERNE') return 'N';
+  const a = adminSousOf(r)[m.id];
+  return a === 'FAIT' ? 'A' : a === 'NON_CONCERNE' ? 'AN' : null;
+}
+/* état de la tâche calculé à partir des sous-tâches (terrain + saisies admin) */
+function sousEtat(r, sous){
+  let w = 0, d = 0;
+  modsOf(r).forEach(m => {
+    const f = (D.sidx.get(String(r.id)) || new Map()).get(String(m.id));
+    const st = (f === 'FAIT' || f === 'NON_CONCERNE') ? f : sous[m.id];
+    if(st === 'NON_CONCERNE') return;
+    const q = +m.poids || 1; w += q; if(st === 'FAIT') d += q;
+  });
+  if(w && d >= w) return {etat:'TERMINE', pct:null};
+  if(d > 0) return {etat:'EN_COURS', pct:Math.round(d / w * 100)};
+  return {etat:null, pct:null};
+}
+
 function sousHtml(r){
-  const mods = (D.mod || []).filter(m => m.actif !== false && key(m.tache) === key(r.Tache)).sort((a,b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
+  const mods = modsOf(r);
   if(!mods.length) return '';
-  const sm = D.sidx.get(String(r.id)) || new Map();
-  return `<div class="tl" style="margin-top:6px">${mods.map(m => { const st = sm.get(String(m.id)); return `<div style="${st === 'NON_CONCERNE' ? 'opacity:.55' : ''}">${st === 'FAIT' ? '☑' : st === 'NON_CONCERNE' ? '⊘' : '☐'} ${esc(m.libelle)}${st === 'NON_CONCERNE' ? ' (N/C)' : ''}</div>`; }).join('')}</div>`;
+  const adm = ADM && !r.Fait;
+  return `<div class="tl" style="margin-top:6px">${mods.map(m => {
+    const st = sousState(r, m), nc = st === 'N' || st === 'AN', ad = st === 'A' || st === 'AN';
+    const txt = `${st === 'T' || st === 'A' ? '☑' : nc ? '⊘' : '☐'} ${esc(m.libelle)}${nc ? ' (N/C)' : ''}${ad ? ' 📌' : ''}`;
+    const sty = (ad ? 'color:var(--ad);font-weight:600;' : '') + (nc ? 'opacity:.55;' : '');
+    return adm && st !== 'T' && st !== 'N' ? `<div class="ss" role="button" tabindex="0" data-ss="1" data-t="${r.id}" data-m="${m.id}" style="${sty}">${txt}</div>` : `<div style="${sty}">${txt}</div>`;
+  }).join('')}${adm ? '<div class="mu" style="margin-top:4px">Touche une sous-tâche : ☐ → ☑ (fait) → ⊘ (non concerné) → ☐</div>' : ''}</div>`;
 }
 
 function adminSel(r){
-  return `<label class="tg" style="margin-top:4px"><input type="checkbox" data-adm="t" data-id="${r.id}"${r.admin_etat === 'TERMINE' ? ' checked' : ''}> 📌 Terminé (déclaré admin)</label>`;
+  return `<label class="tg" style="margin-top:4px"><input type="checkbox" data-adm="t" data-id="${r.id}"${r.admin_etat === 'TERMINE' ? ' checked' : ''}> 📌 ${modsOf(r).length ? 'Tout terminé (sous-tâches)' : 'Terminé (déclaré admin)'}</label>`;
 }
 
 function stepRow(b, l, real, adm, col){
@@ -442,13 +572,12 @@ function openSup(ck, sk){
     ${stepRow(b, 'Fouille', b.date_fouille, b.admin_date_fouille, 'admin_date_fouille')}
     ${stepRow(b, 'Béton', b.date_beton, b.admin_date_beton, 'admin_date_beton')}
     ${stepRow(b, 'Matage', b.date_matage, b.admin_date_matage, 'admin_date_matage')}` : '';
-  const tk = p.rows.length ? TYPES.map(t => {
-    const L = p.rows.filter(r => key(r.type) === t);
+  const tk = (p.rows.length || p.fb.length) ? TYPES.map(t => {
+    const L = p.rows.concat(p.fb).filter(r => key(r.type) === t);
     return L.length ? `<div class="th" style="color:var(${TC[t]})">${TL[t]}</div>` + L.map(task).join('') : '';
   }).join('') : '<div class="mu">Aucune tâche SUTX.</div>';
-  const fbn = p.fb.filter(r => r.conforme === false).map(r => `<div class="tk"><span class="ck"></span><div><b>${esc(r.Tache)}</b>${r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`}</div></div>`).join('');
   dlg.innerHTML = `<div class="dh"><div><b>${esc(p.name)}</b><div class="mu tl" style="margin:0">${esc(c.name)}</div></div><button type="button" id="dx">Fermer</button></div>
-    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}${fbn ? '<div class="th">Non-conformités Fouille / Béton / Matage</div>' + fbn : ''}</div>`;
+    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}</div>`;
   if(!dlg.open) dlg.showModal();
   $('#dx').onclick = () => dlg.close();
 }
@@ -457,14 +586,16 @@ function openSup(ck, sk){
 async function load(){
   $('#st').textContent = 'Chargement…';
   try{
-    const [sx, bl] = await Promise.all([
-      fetchAll('suivi_sutx_v2', 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at,admin_etat,admin_pct,admin_le,admin_par'),
+    const SXC = 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at,admin_etat,admin_pct,admin_le,admin_par';
+    const getSx = () => fetchAll('suivi_sutx_v2', SXC + ',admin_sous').then(a => [a, true]).catch(() => fetchAll('suivi_sutx_v2', SXC).then(a => [a, false]));
+    const [[sx, hasSous], bl] = await Promise.all([
+      getSx(),
       fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
     ]);
     const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
     const suivi = await fetchAll('sous_travaux_suivi', 'id,tache_id,modele_id,statut').catch(() => []);
     D = stats(sx, bl); last = Date.now();
-    D.mod = mod; D.sidx = new Map();
+    D.mod = mod; D.hasSous = hasSous; D.sidx = new Map();
     suivi.forEach(x => { const k = String(x.tache_id); if(!D.sidx.has(k)) D.sidx.set(k, new Map()); D.sidx.get(k).set(String(x.modele_id), x.statut); });
     $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
     show();
@@ -478,14 +609,18 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
 $('#rf').addEventListener('click', load);
 $('#v').addEventListener('change', e => { if(e.target.id === 'selc'){ sel = e.target.value; show(); } });
 $('#v').addEventListener('click', e => {
+  const pk = e.target.closest('[data-pick]');
+  if(pk){ sel = pk.dataset.pick; show(); window.scrollTo(0,0); return; }
+  const fl = e.target.closest('[data-cf]');
+  if(fl){ const ck = fl.dataset.cc, k = fl.dataset.cf, f = cf[ck]; if(!f || f.k !== k) cf[ck] = {k, m:'todo'}; else if(f.m === 'todo') f.m = 'done'; else delete cf[ck]; fill(); return; }
   const g = e.target.closest('[data-go]');
   if(g){ sel = g.dataset.go; tab = 'syn'; sub = 'glob'; show(); window.scrollTo(0,0); return; }
   const b = e.target.closest('[data-sub],[data-qf],[data-vp]');
   if(b){ if(b.dataset.sub) sub = b.dataset.sub; if(b.dataset.qf) qf = b.dataset.qf; if(b.dataset.vp) vp = b.dataset.vp; show(); return; }
   const r = e.target.closest('[data-s]'); if(r) openSup(r.dataset.c, r.dataset.s);
 });
-$('#v').addEventListener('keydown', e => { const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
-dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
+$('#v').addEventListener('keydown', e => { const fq = e.target.closest('[data-cf],[data-pick]'); if(fq && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fq.click(); return; } const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
+dlg.addEventListener('click', e => { if(e.target === dlg){ dlg.close(); return; } const ss = e.target.closest('[data-ss]'); if(ss && ADM) adminSous(ss.dataset.t, ss.dataset.m); });
 dlg.addEventListener('change', e => {
   const el = e.target;
   if(!ADM || !el.dataset) return;
