@@ -108,8 +108,8 @@ const SUPABASE_URL = "https://thbqkeugjvsxbryfnzuo.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_2-Ij-nrTPeK6rB-kSD-QTg_b42zNakq";
 
 const TYPES = ['GC','DEPOSE','POSE'];
-const TC = {GC:'--gc',DEPOSE:'--dep',POSE:'--pose'};
-const TL = {GC:'Génie civil',DEPOSE:'Dépose',POSE:'Pose'};
+const TC = {GC:'--gc',DEPOSE:'--dep',POSE:'--pose','RELEVER CAT':'--sx'};
+const TL = {GC:'Génie civil',DEPOSE:'Dépose',POSE:'Pose','RELEVER CAT':'Relevés CAT'};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const key = s => String(s || '').trim().toUpperCase();
@@ -141,7 +141,9 @@ const isFBM = r => key(r.type) === 'GC' && /fouille|beton|matage/.test(String(r.
 const ncOf = rows => rows.filter(r => r.conforme === false && r.nc_levee !== true).length;
 
 /* ---------- FKT : tâches « RELEVER CAT », seules les définitives comptent ---------- */
-const isFKT = r => /relever\s*cat/.test(String((r.type || '') + ' ' + (r.Tache || '')).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
+const isRC = r => key(r.type) === 'RELEVER CAT';
+/* FKT : portée par les tâches de relevé (hauteur, désaxement, R1-R2...), pas par les lignes « FKT ... » */
+const isFKT = r => isRC(r) && !/^fkt/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim());
 function adminFktOf(r){ try{ return r.admin_fkt ? JSON.parse(r.admin_fkt) : null; }catch(e){ return null; } }
 /* s : 'T' terrain, 'A' saisi par moi · def : définitive · prov : provisoire seulement */
 function fktOf(r){
@@ -211,19 +213,23 @@ function aggF(ps){
 
 /* rows = tâches SUTX hors Fouille/Béton/Matage (comptées dans SUTX)
    fb   = tâches Fouille/Béton/Matage (affichées mais non comptées dans SUTX)
-   D.all = SUTX seul · D.qa = tout (pour les NC) · D.fb = FBM seul */
+   rc   = tâches RELEVER CAT (affichées, FKT, non comptées dans SUTX)
+   D.all = SUTX seul · D.qa = tout (pour les NC) · D.fb = FBM · D.rc = relevés CAT
+   POSE_SUPPORT et POSE_ANC (nouvelle base) sont regroupés en « Pose » ; ENVIRONNEMENT est ignoré */
 function stats(sx, bl){
-  const ch = {}, act = {}, qa = sx.filter(r => TYPES.includes(key(r.type)));
-  const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], bl:[], s:{}});
-  const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], b:null});
+  sx.forEach(r => { const t = key(r.type); if(t === 'POSE_SUPPORT' || t === 'POSE_ANC') r.type = 'POSE'; });
+  const ch = {}, act = {}, qa = sx.filter(r => TYPES.includes(key(r.type)) || isRC(r));
+  const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], rc:[], bl:[], s:{}});
+  const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], rc:[], b:null});
   const add = (d,i) => { if(!d) return; (act[d] = act[d] || [0,0])[i]++; };
   qa.forEach(r => {
     const c = get(r.Chantier), p = sp(c, r.Support);
-    if(isFBM(r)){ c.fb.push(r); p.fb.push(r); }
+    if(isRC(r)){ c.rc.push(r); p.rc.push(r); }
+    else if(isFBM(r)){ c.fb.push(r); p.fb.push(r); }
     else { c.rows.push(r); p.rows.push(r); if(r.Fait) add(r.date_fait, 0); }
   });
   bl.forEach(r => { const c = get(r.chantier); c.bl.push(r); sp(c, r.support).b = r; add(r.date_fouille,1); add(r.date_beton,1); add(r.date_matage,1); });
-  return {ch:Object.values(ch).sort((a,b) => a.name.localeCompare(b.name,'fr')), act, all:qa.filter(r => !isFBM(r)), qa, fb:qa.filter(isFBM), bl};
+  return {ch:Object.values(ch).sort((a,b) => a.name.localeCompare(b.name,'fr')), act, all:qa.filter(r => !isRC(r) && !isFBM(r)), qa, fb:qa.filter(isFBM), rc:qa.filter(isRC), bl};
 }
 
 /* ---------- Composants visuels ---------- */
@@ -256,7 +262,7 @@ function vAct(act){
 function scope(){
   const c = sel === 'all' ? null : D.ch.find(x => x.k === sel);
   if(!c) sel = 'all';
-  return c ? {c, rows:c.rows, bl:c.bl, fb:c.fb, ps:fbmSups(c)} : {c:null, rows:D.all, bl:D.bl, fb:D.fb, ps:D.ch.flatMap(fbmSups)};
+  return c ? {c, rows:c.rows, bl:c.bl, fb:c.fb, rc:c.rc, ps:fbmSups(c)} : {c:null, rows:D.all, bl:D.bl, fb:D.fb, rc:D.rc, ps:D.ch.flatMap(fbmSups)};
 }
 
 function actOf(rows, ps){
@@ -278,8 +284,8 @@ function vSyn(){
   const sup = L ? `<div class="card"><h2>Supports · ${nok} / ${L.length} terminés</h2>${L.map(x => sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}</div>` : '';
   const parC = `<div class="card"><h2>Par chantier</h2><div class="lg">Touche un chantier pour le détailler.</div>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b><span style="color:var(--sx)">SUTX ${x.p} %</span> · <span style="color:var(--fb)">FBM ${y.p} %</span></b></div>${stk(x)}<div style="height:6px"></div>${dbar(y.dT, y.dA, y.tot)}</div>`; }).join('')}</div>`;
   const lgd = `<div class="lg2" style="justify-content:center;margin:10px 0 0"><span><i style="background:var(--sx)"></i>Terrain SUTX</span><span><i style="background:var(--fb)"></i>Terrain FBM</span><span><i style="background:var(--ad)"></i>Saisi par moi</span></div>`;
-  const K = aggK(S.rows), fktCard = K.n ? `<div class="card"><h2>FKT définitives</h2><div class="rl"><span>${K.d} / ${K.n}</span><b>${K.p} %</b></div>${dbar(K.T, K.A, K.n, 'big', '--gc')}<div class="mu tl"><span style="color:var(--gc)">■</span> ${K.T} terrain · <span style="color:var(--ad)">■</span> ${K.A} saisie(s) par moi · ${K.P} provisoire(s) · ${K.none} sans FKT</div></div>` : '';
-  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.dT} terrain · ${f.dA} par moi / ${f.tot} étapes`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb), 'à traiter', '--dep')}</div>
+  const K = aggK(S.rc), fktCard = K.n ? `<div class="card"><h2>FKT définitives</h2><div class="rl"><span>${K.d} / ${K.n}</span><b>${K.p} %</b></div>${dbar(K.T, K.A, K.n, 'big', '--gc')}<div class="mu tl"><span style="color:var(--gc)">■</span> ${K.T} terrain · <span style="color:var(--ad)">■</span> ${K.A} saisie(s) par moi · ${K.P} provisoire(s) · ${K.none} sans FKT</div></div>` : '';
+  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.dT} terrain · ${f.dA} par moi / ${f.tot} étapes`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb) + ncOf(S.rc), 'à traiter', '--dep')}</div>
     <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX',a.pA)}${ring(f.p,'--fb','Avancement FBM',f.pA)}</div>${lgd}</div>
     ${fktCard}
     ${S.c ? '' : parC}
@@ -299,7 +305,7 @@ function supList(c){
   }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
 }
 
-const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb)) ? '<span class="nb">⚠️ NC</span>' : ''}${stepsOf(x.p).length ? STEPK.map((k,i) => { const st = stepState(x.p, k); return `<em class="${st === 'T' ? 'on' : st === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : ''}</span></div>
+const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb) + ncOf(x.p.rc)) ? '<span class="nb">⚠️ NC</span>' : ''}${stepsOf(x.p).length ? STEPK.map((k,i) => { const st = stepState(x.p, k); return `<em class="${st === 'T' ? 'on' : st === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : ''}</span></div>
   ${x.a.n ? stk(x.a) : ''}
   <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
 
@@ -327,7 +333,7 @@ function fill(){
     const fl = fc ? (STEPS[fc.k] ? STEPS[fc.k][0] : TL[fc.k]) + ' ' + (fc.m === 'todo' ? 'à faire' : 'faits') : '';
     const steps = [['fouille','Fouille'],['beton','Béton'],['matage','Matage']];
     return `<details class="card" data-k="${esc(c.k)}"${byS || OPEN.has(c.k) ? ' open' : ''}><summary>
-      <div class="rl"><b>${esc(c.name)}</b><span class="mu" style="margin-right:18px">${(a.nc + ncOf(c.fb)) ? '<span class="nb">⚠️ ' + (a.nc + ncOf(c.fb)) + ' NC</span>' : ''}<span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>
+      <div class="rl"><b>${esc(c.name)}</b><span class="mu" style="margin-right:18px">${(a.nc + ncOf(c.fb) + ncOf(c.rc)) ? '<span class="nb">⚠️ ' + (a.nc + ncOf(c.fb) + ncOf(c.rc)) + ' NC</span>' : ''}<span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>
       ${stk(a)}<div style="height:6px"></div>${dbar(f.dT, f.dA, f.tot)}</summary>
       <div class="in"><button type="button" data-go="${esc(c.k)}" style="width:100%;margin:10px 0;font-weight:600">📊 Synthèse de ce chantier</button>${legend()}<div class="lg">Touche une ligne pour ne lister que les supports « à faire », puis « faits », puis tout.</div>${TYPES.filter(t => c.rows.some(r => key(r.type) === t)).map(t => { const y = agg(c.rows.filter(r => key(r.type) === t)); return frow(c, t, `<span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span>`, `${y.T}/${y.w} · ${y.p} %`, stk(y)); }).join('')}
       ${steps.filter(([k]) => f.s[k].n).map(([k,l]) => { const x = f.s[k]; return frow(c, k, l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, dbar(x.T, x.A, x.n)); }).join('')}
@@ -352,7 +358,7 @@ const qrow = r => { const e = eff(r), who = [r.prenom, r.nom].filter(Boolean).jo
 
 function vQa(){
   const prov = r => (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0);
-  const L = {nc:D.qa.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), fk:D.all.filter(r => isFKT(r) && eff(r) === 'T' && !fktOf(r).def), lv:D.qa.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
+  const L = {nc:D.qa.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), fk:D.rc.filter(r => isFKT(r) && eff(r) === 'T' && !fktOf(r).def), lv:D.qa.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
   const T = {nc:'Non-conformités ouvertes', ec:'Tâches en cours', pv:'Pendules provisoires à déposer', fk:'FKT définitive à obtenir (tâches terminées)', lv:'Non-conformités levées', an:'Tâches annulées'};
   const rows = L[qf].slice().sort((a,b) => String(b.updated_at).localeCompare(String(a.updated_at)));
   return sg('qf', [['nc','⚠️ ' + L.nc.length],['ec','🟠 ' + L.ec.length],['pv','🔧 ' + L.pv.length],['fk','📄 ' + L.fk.length],['lv','✅ ' + L.lv.length],['an','🚫 ' + L.an.length]], qf)
@@ -495,7 +501,7 @@ function vAdm(){
   const lim = vp === 'all' ? '' : d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0') + '-' + String(d0.getDate()).padStart(2,'0');
   const okP = d => !!d && (!lim || String(d) >= lim);
   const conf = r => r.Fait || (r.admin_etat !== 'TERMINE' && !!r.etat);
-  const T = D.all.filter(r => ['TERMINE','EN_COURS'].includes(r.admin_etat) && okP(r.admin_le));
+  const T = D.all.concat(D.rc).filter(r => ['TERMINE','EN_COURS'].includes(r.admin_etat) && okP(r.admin_le));
   const F = [];
   D.ch.forEach(c => Object.values(c.s).forEach(p => {
     if(p.b) [['Fouille','date_fouille','admin_date_fouille'],['Béton','date_beton','admin_date_beton'],['Matage','date_matage','admin_date_matage']].forEach(([l,re,ad]) => {
@@ -542,7 +548,8 @@ const df = (a,b) => a != null && b != null && a !== '' && b !== '' && String(a) 
 const PAIRS = [['I','i','i_reel'],['ECH','ech','ech_reel'],['AR','ar','ar_reel'],['ENC','enc','enc_reel'],['A','af','a_reel'],['B','b','b_reel'],['H','h','h_reel'],['F','f','f_reel'],['P','p','p_reel'],['SUP','sup','sup_reel']];
 
 function modsOf(r){
-  return (D.mod || []).filter(m => m.actif !== false && key(m.tache) === key(r.Tache)).sort((a,b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
+  const nom = t => key(String(t || '').replace(/\s+AXE\s*\d+$/i, ''));
+  return (D.mod || []).filter(m => m.actif !== false && nom(m.tache) === nom(r.Tache)).sort((a,b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
 }
 function adminSousOf(r){ try{ return r.admin_sous ? JSON.parse(r.admin_sous) : {}; }catch(e){ return {}; } }
 /* T/N = relevé terrain (fait / non concerné) · A/AN = saisi par moi · null = pas fait */
@@ -627,8 +634,8 @@ function openSup(ck, sk){
     ${stepRow(b, 'Fouille', b.date_fouille, b.admin_date_fouille, 'admin_date_fouille')}
     ${stepRow(b, 'Béton', b.date_beton, b.admin_date_beton, 'admin_date_beton')}
     ${stepRow(b, 'Matage', b.date_matage, b.admin_date_matage, 'admin_date_matage')}` : '';
-  const tk = (p.rows.length || p.fb.length) ? TYPES.map(t => {
-    const L = p.rows.concat(p.fb).filter(r => key(r.type) === t);
+  const tk = (p.rows.length || p.fb.length || p.rc.length) ? TYPES.concat(['RELEVER CAT']).map(t => {
+    const L = p.rows.concat(p.fb, p.rc).filter(r => key(r.type) === t);
     return L.length ? `<div class="th" style="color:var(${TC[t]})">${TL[t]}</div>` + L.map(task).join('') : '';
   }).join('') : '<div class="mu">Aucune tâche SUTX.</div>';
   dlg.innerHTML = `<div class="dh"><div><b>${esc(p.name)}</b><div class="mu tl" style="margin:0">${esc(c.name)}</div></div><button type="button" id="dx">Fermer</button></div>
