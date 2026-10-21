@@ -603,7 +603,7 @@ function task(r){
   if(viaAdmin(r)) x.push('📌 déclaré par ' + esc(r.admin_par || 'admin') + ' le ' + dt(r.admin_le));
   if(+r.qt_prevu > 1) x.push(`Quantité ${r.qt_realisee ?? 0} / ${r.qt_prevu}`);
   if(r.date_fait) x.push('Fait le ' + dt(r.date_fait));
-  const rl = key(r.type) === 'POSE' && /appareil tendeur|chaise de relevage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
+  const rl = ['R1','R2','R1R2'].includes(key(r.saisie).replace(/\s+/g, ''));
   if(r.hauteur != null) x.push((rl ? 'R1 ' : 'Hauteur ') + vv(r.hauteur));
   if(r.desaxement != null) x.push((rl ? 'R2 ' : 'Désaxement ') + vv(r.desaxement));
   if(r.prevu1 || r.prevu2){
@@ -650,7 +650,7 @@ async function load(){
   try{
     const SXC = 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at,admin_etat,admin_pct,admin_le,admin_par';
     const probe = c => fetch(`${SUPABASE_URL}/rest/v1/suivi_sutx_v2?select=${c}&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? c : null).catch(() => null);
-    const have = (await Promise.all(['admin_sous','admin_fkt','fkt_etat','fkt_num'].map(probe))).filter(Boolean);
+    const have = (await Promise.all(['admin_sous','admin_fkt','fkt_etat','fkt_num','saisie'].map(probe))).filter(Boolean);
     const [sx, bl] = await Promise.all([
       fetchAll('suivi_sutx_v2', SXC + have.map(c => ',' + c).join('')),
       fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
