@@ -320,8 +320,6 @@ function fbmDetail(c){
   return `<div class="card"><h2>Supports FBM · ${nok} / ${L.length} complets</h2><div class="lg">F fouille · B béton · M matage. Un support compte pour 1 quand toutes ses étapes sont faites.</div>
   ${L.map(x => `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${stepsOf(x.p).map((k,i) => `<em class="${x.st[i] === 'T' ? 'on' : x.st[i] === 'A' ? 'ad' : ''}">${lib[k]}</em>`).join('')}${x.ok ? ' ✅' : ''}</span></div><div class="mu tl">${x.n} / ${x.st.length} étapes${x.p.b && x.p.b.m3_prevu != null ? ' · béton ' + nf(+x.p.b.m3_reel || 0) + ' / ' + nf(+x.p.b.m3_prevu || 0) + ' m³' : ''}</div></div>`).join('') || '<div class="mu">Aucun support.</div>'}</div>`;
 }
- ${x.a.n ? stk(x.a) : ''}
-  <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
 
 const STEPS = {fouille:['Fouille'], beton:['Béton'], matage:['Matage']};
 function supMatch(p, f){
