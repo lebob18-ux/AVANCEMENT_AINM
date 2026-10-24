@@ -309,6 +309,9 @@ function supList(c){
 }
 
 const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb) + ncOf(x.p.rc)) ? '<span class="nb">⚠️ NC</span>' : ''}${stepsOf(x.p).length ? STEPK.map((k,i) => { const st = stepState(x.p, k); return `<em class="${st === 'T' ? 'on' : st === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : ''}</span></div>
+  ${x.a.n ? stk(x.a) : ''}
+  <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
+
 /* Détail FBM d'un chantier : une ligne par support, avec l'état de chaque étape */
 function fbmDetail(c){
   const L = fbmSups(c).map(p => { const st = stepsOf(p).map(k => stepState(p, k)); return {p, st, n:st.filter(Boolean).length, ok:st.length > 0 && st.every(Boolean)}; })
