@@ -200,10 +200,13 @@ function stepState(p, k){
 }
 const fbmSups = c => Object.values(c.s).filter(p => p.b || p.fb.length);
 function aggF(ps){
-  const o = {n:ps.length, mp:0, mr:0, d:0, dT:0, dA:0, tot:0, s:{fouille:{T:0,A:0,n:0}, beton:{T:0,A:0,n:0}, matage:{T:0,A:0,n:0}}};
+  const o = {n:ps.length, tot:ps.length, mp:0, mr:0, d:0, dT:0, dA:0, pE:0, s:{fouille:{T:0,A:0,n:0}, beton:{T:0,A:0,n:0}, matage:{T:0,A:0,n:0}}};
   ps.forEach(p => {
     if(p.b){ o.mp += +p.b.m3_prevu || 0; o.mr += +p.b.m3_reel || 0; }
-    stepsOf(p).forEach(k => { const x = o.s[k], st = stepState(p, k); x.n++; o.tot++; if(st === 'T'){ x.T++; o.dT++; } else if(st === 'A'){ x.A++; o.dA++; } });
+    const st = stepsOf(p), E = st.map(k => stepState(p, k));
+    st.forEach((k, i) => { const x = o.s[k]; x.n++; if(E[i] === 'T') x.T++; else if(E[i] === 'A') x.A++; });
+    if(st.length && E.every(Boolean)){ if(E.every(s => s === 'T')) o.dT++; else o.dA++; }
+    else if(E.some(Boolean)) o.pE++;
   });
   o.d = o.dT + o.dA;
   o.p = o.tot ? Math.round(o.d / o.tot * 100) : 0;
@@ -285,7 +288,7 @@ function vSyn(){
   const parC = `<div class="card"><h2>Par chantier</h2><div class="lg">Touche un chantier pour le détailler.</div>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b><span style="color:var(--sx)">SUTX ${x.p} %</span> · <span style="color:var(--fb)">FBM ${y.p} %</span></b></div>${stk(x)}<div style="height:6px"></div>${dbar(y.dT, y.dA, y.tot)}</div>`; }).join('')}</div>`;
   const lgd = `<div class="lg2" style="justify-content:center;margin:10px 0 0"><span><i style="background:var(--sx)"></i>Terrain SUTX</span><span><i style="background:var(--fb)"></i>Terrain FBM</span><span><i style="background:var(--ad)"></i>Saisi par moi</span></div>`;
   const K = aggK(S.rc), fktCard = K.n ? `<div class="card"><h2>FKT définitives</h2><div class="rl"><span>${K.d} / ${K.n}</span><b>${K.p} %</b></div>${dbar(K.T, K.A, K.n, 'big', '--gc')}<div class="mu tl"><span style="color:var(--gc)">■</span> ${K.T} terrain · <span style="color:var(--ad)">■</span> ${K.A} saisie(s) par moi · ${K.P} provisoire(s) · ${K.none} sans FKT</div></div>` : '';
-  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.dT} terrain · ${f.dA} par moi / ${f.tot} étapes`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb) + ncOf(S.rc), 'à traiter', '--dep')}</div>
+  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets${f.pE ? ' · ' + f.pE + ' en cours' : ''}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb) + ncOf(S.rc), 'à traiter', '--dep')}</div>
     <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX',a.pA)}${ring(f.p,'--fb','Avancement FBM',f.pA)}</div>${lgd}</div>
     ${fktCard}
     ${S.c ? '' : parC}
@@ -294,7 +297,7 @@ function vSyn(){
     + (sup || `<div class="card"><h2>Par chantier</h2>${legend()}${D.ch.filter(c => c.rows.length).map(c => { const x = agg(c.rows); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`);
   return s + `<div class="card"><h2>Étapes</h2>${rowF('Fouille', f.s.fouille)}${rowF('Béton', f.s.beton)}${rowF('Matage', f.s.matage)}${lgd}</div>
     <div class="card"><h2>Volume béton</h2><div class="rl"><span>Réel / prévu (m³)</span><b>${nf(f.mr)} / ${nf(f.mp)}</b></div>${pbar(pc(f.mr, f.mp),'--fb','big')}</div>`
-    + (sup || `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => fbmSups(c).length).map(c => { const x = aggF(fbmSups(c)), q = k => x.s[k].T + x.s[k].A; return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${dbar(x.dT, x.dA, x.tot)}<div class="mu tl">Fouille ${q('fouille')}/${x.s.fouille.n} · Béton ${q('beton')}/${x.s.beton.n} · Matage ${q('matage')}/${x.s.matage.n}</div></div>`; }).join('')}</div>`);
+    + (S.c ? fbmDetail(S.c) : `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => fbmSups(c).length).map(c => { const x = aggF(fbmSups(c)), q = k => x.s[k].T + x.s[k].A; return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${dbar(x.dT, x.dA, x.tot)}<div class="mu tl">Fouille ${q('fouille')}/${x.s.fouille.n} · Béton ${q('beton')}/${x.s.beton.n} · Matage ${q('matage')}/${x.s.matage.n}</div></div>`; }).join('')}</div>`);
 }
 
 /* ---------- Onglet Chantiers ---------- */
@@ -306,7 +309,15 @@ function supList(c){
 }
 
 const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb) + ncOf(x.p.rc)) ? '<span class="nb">⚠️ NC</span>' : ''}${stepsOf(x.p).length ? STEPK.map((k,i) => { const st = stepState(x.p, k); return `<em class="${st === 'T' ? 'on' : st === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : ''}</span></div>
-  ${x.a.n ? stk(x.a) : ''}
+/* Détail FBM d'un chantier : une ligne par support, avec l'état de chaque étape */
+function fbmDetail(c){
+  const L = fbmSups(c).map(p => { const st = stepsOf(p).map(k => stepState(p, k)); return {p, st, n:st.filter(Boolean).length, ok:st.length > 0 && st.every(Boolean)}; })
+    .sort((a,b) => (a.ok - b.ok) || a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
+  const nok = L.filter(x => x.ok).length, lib = {fouille:'F', beton:'B', matage:'M'};
+  return `<div class="card"><h2>Supports FBM · ${nok} / ${L.length} complets</h2><div class="lg">F fouille · B béton · M matage. Un support compte pour 1 quand toutes ses étapes sont faites.</div>
+  ${L.map(x => `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${stepsOf(x.p).map((k,i) => `<em class="${x.st[i] === 'T' ? 'on' : x.st[i] === 'A' ? 'ad' : ''}">${lib[k]}</em>`).join('')}${x.ok ? ' ✅' : ''}</span></div><div class="mu tl">${x.n} / ${x.st.length} étapes${x.p.b && x.p.b.m3_prevu != null ? ' · béton ' + nf(+x.p.b.m3_reel || 0) + ' / ' + nf(+x.p.b.m3_prevu || 0) + ' m³' : ''}</div></div>`).join('') || '<div class="mu">Aucun support.</div>'}</div>`;
+}
+ ${x.a.n ? stk(x.a) : ''}
   <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
 
 const STEPS = {fouille:['Fouille'], beton:['Béton'], matage:['Matage']};
