@@ -213,14 +213,12 @@ function aggF(ps){
   o.pA = o.tot ? Math.min(o.p, Math.round(o.dA / o.tot * 100)) : 0;
   return o;
 }
-
-/* rows = tâches SUTX hors Fouille/Béton/Matage (comptées dans SUTX)
-   fb   = tâches Fouille/Béton/Matage (affichées mais non comptées dans SUTX)
-   rc   = tâches RELEVER CAT (affichées, FKT, non comptées dans SUTX)
-   D.all = SUTX seul · D.qa = tout (pour les NC) · D.fb = FBM · D.rc = relevés CAT
-   POSE_SUPPORT et POSE_ANC (nouvelle base) sont regroupés en « Pose » ; ENVIRONNEMENT est ignoré */
+const EXCLUS = ['TEST_BOB'];   // chantiers de test : ignorés partout
 function stats(sx, bl){
-  sx.forEach(r => { const t = key(r.type); if(t === 'POSE_SUPPORT' || t === 'POSE_ANC') r.type = 'POSE'; });
+  sx = sx.filter(r => !EXCLUS.includes(key(r.Chantier)));
+  bl = bl.filter(r => !EXCLUS.includes(key(r.chantier)));
+    sx.forEach(r => { const t = key(r.type); if(t === 'POSE_SUPPORT' || t === 'POSE_ANC') r.type = 'POSE'; });
+  
   const ch = {}, act = {}, qa = sx.filter(r => TYPES.includes(key(r.type)) || isRC(r));
   const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], rc:[], bl:[], s:{}});
   const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], rc:[], b:null});
