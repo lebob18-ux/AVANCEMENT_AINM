@@ -735,26 +735,216 @@ $('#adm').addEventListener('click', connexionAdmin);
 document.addEventListener('visibilitychange', () => { if(!document.hidden && Date.now() - last > 300000) load(); });
 load();
 /* ---------- Export PDF (impression A4 : « Enregistrer au format PDF ») ---------- */
-function rapportHtml(){
+/* ---------- Export PDF : fichier vectoriel généré dans l'app, à enregistrer ou partager ---------- */
+const PW_N = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const PW_B = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+const PW_S = {'·':278,'›':333,'‹':333,'—':1000,'–':556,'…':1000,'’':250,'‘':250,'°':400,'«':556,'»':556,'œ':944,'€':556};
+const PW_X = {'’':0x92,'‘':0x91,'“':0x93,'”':0x94,'—':0x97,'–':0x96,'…':0x85,'›':0x9B,'‹':0x8B,'€':0x80,'œ':0x9C,'Œ':0x8C};
+function pdfW(s, size, bold){
+  const T = bold ? PW_B : PW_N; let w = 0;
+  for(const ch of String(s ?? '')){
+    const c = ch.charCodeAt(0);
+    if(c >= 32 && c < 127){ w += T[c - 32]; continue; }
+    if(ch === '²' || ch === '³'){ w += T[19] * 0.62; continue; }
+    const b = ch.normalize('NFD').charCodeAt(0);
+    w += (b >= 32 && b < 127) ? T[b - 32] : (PW_S[ch] || 556);
+  }
+  return w * size / 1000;
+}
+function pdfHex(s){
+  let o = '';
+  for(const ch of String(s ?? '')){ const c = ch.charCodeAt(0), b = PW_X[ch] ?? (c >= 32 && c < 256 ? c : 63); o += b.toString(16).padStart(2, '0'); }
+  return '<' + o + '>';
+}
+function pdfWrap(s, maxW, size, bold){
+  const out = []; let line = '';
+  String(s ?? '').split(/\s+/).filter(Boolean).forEach(w => {
+    const t = line ? line + ' ' + w : w;
+    if(!line || pdfW(t, size, bold) <= maxW) line = t; else { out.push(line); line = w; }
+  });
+  if(line) out.push(line);
+  return out.flatMap(l => {
+    if(pdfW(l, size, bold) <= maxW) return [l];
+    const r = []; let cur = '';
+    for(const ch of l){ if(pdfW(cur + ch, size, bold) > maxW){ r.push(cur); cur = ch; } else cur += ch; }
+    if(cur) r.push(cur);
+    return r;
+  });
+}
+const pdfFit = (s, maxW, size, bold) => { s = String(s ?? ''); if(pdfW(s, size, bold) <= maxW) return s; while(s.length > 1 && pdfW(s + '…', size, bold) > maxW) s = s.slice(0, -1); return s + '…'; };
+
+function pdfDoc(){
+  const W = 595.28, H = 841.89, P = []; let k = -1;
+  const col = h => [1, 3, 5].map(i => (parseInt(h.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
+  const o = s => P[k].push(s);
+  return {
+    W, H,
+    page(){ P.push([]); k = P.length - 1; },
+    go(i){ k = i; },
+    count: () => P.length,
+    rect(x, y, w, h, fill, stroke, lw){
+      if(w <= 0 || h <= 0) return;
+      o((fill ? col(fill) + ' rg ' : '') + (stroke ? col(stroke) + ' RG ' + (lw || 0.7) + ' w ' : '') + x.toFixed(2) + ' ' + (H - y - h).toFixed(2) + ' ' + w.toFixed(2) + ' ' + h.toFixed(2) + ' re ' + (fill && stroke ? 'B' : fill ? 'f' : 'S'));
+    },
+    text(x, y, s, size, bold, color, align){
+      const parts = String(s ?? '').split(/([²³])/).filter(Boolean), sup = p => p === '²' || p === '³';
+      const wp = p => pdfW(p, size, bold);
+      const tot = parts.reduce((t, p) => t + wp(p), 0);
+      if(align === 'r') x -= tot; else if(align === 'c') x -= tot / 2;
+      const emit = (px, py, str, sz) => o('BT /' + (bold ? 'F2' : 'F1') + ' ' + sz + ' Tf ' + col(color || '#1a232c') + ' rg ' + px.toFixed(2) + ' ' + (H - py).toFixed(2) + ' Td ' + pdfHex(str) + ' Tj ET');
+      parts.forEach(p => { if(sup(p)) emit(x, y - size * 0.38, p === '³' ? '3' : '2', size * 0.62); else emit(x, y, p, size); x += wp(p); });
+    },
+    build(){
+      const obj = [];
+      obj[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+      obj[2] = '<< /Type /Pages /Count ' + P.length + ' /Kids [' + P.map((_, i) => (5 + 2 * i) + ' 0 R').join(' ') + '] >>';
+      obj[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+      obj[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+      P.forEach((c, i) => {
+        const s = c.join('\n');
+        obj[5 + 2 * i] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + (6 + 2 * i) + ' 0 R >>';
+        obj[6 + 2 * i] = '<< /Length ' + s.length + ' >>\nstream\n' + s + '\nendstream';
+      });
+      let out = '%PDF-1.4\n'; const off = [];
+      for(let i = 1; i < obj.length; i++){ off[i] = out.length; out += i + ' 0 obj\n' + obj[i] + '\nendobj\n'; }
+      const x = out.length;
+      out += 'xref\n0 ' + obj.length + '\n0000000000 65535 f \n' + off.slice(1).map(v => String(v).padStart(10, '0') + ' 00000 n \n').join('');
+      out += 'trailer\n<< /Size ' + obj.length + ' /Root 1 0 R >>\nstartxref\n' + x + '\n%%EOF';
+      const u = new Uint8Array(out.length);
+      for(let i = 0; i < out.length; i++) u[i] = out.charCodeAt(i) & 255;
+      return u;
+    }
+  };
+}
+
+function rapportPdf(){
   const S = scope(), a = agg(S.rows), f = aggF(S.ps), K = aggK(S.rc);
   const inS = r => !S.c || key(r.Chantier) === S.c.k;
   const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true && inS(r));
   const fk = D.rc.filter(r => inS(r) && isFKT(r) && eff(r) === 'T' && !fktOf(r).def).length;
   const pv = D.all.filter(r => inS(r) && (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0)).length;
   const now = new Date().toLocaleString('fr-FR', {dateStyle:'long', timeStyle:'short'});
-  const kp = (t, v, s, c) => `<div class="rk" style="border-top:4px solid var(${c})"><span>${t}</span><b>${v}</b><small>${s}</small></div>`;
-  const lgR = `<div class="lg2"><span><i style="background:var(--pose)"></i>Terminé (terrain)</span><span><i style="background:var(--ad)"></i>Terminé (déclaré)</span><span><i style="background:var(--ec)"></i>En cours</span><span><i style="background:var(--mu)"></i>Annulé</span><span><i class="o"></i>À faire</span></div>`;
-  const lgF = `<div class="lg2"><span><i style="background:var(--fb)"></i>FBM terrain</span><span><i style="background:var(--ad)"></i>FBM déclaré</span></div>`;
-  const parC = S.c ? '' : `<h2 class="rs">Avancement par chantier</h2>${lgR}${lgF}<table class="rt"><thead><tr><th>Chantier</th><th style="width:30%">SUTX</th><th style="width:30%">FBM (supports complets)</th><th class="n">NC</th></tr></thead><tbody>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<tr><td><b>${esc(c.name)}</b></td><td>${stk(x)}<small>${x.p} %</small></td><td>${dbar(y.dT, y.dA, y.tot)}<small>${y.d} / ${y.tot} · ${y.p} %</small></td><td class="n">${x.nc + ncOf(c.fb) + ncOf(c.rc) || '—'}</td></tr>`; }).join('')}</tbody></table>`;
-  const parT = `<h2 class="rs">SUTX par type de tâche</h2>${S.c ? lgR : ''}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return x.n ? `<div class="row"><div class="rl"><b style="color:var(${TC[t]})">${TL[t]}</b><b>${x.T} / ${x.w} · ${x.p} %</b></div>${stk(x)}</div>` : ''; }).join('')}`;
-  const fbm = f.tot ? `<h2 class="rs">FBM : fouille, béton, matage</h2>${lgF}<div class="rl"><span>Supports complets (étapes toutes faites)</span><b>${f.d} / ${f.tot} · ${f.p} %</b></div>${dbar(f.dT, f.dA, f.tot, 'big')}${[['fouille','Fouille'],['beton','Béton'],['matage','Matage']].map(([k,l]) => { const x = f.s[k]; return x.n ? `<div class="row"><div class="rl"><span>${l}</span><b>${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %</b></div>${dbar(x.T, x.A, x.n)}<div class="mu tl">${x.T} terrain · ${x.A} déclaré(s)</div></div>` : ''; }).join('')}<div class="rl" style="margin-top:8px"><span>Volume béton réel / prévu</span><b>${nf(f.mr)} / ${nf(f.mp)} m³</b></div>` : '';
-  const sup = !S.c ? '' : (() => { const L = supList(S.c); return `<h2 class="rs">Détail des supports : ${L.filter(x => x.ok).length} / ${L.length} terminés</h2><table class="rt"><thead><tr><th>Support</th><th style="width:34%">SUTX</th><th>FBM</th><th>État</th></tr></thead><tbody>${L.map(x => { const st = stepsOf(x.p), fd = st.filter(k => stepState(x.p, k)).length, e = x.ok ? ['Terminé','--pose'] : (x.a.T + x.a.A + x.a.E + fd) ? ['En cours','--ec'] : ['À faire','--mu']; return `<tr><td><b>${esc(x.p.name)}</b></td><td>${x.a.n ? stk(x.a) + `<small>${x.a.T} / ${x.a.n}</small>` : '<small>—</small>'}</td><td class="chips">${st.length ? STEPK.map((k,i) => { const s = stepState(x.p, k); return `<em class="${s === 'T' ? 'on' : s === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : '—'}</td><td><b style="color:var(${e[1]})">${e[0]}</b></td></tr>`; }).join('')}</tbody></table>`; })();
-  const att = `<h2 class="rs">Points d'attention</h2><div class="rl"><span>Non-conformités ouvertes</span><b>${nc.length}</b></div><div class="rl"><span>FKT définitives à obtenir (tâches terminées)</span><b>${fk}</b></div><div class="rl"><span>Pendules provisoires à déposer</span><b>${pv}</b></div>` + (nc.length ? `<table class="rt" style="margin-top:8px"><thead><tr><th>Chantier › support</th><th>Tâche</th><th>Non-conformité</th></tr></thead><tbody>${nc.slice(0, 40).map(r => `<tr><td>${esc(r.Chantier)} › ${esc(r.Support)}</td><td>${esc(r.Tache)}</td><td>${esc(r.nc_description)}</td></tr>`).join('')}</tbody></table>${nc.length > 40 ? `<small class="mu">… et ${nc.length - 40} autres (voir l'onglet Qualité)</small>` : ''}` : '');
-  return `<div class="rh"><h1>SUIVI PCLE-MMM · Rapport d'avancement</h1><p>${S.c ? esc(S.c.name) : 'Tous les chantiers'} · édité le ${now}</p></div>
-  <div class="rks">${kp('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} déclaré(s) / ${a.w}`, '--sx')}${kp('FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets`, '--fb')}${kp('FKT définitives', K.n ? K.p + ' %' : '—', K.n ? `${K.d} / ${K.n}` : 'sans objet', '--gc')}${kp('Non-conformités', nc.length, 'ouvertes', '--dep')}</div>
-  ${parC}${parT}${fbm}${sup}${att}
-  <p class="rf">Document généré par SUIVI_PCLE-MMM. « Terrain » : relevés des agents ; « déclaré » : avancement saisi par l'administrateur.</p>`;
+  const nomScope = S.c ? S.c.name : 'Tous les chantiers';
+  const C = {sx:'#2f6f9f', fb:'#8a5fb0', ad:'#0e9aa7', pose:'#2f8f63', ec:'#e08a1e', dep:'#c4543b', gc:'#b7881a', mu:'#6b7884', ln:'#d9dee2', sl:'#e3e7ea', tx:'#1a232c', navy:'#0b2545', jaune:'#f2c200'};
+  const d = pdfDoc(), W = d.W, H = d.H, L = 32, R = W - 32, CW = R - L, BOT = H - 46;
+  let y = 0;
+  const newPage = prem => { d.page(); y = 36; if(!prem){ d.text(L, 24, "SUIVI PCLE-MMM · Rapport d'avancement · " + nomScope, 7.5, false, C.mu); d.rect(L, 29, CW, 0.6, C.ln); y = 42; } };
+  const ensure = h => { if(y + h > BOT) newPage(false); };
+  const section = t => { ensure(44); y += 12; d.text(L, y + 9, t, 12, true, C.tx); d.rect(L, y + 14, CW, 1.6, C.tx); y += 24; };
+  const legend = items => { let x = L; items.forEach(([t, c]) => { d.rect(x, y - 1, 8, 8, c); d.text(x + 11, y + 6, t, 7.5, false, C.mu); x += 11 + pdfW(t, 7.5, false) + 12; }); y += 14; };
+  const bar = (x, yy, w, h, parts, n) => { d.rect(x, yy, w, h, C.sl); let cx = x; parts.forEach(([v, c]) => { if(v > 0 && n){ const pw = w * v / n; d.rect(cx, yy, pw, h, c); cx += pw; } }); };
+  const stkBar = (x, yy, w, h, s) => bar(x, yy, w, h, [[s.T - (s.Ta || 0), C.pose], [s.Ta || 0, C.ad], [s.E, C.ec], [s.A, C.mu]], s.n);
+  const fbBar = (x, yy, w, h, t, ad, n) => bar(x, yy, w, h, [[t, C.fb], [ad, C.ad]], n);
+  const rowBar = (label, value, draw, color, sub) => { ensure(sub ? 40 : 31); d.text(L, y + 9, label, 9.5, true, color || C.tx); d.text(R, y + 9, value, 9.5, true, C.tx, 'r'); draw(L, y + 14, CW, 9); if(sub) d.text(L, y + 33, sub, 7.5, false, C.mu); y += sub ? 40 : 31; };
+  const head = cols => { d.rect(L, y + 12, CW, 0.8, C.tx); cols.forEach(([t, x, al]) => d.text(x, y + 9, t, 7, true, C.mu, al)); y += 16; };
+  const lgS = [['Terminé (terrain)', C.pose], ['Terminé (déclaré)', C.ad], ['En cours', C.ec], ['Annulé', C.mu], ['À faire', C.sl]];
+  const lgF = [['FBM terrain', C.fb], ['FBM déclaré', C.ad]];
+
+  newPage(true);
+  d.rect(L, y, CW, 60, C.navy); d.rect(L, y + 56, CW, 4, C.jaune);
+  d.text(L + 14, y + 27, "SUIVI PCLE-MMM · Rapport d'avancement", 17, true, '#ffffff');
+  d.text(L + 14, y + 44, nomScope + ' · édité le ' + now, 9.5, false, '#c9d3df');
+  y += 74;
+  const kw = (CW - 24) / 4;
+  [['SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} déclaré(s) / ${a.w} tâches`, C.sx],
+   ['FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets`, C.fb],
+   ['FKT DÉFINITIVES', K.n ? K.p + ' %' : '—', K.n ? `${K.d} / ${K.n} reçues` : 'sans objet', C.gc],
+   ['NON-CONFORMITÉS', String(nc.length), 'ouvertes', C.dep]].forEach(([t, v, s, c], i) => {
+    const x = L + i * (kw + 8);
+    d.rect(x, y, kw, 66, '#ffffff', C.ln, 0.8); d.rect(x, y, kw, 3.5, c);
+    d.text(x + 9, y + 17, t, 7.5, true, C.mu);
+    d.text(x + 9, y + 40, v, 20, true, C.tx);
+    pdfWrap(s, kw - 18, 7.5, false).slice(0, 2).forEach((l, j) => d.text(x + 9, y + 52 + j * 9, l, 7.5, false, C.mu));
+  });
+  y += 74;
+
+  if(!S.c){
+    section('Avancement par chantier');
+    legend(lgS); legend(lgF);
+    const cols = [['CHANTIER', L], ['SUTX', L + 130], ['FBM (SUPPORTS COMPLETS)', L + 310], ['NC', R, 'r']];
+    head(cols);
+    D.ch.forEach(c => {
+      const x = agg(c.rows), yv = aggF(fbmSups(c)), nn = x.nc + ncOf(c.fb) + ncOf(c.rc);
+      if(y + 32 > BOT){ newPage(false); head(cols); }
+      d.text(L, y + 12, pdfFit(c.name, 120, 9.5, true), 9.5, true, C.tx);
+      stkBar(L + 130, y + 5, 160, 9, x); d.text(L + 130, y + 25, x.p + ' %', 7.5, false, C.mu);
+      fbBar(L + 310, y + 5, 160, 9, yv.dT, yv.dA, yv.tot); d.text(L + 310, y + 25, `${yv.d} / ${yv.tot} · ${yv.p} %`, 7.5, false, C.mu);
+      d.text(R, y + 12, nn ? String(nn) : '—', 9.5, nn > 0, nn ? C.dep : C.mu, 'r');
+      d.rect(L, y + 30, CW, 0.5, C.ln); y += 32;
+    });
+  }
+
+  section('SUTX par type de tâche');
+  if(S.c) legend(lgS);
+  const cT = {GC:C.gc, DEPOSE:C.dep, POSE:C.pose};
+  TYPES.forEach(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); if(x.n) rowBar(TL[t], `${x.T} / ${x.w} · ${x.p} %`, (bx, by, bw, bh) => stkBar(bx, by, bw, bh, x), cT[t]); });
+
+  if(f.tot){
+    section('FBM : fouille, béton, matage');
+    legend(lgF);
+    rowBar('Supports complets (étapes toutes faites)', `${f.d} / ${f.tot} · ${f.p} %`, (bx, by, bw) => fbBar(bx, by, bw, 12, f.dT, f.dA, f.tot));
+    [['fouille', 'Fouille'], ['beton', 'Béton'], ['matage', 'Matage']].forEach(([k, l]) => { const x = f.s[k]; if(x.n) rowBar(l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, (bx, by, bw, bh) => fbBar(bx, by, bw, bh, x.T, x.A, x.n), null, `${x.T} terrain · ${x.A} déclaré(s)`); });
+    ensure(18); d.text(L, y + 9, 'Volume béton réel / prévu', 9.5, false, C.tx); d.text(R, y + 9, `${nf(f.mr)} / ${nf(f.mp)} m³`, 9.5, true, C.tx, 'r'); y += 18;
+  }
+
+  if(S.c){
+    const Ls = supList(S.c);
+    section(`Détail des supports : ${Ls.filter(x => x.ok).length} / ${Ls.length} terminés`);
+    const cols = [['SUPPORT', L], ['SUTX', L + 120], ['FBM', L + 330], ['ÉTAT', L + 410]];
+    head(cols);
+    Ls.forEach(x => {
+      if(y + 28 > BOT){ newPage(false); head(cols); }
+      const st = stepsOf(x.p), fd = st.filter(k => stepState(x.p, k)).length;
+      const e = x.ok ? ['Terminé', C.pose] : (x.a.T + x.a.A + x.a.E + fd) ? ['En cours', C.ec] : ['À faire', C.mu];
+      d.text(L, y + 12, pdfFit(x.p.name, 110, 9.5, true), 9.5, true, C.tx);
+      if(x.a.n){ stkBar(L + 120, y + 5, 170, 8, x.a); d.text(L + 120, y + 22, `${x.a.T} / ${x.a.n}`, 7.5, false, C.mu); } else d.text(L + 120, y + 12, '—', 8, false, C.mu);
+      if(st.length) STEPK.forEach((k, i) => { const s = stepState(x.p, k), cx = L + 330 + i * 16; if(s) d.rect(cx, y + 3, 13, 13, s === 'T' ? C.fb : C.ad); else d.rect(cx, y + 3, 13, 13, '#ffffff', C.fb, 0.7); d.text(cx + 6.5, y + 12.5, 'FBM'[i], 7.5, true, s ? '#ffffff' : C.mu, 'c'); });
+      else d.text(L + 330, y + 12, '—', 8, false, C.mu);
+      d.text(L + 410, y + 12, e[0], 9, true, e[1]);
+      d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
+    });
+  }
+
+  section("Points d'attention");
+  [['Non-conformités ouvertes', nc.length, true], ['FKT définitives à obtenir (tâches terminées)', fk], ['Pendules provisoires à déposer', pv]].forEach(([t, v, rouge]) => {
+    ensure(18); d.text(L, y + 9, t, 9.5, false, C.tx); d.text(R, y + 9, String(v), 9.5, true, rouge && v ? C.dep : C.tx, 'r'); d.rect(L, y + 14, CW, 0.5, C.ln); y += 18;
+  });
+  if(nc.length){
+    y += 8;
+    const cols = [['CHANTIER › SUPPORT', L], ['TÂCHE', L + 140], ['NON-CONFORMITÉ', L + 280]];
+    ensure(50); head(cols);
+    nc.slice(0, 40).forEach(r => {
+      const l1 = pdfWrap(`${r.Chantier} › ${r.Support}`, 130, 8.5, false), l2 = pdfWrap(r.Tache, 130, 8.5, false), l3 = pdfWrap(r.nc_description || '—', R - L - 280, 8.5, false);
+      const h = Math.max(l1.length, l2.length, l3.length) * 10.5 + 8;
+      if(y + h > BOT){ newPage(false); head(cols); }
+      [[l1, L], [l2, L + 140], [l3, L + 280]].forEach(([ls, x]) => ls.forEach((t, i) => d.text(x, y + 11 + i * 10.5, t, 8.5, false, C.tx)));
+      d.rect(L, y + h - 1, CW, 0.5, C.ln); y += h;
+    });
+    if(nc.length > 40){ ensure(16); d.text(L, y + 10, `… et ${nc.length - 40} autres (voir l'onglet Qualité)`, 8, false, C.mu); y += 16; }
+  }
+  ensure(34); y += 14;
+  pdfWrap("Document généré par SUIVI_PCLE-MMM. « Terrain » : relevés des agents ; « déclaré » : avancement saisi par l'administrateur.", CW, 7.5, false).forEach((t, i) => d.text(L, y + 8 + i * 9, t, 7.5, false, C.mu));
+
+  const n = d.count();
+  for(let i = 0; i < n; i++){ d.go(i); d.rect(L, H - 34, CW, 0.6, C.ln); d.text(L, H - 22, 'SUIVI_PCLE-MMM · édité le ' + now, 7.5, false, C.mu); d.text(R, H - 22, `Page ${i + 1} / ${n}`, 7.5, false, C.mu, 'r'); }
+  return {bytes:d.build(), name:'PCLE-MMM_' + (S.c ? S.c.name.replace(/[^\w-]+/g, '_') : 'Tous_chantiers') + '_' + jour() + '.pdf'};
 }
+
+$('#pdf').addEventListener('click', () => {
+  if(!D) return;
+  let r;
+  try{ r = rapportPdf(); }catch(e){ alert('Création du PDF impossible : ' + e.message); return; }
+  const blob = new Blob([r.bytes], {type:'application/pdf'}), file = new File([blob], r.name, {type:'application/pdf'});
+  const peutPartager = !!(navigator.canShare && navigator.canShare({files:[file]}));
+  dlg.innerHTML = `<div class="dh"><b>📄 Rapport prêt</b><button type="button" id="dx">Fermer</button></div><div class="db"><div style="font-weight:600;overflow-wrap:anywhere">${esc(r.name)}</div><div class="mu tl">${Math.max(1, Math.round(blob.size / 1024))} Ko · PDF A4</div>
+    <button type="button" id="pdf-save" style="width:100%;margin-top:14px;min-height:48px;font-weight:600">⬇️ Enregistrer sur le téléphone</button>
+    ${peutPartager ? '<button type="button" id="pdf-share" style="width:100%;margin-top:8px;min-height:48px;font-weight:600">📤 Partager…</button>' : ''}
+    <div class="mu tl" id="pdf-msg"></div></div>`;
+  if(!dlg.open) dlg.showModal();
+  $('#dx').onclick = () => dlg.close();
+  $('#pdf-save').onclick = () => { const a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = r.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000); $('#pdf-msg').textContent = 'Enregistré dans le dossier Téléchargements.'; };
+  if(peutPartager) $('#pdf-share').onclick = () => navigator.share({files:[file], title:r.name}).catch(e => { if(e.name !== 'AbortError') $('#pdf-msg').textContent = 'Partage impossible : ' + e.message; });
+});
 
 $('#pdf').addEventListener('click', () => {
   if(!D) return;
