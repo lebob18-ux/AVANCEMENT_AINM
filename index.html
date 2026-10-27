@@ -92,17 +92,45 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .fl small{color:var(--fb);font-weight:700}
 .ss{padding:8px 4px;min-height:36px;cursor:pointer;border-radius:6px}
 .ss:active{background:var(--sl)}
+  #rapport{display:none}
+@media print{
+  @page{size:A4;margin:11mm 11mm 13mm}
+  html,body{background:#fff!important;color:#1a232c!important;padding:0!important}
+  body>*:not(#rapport){display:none!important}
+  #rapport{display:block;font:10pt/1.35 system-ui,"Segoe UI",Roboto,Arial,sans-serif;color:#1a232c;--sx:#2f6f9f;--fb:#8a5fb0;--ad:#0e9aa7;--pose:#2f8f63;--ec:#e08a1e;--dep:#c4543b;--gc:#b7881a;--mu:#6b7884;--ln:#d9dee2;--sl:#e3e7ea;--tx:#1a232c;--card:#fff}
+  #rapport *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rh{background:#0b2545;color:#fff;padding:14px 16px;border-radius:6px;border-bottom:4px solid #f2c200;margin-bottom:12px}
+  .rh h1{font-size:17pt;margin:0}
+  .rh p{margin:3px 0 0;font-size:10pt;opacity:.85}
+  .rks{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
+  .rk{border:1px solid var(--ln);border-radius:6px;padding:8px 10px;break-inside:avoid}
+  .rk span{display:block;font-size:8pt;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+  .rk b{display:block;font-size:20pt;line-height:1.15}
+  .rk small{display:block;font-size:8pt;color:var(--mu)}
+  .rs{margin:16px 0 6px;font-size:12pt;font-weight:700;border-bottom:2px solid var(--tx);padding-bottom:3px;break-after:avoid}
+  .rt{width:100%;border-collapse:collapse;font-size:9.5pt}
+  .rt th{text-align:left;font-size:8pt;color:var(--mu);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--tx);padding:4px}
+  .rt td{padding:5px 4px;border-bottom:1px solid var(--ln);vertical-align:middle}
+  .rt tr{break-inside:avoid}
+  .rt thead{display:table-header-group}
+  .rt .n{text-align:right;white-space:nowrap}
+  .rt small{display:block;font-size:8pt;color:var(--mu);margin-top:2px}
+  #rapport .row{break-inside:avoid}
+  #rapport .bar i{background-image:none}
+  .rf{margin-top:18px;padding-top:6px;border-top:1px solid var(--ln);font-size:8pt;color:var(--mu)}
+}
 </style>
 </head>
 <body>
 <main>
 <div class="top">
-<header><div><h1>SUIVI_PCLE-MMM</h1><div id="st"></div></div><span style="display:flex;gap:6px"><button id="adm" type="button" style="font-weight:600">🔐 Admin</button><button id="inst" type="button" style="display:none;font-weight:600">📲 Installer</button><button id="rf" type="button">Actualiser</button></span></header>
+<header><div><h1>SUIVI_PCLE-MMM</h1><div id="st"></div></div><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button id="adm" type="button" style="font-weight:600">🔐 Admin</button><button id="inst" type="button" style="display:none;font-weight:600">📲 Installer</button><button id="pdf" type="button" style="font-weight:600">📄 PDF</button><button id="rf" type="button">Actualiser</button></span></header>
 <nav><button type="button" data-t="syn" aria-pressed="true">Synthèse</button><button type="button" data-t="ch" aria-pressed="false">Chantiers</button><button type="button" data-t="qa" aria-pressed="false" id="nqa">Qualité</button><button type="button" data-t="adm" aria-pressed="false" id="nadm" style="display:none">Admin</button></nav>
 </div>
 <div id="v"></div>
 </main>
 <dialog id="dlg"></dialog>
+  <div id="rapport"></div>
 <script>
 const SUPABASE_URL = "https://thbqkeugjvsxbryfnzuo.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_2-Ij-nrTPeK6rB-kSD-QTg_b42zNakq";
@@ -706,7 +734,36 @@ $('#adm').addEventListener('click', connexionAdmin);
 { const dej = localStorage.getItem('pcle_adm'); if(dej) verifAdmin(dej).then(a => { if(a){ ADM = a; majAdminUI(); if(D) show(); } }); }
 document.addEventListener('visibilitychange', () => { if(!document.hidden && Date.now() - last > 300000) load(); });
 load();
+/* ---------- Export PDF (impression A4 : « Enregistrer au format PDF ») ---------- */
+function rapportHtml(){
+  const S = scope(), a = agg(S.rows), f = aggF(S.ps), K = aggK(S.rc);
+  const inS = r => !S.c || key(r.Chantier) === S.c.k;
+  const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true && inS(r));
+  const fk = D.rc.filter(r => inS(r) && isFKT(r) && eff(r) === 'T' && !fktOf(r).def).length;
+  const pv = D.all.filter(r => inS(r) && (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0)).length;
+  const now = new Date().toLocaleString('fr-FR', {dateStyle:'long', timeStyle:'short'});
+  const kp = (t, v, s, c) => `<div class="rk" style="border-top:4px solid var(${c})"><span>${t}</span><b>${v}</b><small>${s}</small></div>`;
+  const lgR = `<div class="lg2"><span><i style="background:var(--pose)"></i>Terminé (terrain)</span><span><i style="background:var(--ad)"></i>Terminé (déclaré)</span><span><i style="background:var(--ec)"></i>En cours</span><span><i style="background:var(--mu)"></i>Annulé</span><span><i class="o"></i>À faire</span></div>`;
+  const lgF = `<div class="lg2"><span><i style="background:var(--fb)"></i>FBM terrain</span><span><i style="background:var(--ad)"></i>FBM déclaré</span></div>`;
+  const parC = S.c ? '' : `<h2 class="rs">Avancement par chantier</h2>${lgR}${lgF}<table class="rt"><thead><tr><th>Chantier</th><th style="width:30%">SUTX</th><th style="width:30%">FBM (supports complets)</th><th class="n">NC</th></tr></thead><tbody>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<tr><td><b>${esc(c.name)}</b></td><td>${stk(x)}<small>${x.p} %</small></td><td>${dbar(y.dT, y.dA, y.tot)}<small>${y.d} / ${y.tot} · ${y.p} %</small></td><td class="n">${x.nc + ncOf(c.fb) + ncOf(c.rc) || '—'}</td></tr>`; }).join('')}</tbody></table>`;
+  const parT = `<h2 class="rs">SUTX par type de tâche</h2>${S.c ? lgR : ''}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return x.n ? `<div class="row"><div class="rl"><b style="color:var(${TC[t]})">${TL[t]}</b><b>${x.T} / ${x.w} · ${x.p} %</b></div>${stk(x)}</div>` : ''; }).join('')}`;
+  const fbm = f.tot ? `<h2 class="rs">FBM : fouille, béton, matage</h2>${lgF}<div class="rl"><span>Supports complets (étapes toutes faites)</span><b>${f.d} / ${f.tot} · ${f.p} %</b></div>${dbar(f.dT, f.dA, f.tot, 'big')}${[['fouille','Fouille'],['beton','Béton'],['matage','Matage']].map(([k,l]) => { const x = f.s[k]; return x.n ? `<div class="row"><div class="rl"><span>${l}</span><b>${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %</b></div>${dbar(x.T, x.A, x.n)}<div class="mu tl">${x.T} terrain · ${x.A} déclaré(s)</div></div>` : ''; }).join('')}<div class="rl" style="margin-top:8px"><span>Volume béton réel / prévu</span><b>${nf(f.mr)} / ${nf(f.mp)} m³</b></div>` : '';
+  const sup = !S.c ? '' : (() => { const L = supList(S.c); return `<h2 class="rs">Détail des supports : ${L.filter(x => x.ok).length} / ${L.length} terminés</h2><table class="rt"><thead><tr><th>Support</th><th style="width:34%">SUTX</th><th>FBM</th><th>État</th></tr></thead><tbody>${L.map(x => { const st = stepsOf(x.p), fd = st.filter(k => stepState(x.p, k)).length, e = x.ok ? ['Terminé','--pose'] : (x.a.T + x.a.A + x.a.E + fd) ? ['En cours','--ec'] : ['À faire','--mu']; return `<tr><td><b>${esc(x.p.name)}</b></td><td>${x.a.n ? stk(x.a) + `<small>${x.a.T} / ${x.a.n}</small>` : '<small>—</small>'}</td><td class="chips">${st.length ? STEPK.map((k,i) => { const s = stepState(x.p, k); return `<em class="${s === 'T' ? 'on' : s === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : '—'}</td><td><b style="color:var(${e[1]})">${e[0]}</b></td></tr>`; }).join('')}</tbody></table>`; })();
+  const att = `<h2 class="rs">Points d'attention</h2><div class="rl"><span>Non-conformités ouvertes</span><b>${nc.length}</b></div><div class="rl"><span>FKT définitives à obtenir (tâches terminées)</span><b>${fk}</b></div><div class="rl"><span>Pendules provisoires à déposer</span><b>${pv}</b></div>` + (nc.length ? `<table class="rt" style="margin-top:8px"><thead><tr><th>Chantier › support</th><th>Tâche</th><th>Non-conformité</th></tr></thead><tbody>${nc.slice(0, 40).map(r => `<tr><td>${esc(r.Chantier)} › ${esc(r.Support)}</td><td>${esc(r.Tache)}</td><td>${esc(r.nc_description)}</td></tr>`).join('')}</tbody></table>${nc.length > 40 ? `<small class="mu">… et ${nc.length - 40} autres (voir l'onglet Qualité)</small>` : ''}` : '');
+  return `<div class="rh"><h1>SUIVI PCLE-MMM · Rapport d'avancement</h1><p>${S.c ? esc(S.c.name) : 'Tous les chantiers'} · édité le ${now}</p></div>
+  <div class="rks">${kp('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} déclaré(s) / ${a.w}`, '--sx')}${kp('FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets`, '--fb')}${kp('FKT définitives', K.n ? K.p + ' %' : '—', K.n ? `${K.d} / ${K.n}` : 'sans objet', '--gc')}${kp('Non-conformités', nc.length, 'ouvertes', '--dep')}</div>
+  ${parC}${parT}${fbm}${sup}${att}
+  <p class="rf">Document généré par SUIVI_PCLE-MMM. « Terrain » : relevés des agents ; « déclaré » : avancement saisi par l'administrateur.</p>`;
+}
 
+$('#pdf').addEventListener('click', () => {
+  if(!D) return;
+  const S = scope(), t0 = document.title;
+  $('#rapport').innerHTML = rapportHtml();
+  document.title = 'PCLE-MMM_' + (S.c ? S.c.name.replace(/[^\w-]+/g, '_') : 'Tous_chantiers') + '_' + jour();
+  window.onafterprint = () => { $('#rapport').innerHTML = ''; document.title = t0; window.onafterprint = null; };
+  window.print();
+});
 /* Installation (Android / PC) + service worker */
 let invitation = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); invitation = e; $('#inst').style.display = ''; });
