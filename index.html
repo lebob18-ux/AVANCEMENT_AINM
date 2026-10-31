@@ -227,10 +227,16 @@ function stepState(p, k){
   return null;
 }
 const fbmSups = c => Object.values(c.s).filter(p => p.b || p.fb.length);
+  const num = v => { if(v === null || v === undefined || v === '') return null; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; };
+const m3r = b => b ? (num(b.m3_reel) ?? num(b.admin_m3_reel)) : null;   // réel : terrain d'abord, sinon valeur saisie par l'admin
 function aggF(ps){
-  const o = {n:ps.length, tot:ps.length, mp:0, mr:0, d:0, dT:0, dA:0, pE:0, s:{fouille:{T:0,A:0,n:0}, beton:{T:0,A:0,n:0}, matage:{T:0,A:0,n:0}}};
+  const o = {n:ps.length, tot:ps.length, mp:0, mr:0, mpr:0, ec:0, sr:0, d:0, dT:0, dA:0, pE:0, s:{fouille:{T:0,A:0,n:0}, beton:{T:0,A:0,n:0}, matage:{T:0,A:0,n:0}}};
   ps.forEach(p => {
-    if(p.b){ o.mp += +p.b.m3_prevu || 0; o.mr += +p.b.m3_reel || 0; }
+    if(p.b){
+      const pv = num(p.b.m3_prevu) || 0, rl = m3r(p.b);
+      o.mp += pv; o.mr += rl || 0;
+      if(stepState(p, 'beton')){ o.mpr += pv; if(rl !== null) o.ec += rl - pv; else o.sr++; }
+    }
     const st = stepsOf(p), E = st.map(k => stepState(p, k));
     st.forEach((k, i) => { const x = o.s[k]; x.n++; if(E[i] === 'T') x.T++; else if(E[i] === 'A') x.A++; });
     if(st.length && E.every(Boolean)){ if(E.every(s => s === 'T')) o.dT++; else o.dA++; }
@@ -322,7 +328,7 @@ function vSyn(){
   if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %${x.Ta ? ' · ' + x.Ta + ' par moi' : ''}</b></div>${stk(x)}</div>`; }).join('')}</div>`
     + (sup || `<div class="card"><h2>Par chantier</h2>${legend()}${D.ch.filter(c => c.rows.length).map(c => { const x = agg(c.rows); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`);
   return s + `<div class="card"><h2>Étapes</h2>${rowF('Fouille', f.s.fouille)}${rowF('Béton', f.s.beton)}${rowF('Matage', f.s.matage)}${lgd}</div>
-    <div class="card"><h2>Volume béton</h2><div class="rl"><span>Réel / prévu (m³)</span><b>${nf(f.mr)} / ${nf(f.mp)}</b></div>${pbar(pc(f.mr, f.mp),'--fb','big')}</div>`
+    <div class="card"><h2>Volume béton (m³)</h2><div class="rl"><span>Prévu réalisé / prévu total</span><b>${nf(f.mpr)} / ${nf(f.mp)} · ${pc(f.mpr, f.mp)} %</b></div>${pbar(pc(f.mpr, f.mp),'--fb','big')}<div class="rl" style="margin-top:10px"><span>Béton réel coulé</span><b>${nf(f.mr)}</b></div><div class="rl"><span>Écart réel − prévu (supports bétonnés)</span><b>${f.ec > 0.049 ? '+' : ''}${nf(Math.abs(f.ec) < 0.05 ? 0 : f.ec)}</b></div>${f.sr ? `<div class="mu tl">${f.sr} support(s) bétonné(s) sans volume réel saisi : exclus de l'écart.</div>` : ''}</div>`
     + (S.c ? fbmDetail(S.c) : `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => fbmSups(c).length).map(c => { const x = aggF(fbmSups(c)), q = k => x.s[k].T + x.s[k].A; return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${dbar(x.dT, x.dA, x.tot)}<div class="mu tl">Fouille ${q('fouille')}/${x.s.fouille.n} · Béton ${q('beton')}/${x.s.beton.n} · Matage ${q('matage')}/${x.s.matage.n}</div></div>`; }).join('')}</div>`);
 }
 
@@ -344,9 +350,18 @@ function fbmDetail(c){
     .sort((a,b) => (a.ok - b.ok) || a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
   const nok = L.filter(x => x.ok).length, lib = {fouille:'F', beton:'B', matage:'M'};
   return `<div class="card"><h2>Supports FBM · ${nok} / ${L.length} complets</h2><div class="lg">F fouille · B béton · M matage. Un support compte pour 1 quand toutes ses étapes sont faites.</div>
-  ${L.map(x => `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${stepsOf(x.p).map((k,i) => `<em class="${x.st[i] === 'T' ? 'on' : x.st[i] === 'A' ? 'ad' : ''}">${lib[k]}</em>`).join('')}${x.ok ? ' ✅' : ''}</span></div><div class="mu tl">${x.n} / ${x.st.length} étapes${x.p.b && x.p.b.m3_prevu != null ? ' · béton ' + nf(+x.p.b.m3_reel || 0) + ' / ' + nf(+x.p.b.m3_prevu || 0) + ' m³' : ''}</div></div>`).join('') || '<div class="mu">Aucun support.</div>'}</div>`;
+  ${L.map(x => `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${stepsOf(x.p).map((k,i) => `<em class="${x.st[i] === 'T' ? 'on' : x.st[i] === 'A' ? 'ad' : ''}">${lib[k]}</em>`).join('')}${x.ok ? ' ✅' : ''}</span></div><div class="mu tl">${x.n} / ${x.st.length} étapes${betonTxt(x.p)}</div></div>`).join('') || '<div class="mu">Aucun support.</div>'}</div>`;
 }
-
+/* Béton d'un support : prévu / réel selon l'avancement (liste FBM) */
+function betonTxt(p){
+  if(!stepsOf(p).includes('beton')) return '';
+  const b = p.b, pv = b ? num(b.m3_prevu) : null, rl = m3r(b), fait = stepState(p, 'beton') !== null, adm = !!b && num(b.m3_reel) === null && num(b.admin_m3_reel) !== null;
+  if(pv === null) return ' · béton : prévu non renseigné';
+  if(!fait) return ' · béton : prévu ' + nf(pv) + ' m³';
+  if(rl === null) return ' · béton fait : réel non saisi (prévu ' + nf(pv) + ' m³)';
+  const e = rl - pv;
+  return ' · béton : ' + nf(rl) + ' / ' + nf(pv) + ' m³' + (Math.abs(e) >= 0.05 ? ' (' + (e > 0 ? '+' : '') + nf(e) + ')' : '') + (adm ? ' 📌' : '');
+}
 const STEPS = {fouille:['Fouille'], beton:['Béton'], matage:['Matage']};
 function supMatch(p, f){
   if(!f) return true;
@@ -533,7 +548,25 @@ async function adminFbm(id, col, val){
   }catch(e){ alert('Mise à jour impossible : ' + e.message); }
   rafraichirApres();
 }
+const SQL_M3 = "Colonne admin_m3_reel absente. Dans Supabase > SQL Editor, exécute :\n\nalter table blindage add column if not exists admin_m3_reel numeric;\nnotify pgrst, 'reload schema';\n\nPuis actualise l'app.";
 
+/* Volume béton réel saisi par l'admin (utilisé seulement si le terrain n'a pas saisi le sien) */
+async function adminM3(id, val){
+  const b = D.bl.find(x => String(x.id) === String(id));
+  if(!b || !ADM) return;
+  if(!D.hasM3){ alert(SQL_M3); rafraichirApres(); return; }
+  const patch = {admin_m3_reel: num(val), admin_par: (ADM.prenom + ' ' + ADM.nom).trim(), admin_maj_le: new Date().toISOString()};
+  try{ await patchTable('blindage', id, patch); Object.assign(b, patch); }
+  catch(e){ alert('Mise à jour impossible : ' + e.message); }
+  rafraichirApres();
+}
+
+function m3Row(b){
+  const t = num(b.m3_reel), a = num(b.admin_m3_reel);
+  if(t !== null) return `<div class="rl"><span>Béton m³ : réel</span><b>${vv(t)}</b></div>`;
+  if(ADM) return `<div class="rl"><span>Béton m³ : réel${a !== null ? ' 📌' : ''}</span><input type="number" step="0.1" min="0" inputmode="decimal" data-adm="m" data-id="${b.id}" value="${a !== null ? a : ''}" placeholder="m³" style="min-height:36px;padding:4px 8px;width:110px;text-align:right"></div>`;
+  return `<div class="rl"><span>Béton m³ : réel</span><b>${a !== null ? vv(a) + ' 📌 admin' : '—'}</b></div>`;
+}
 function vAdm(){
   const d0 = new Date(); if(vp !== 'all') d0.setDate(d0.getDate() - (+vp));
   const lim = vp === 'all' ? '' : d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0') + '-' + String(d0.getDate()).padStart(2,'0');
@@ -665,7 +698,8 @@ function openSup(ck, sk){
     ? `<table class="tb"><tr><th></th><th>Prévu</th><th>Réel</th></tr>${PAIRS.map(([l,a,r]) => `<tr><td>${l}</td><td>${vv(b[a])}</td><td class="${df(b[a],b[r]) ? 'df' : ''}">${vv(b[r])}</td></tr>`).join('')}</table>`
     : '<div class="mu">Pas de fiche FBM pour ce support.</div>';
   const beton = b ? `<h2 style="margin-top:16px">Béton et dates</h2>
-    <div class="rl"><span>Béton m³ : prévu / réel</span><b>${vv(b.m3_prevu)} / ${vv(b.m3_reel)}</b></div>
+    <div class="rl"><span>Béton m³ : prévu</span><b>${vv(num(b.m3_prevu))}</b></div>
+    ${m3Row(b)}
     <div class="rl"><span>Type de béton</span><b>${vv(b.type_beton)}</b></div>
     <div class="rl"><span>Slump</span><b>${vv(b.slump)}</b></div>
     <div class="rl"><span>BL béton</span><b>${vv(b.bl_beton)}</b></div>
@@ -689,14 +723,15 @@ async function load(){
     const SXC = 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at,admin_etat,admin_pct,admin_le,admin_par';
     const probe = c => fetch(`${SUPABASE_URL}/rest/v1/suivi_sutx_v2?select=${c}&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? c : null).catch(() => null);
     const have = (await Promise.all(['admin_sous','admin_fkt','fkt_etat','fkt_num','saisie'].map(probe))).filter(Boolean);
+        const haveB = await fetch(`${SUPABASE_URL}/rest/v1/blindage?select=admin_m3_reel&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? ['admin_m3_reel'] : []).catch(() => []);
     const [sx, bl] = await Promise.all([
       fetchAll('suivi_sutx_v2', SXC + have.map(c => ',' + c).join('')),
-      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton')
+      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton' + haveB.map(c => ',' + c).join(''))
     ]);
     const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
     const suivi = await fetchAll('sous_travaux_suivi', 'id,tache_id,modele_id,statut').catch(() => []);
     D = stats(sx, bl); last = Date.now();
-    D.mod = mod; D.hasSous = have.includes('admin_sous'); D.hasFkt = have.includes('admin_fkt'); D.sidx = new Map();
+    D.mod = mod; D.hasSous = have.includes('admin_sous'); D.hasFkt = have.includes('admin_fkt'); D.sidx = new Map(); D.hasM3 = haveB.length > 0;
     suivi.forEach(x => { const k = String(x.tache_id); if(!D.sidx.has(k)) D.sidx.set(k, new Map()); D.sidx.get(k).set(String(x.modele_id), x.statut); });
     $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
     show();
@@ -724,6 +759,7 @@ $('#v').addEventListener('keydown', e => { const fq = e.target.closest('[data-cf
 dlg.addEventListener('click', e => { if(e.target === dlg){ dlg.close(); return; } const ss = e.target.closest('[data-ss]'); if(ss && ADM) adminSous(ss.dataset.t, ss.dataset.m); });
 dlg.addEventListener('change', e => {
   const el = e.target;
+  if(el.dataset.adm === 'm') adminM3(el.dataset.id, el.value);
   if(!ADM || !el.dataset) return;
   if(el.dataset.adm === 't') adminTache(el.dataset.id, el.checked ? 'TERMINE' : 'CLEAR');
   if(el.dataset.adm === 'f') adminFbm(el.dataset.id, el.dataset.col, el.value);
@@ -884,7 +920,7 @@ function rapportPdf(){
     legend(lgF);
     rowBar('Supports complets (étapes toutes faites)', `${f.d} / ${f.tot} · ${f.p} %`, (bx, by, bw) => fbBar(bx, by, bw, 12, f.dT, f.dA, f.tot));
     [['fouille', 'Fouille'], ['beton', 'Béton'], ['matage', 'Matage']].forEach(([k, l]) => { const x = f.s[k]; if(x.n) rowBar(l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, (bx, by, bw, bh) => fbBar(bx, by, bw, bh, x.T, x.A, x.n), null, `${x.T} terrain · ${x.A} déclaré(s)`); });
-    ensure(18); d.text(L, y + 9, 'Volume béton réel / prévu', 9.5, false, C.tx); d.text(R, y + 9, `${nf(f.mr)} / ${nf(f.mp)} m³`, 9.5, true, C.tx, 'r'); y += 18;
+    [['Volume béton : prévu réalisé / prévu total', `${nf(f.mpr)} / ${nf(f.mp)} m³ · ${pc(f.mpr, f.mp)} %`], ['Béton réel coulé', `${nf(f.mr)} m³`], ['Écart réel - prévu (supports bétonnés)', `${f.ec > 0.049 ? '+' : ''}${nf(Math.abs(f.ec) < 0.05 ? 0 : f.ec)} m³`]].forEach(([t, v]) => { ensure(18); d.text(L, y + 9, t, 9.5, false, C.tx); d.text(R, y + 9, v, 9.5, true, C.tx, 'r'); d.rect(L, y + 14, CW, 0.5, C.ln); y += 18; });
   }
 
   if(S.c){
@@ -946,14 +982,6 @@ $('#pdf').addEventListener('click', () => {
   if(peutPartager) $('#pdf-share').onclick = () => navigator.share({files:[file], title:r.name}).catch(e => { if(e.name !== 'AbortError') $('#pdf-msg').textContent = 'Partage impossible : ' + e.message; });
 });
 
-$('#pdf').addEventListener('click', () => {
-  if(!D) return;
-  const S = scope(), t0 = document.title;
-  $('#rapport').innerHTML = rapportHtml();
-  document.title = 'PCLE-MMM_' + (S.c ? S.c.name.replace(/[^\w-]+/g, '_') : 'Tous_chantiers') + '_' + jour();
-  window.onafterprint = () => { $('#rapport').innerHTML = ''; document.title = t0; window.onafterprint = null; };
-  window.print();
-});
 /* Installation (Android / PC) + service worker */
 let invitation = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); invitation = e; $('#inst').style.display = ''; });
