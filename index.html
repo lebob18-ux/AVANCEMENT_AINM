@@ -85,6 +85,7 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .tk{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln)}
 .ck{flex:none;width:22px;height:22px;border:2px solid var(--ln);border-radius:5px;display:grid;place-items:center;font-size:14px;color:#fff}
 .ck.on{background:var(--pose);border-color:var(--pose)}
+.ck.admin{background:var(--ad);border-color:var(--ad)}
 .ck.ec{background:var(--ec);border-color:var(--ec)}
 .ck.an{background:var(--mu);border-color:var(--mu)}
 .fl{cursor:pointer;border-radius:8px;padding:4px 6px;margin:8px 0}
@@ -92,6 +93,7 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .fl small{color:var(--fb);font-weight:700}
 .ss{padding:8px 4px;min-height:36px;cursor:pointer;border-radius:6px}
 .ss:active{background:var(--sl)}
+.admsearch{display:grid;gap:7px;margin-bottom:12px}.admsearch input{width:100%;min-width:0}.meta{font-size:12px;color:var(--mu);margin-top:4px}.tag{display:inline-block;border:1px solid var(--ln);border-radius:6px;padding:2px 6px;font-size:11px;margin:2px 3px 2px 0}
   #rapport{display:none}
 @media print{
   @page{size:A4;margin:11mm 11mm 13mm}
@@ -144,7 +146,8 @@ const key = s => String(s || '').trim().toUpperCase();
 const pc = (v,t) => t ? Math.round(v/t*100) : 0;
 const nf = n => (Math.round(n*10)/10).toLocaleString('fr-FR');
 let D = null, tab = 'syn', sub = 'glob', qf = 'nc', sel = 'all', last = 0;
-let ADM = null, vp = '7', supOuvert = null, cf = {}, OPEN = new Set();
+let sutxType = 'all';
+let ADM = null, vp = 'all', admQ = '', supOuvert = null, cf = {}, OPEN = new Set();
 
 async function fetchAll(table, cols){
   let out = [], from = 0; const step = 1000;
@@ -315,18 +318,61 @@ function vSyn(){
   const S = scope(), a = agg(S.rows), f = aggF(S.ps);
   const pick = S.c ? `<button type="button" data-pick="all" style="width:100%;font-weight:600;margin:4px 0 0">← Tous les chantiers · ${esc(S.c.name)}</button>` : '';
   const s = pick + sg('sub', [['glob','Vue d\'ensemble'],['sutx','SUTX'],['fbm','FBM']], sub);
-  const L = S.c ? supList(S.c) : null, nok = L ? L.filter(x => x.ok).length : 0;
-  const sup = L ? `<div class="card"><h2>Supports · ${nok} / ${L.length} terminés</h2>${L.map(x => sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}</div>` : '';
+
+  const L = S.c
+    ? (sub === 'sutx' ? supListSutx(S.c, sutxType) : supList(S.c))
+    : null;
+  const nok = L ? L.filter(x => x.ok).length : 0;
+  const sup = L
+    ? `<div class="card">
+        <h2>Supports · ${nok} / ${L.length} terminés</h2>
+        ${L.map(x => sub === 'sutx' ? sRowSutx(x, S.c.k) : sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}
+      </div>`
+    : '';
+
   const parC = `<div class="card"><h2>Par chantier</h2><div class="lg">Touche un chantier pour le détailler.</div>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b><span style="color:var(--sx)">SUTX ${x.p} %</span> · <span style="color:var(--fb)">FBM ${y.p} %</span></b></div>${stk(x)}<div style="height:6px"></div>${dbar(y.dT, y.dA, y.tot)}</div>`; }).join('')}</div>`;
   const lgd = `<div class="lg2" style="justify-content:center;margin:10px 0 0"><span><i style="background:var(--sx)"></i>Terrain SUTX</span><span><i style="background:var(--fb)"></i>Terrain FBM</span><span><i style="background:var(--ad)"></i>Saisi par moi</span></div>`;
   const K = aggK(S.rc), fktCard = K.n ? `<div class="card"><h2>FKT définitives</h2><div class="rl"><span>${K.d} / ${K.n}</span><b>${K.p} %</b></div>${dbar(K.T, K.A, K.n, 'big', '--gc')}<div class="mu tl"><span style="color:var(--gc)">■</span> ${K.T} terrain · <span style="color:var(--ad)">■</span> ${K.A} saisie(s) par moi · ${K.P} provisoire(s) · ${K.none} sans FKT</div></div>` : '';
+
   if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets${f.pE ? ' · ' + f.pE + ' en cours' : ''}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb) + ncOf(S.rc), 'à traiter', '--dep')}</div>
     <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX',a.pA)}${ring(f.p,'--fb','Avancement FBM',f.pA)}</div>${lgd}</div>
     ${fktCard}
     ${S.c ? '' : parC}
     ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.ps));
-  if(sub === 'sutx') return s + `<div class="card"><h2>Par type</h2>${legend()}${TYPES.map(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); return `<div class="row"><div class="rl"><span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span><b>${x.T}/${x.w} · ${x.p} %${x.Ta ? ' · ' + x.Ta + ' par moi' : ''}</b></div>${stk(x)}</div>`; }).join('')}</div>`
-    + (sup || `<div class="card"><h2>Par chantier</h2>${legend()}${D.ch.filter(c => c.rows.length).map(c => { const x = agg(c.rows); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}</div>`; }).join('')}</div>`);
+
+  if(sub === 'sutx'){
+    const types = TYPES.map(t => {
+      const x = agg(S.rows.filter(r => key(r.type) === t));
+      const actif = sutxType === t;
+      return `<div class="row fl${actif ? ' on' : ''}" role="button" tabindex="0"
+        data-sutx-type="${t}" aria-pressed="${actif}"
+        style="cursor:pointer;border-radius:8px;padding:8px;${actif ? 'outline:2px solid var(' + TC[t] + ');background:var(--card)' : ''}">
+        <div class="rl">
+          <span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span>
+          <b>${x.T}/${x.w} · ${x.p} %${x.Ta ? ' · ' + x.Ta + ' par moi' : ''}${actif ? ' ✓' : ''}</b>
+        </div>
+        ${stk(x)}
+      </div>`;
+    }).join('');
+
+    const chantiersSutx = D.ch.filter(c => {
+      const rows = sutxType === 'all' ? c.rows : c.rows.filter(r => key(r.type) === sutxType);
+      return rows.length > 0;
+    }).map(c => {
+      const rows = sutxType === 'all' ? c.rows : c.rows.filter(r => key(r.type) === sutxType);
+      const x = agg(rows);
+      return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}">
+        <div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}
+      </div>`;
+    }).join('');
+
+    return s + `<div class="card">
+      <h2>Par type · Filtre supplémentaire</h2>
+      ${types}
+      ${sutxType !== 'all' ? `<div class="mu" style="text-align:center">Filtre actif : ${TL[sutxType]} · <span data-sutx-type="all" role="button" tabindex="0" style="text-decoration:underline;cursor:pointer">Tout afficher</span></div>` : ''}
+    </div>` + (S.c ? sup : `<div class="card"><h2>Par chantier</h2>${legend()}${chantiersSutx || '<div class="mu">Aucun chantier pour ce type.</div>'}</div>`);
+  }
+
   return s + `<div class="card"><h2>Étapes</h2>${rowF('Fouille', f.s.fouille)}${rowF('Béton', f.s.beton)}${rowF('Matage', f.s.matage)}${lgd}</div>
     <div class="card"><h2>Volume béton (m³)</h2><div class="rl"><span>Prévu réalisé / prévu total</span><b>${nf(f.mpr)} / ${nf(f.mp)} · ${pc(f.mpr, f.mp)} %</b></div>${pbar(pc(f.mpr, f.mp),'--fb','big')}<div class="rl" style="margin-top:10px"><span>Béton réel coulé</span><b>${nf(f.mr)}</b></div><div class="rl"><span>Écart réel − prévu (supports bétonnés)</span><b>${f.ec > 0.049 ? '+' : ''}${nf(Math.abs(f.ec) < 0.05 ? 0 : f.ec)}</b></div>${f.sr ? `<div class="mu tl">${f.sr} support(s) bétonné(s) sans volume réel saisi : exclus de l'écart.</div>` : ''}</div>`
     + (S.c ? fbmDetail(S.c) : `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => fbmSups(c).length).map(c => { const x = aggF(fbmSups(c)), q = k => x.s[k].T + x.s[k].A; return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${dbar(x.dT, x.dA, x.tot)}<div class="mu tl">Fouille ${q('fouille')}/${x.s.fouille.n} · Béton ${q('beton')}/${x.s.beton.n} · Matage ${q('matage')}/${x.s.matage.n}</div></div>`; }).join('')}</div>`);
@@ -339,7 +385,29 @@ function supList(c){
     return {p, a, ok:(a.n + st.length) > 0 && a.T + a.A === a.n && fd === st.length};
   }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
 }
+/* Liste des supports SUTX, filtrable par type */
+function supListSutx(c, typeFilter = 'all'){
+  return Object.values(c.s).map(p => {
+    const rows = typeFilter === 'all'
+      ? p.rows
+      : p.rows.filter(r => key(r.type) === typeFilter);
+    if(!rows.length) return null;
+    const a = agg(rows);
+    return {p, rows, a, ok:a.n > 0 && a.T + a.A === a.n};
+  }).filter(Boolean).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
+}
 
+/* Ligne support SUTX sans indicateurs FBM */
+function sRowSutx(x, ck){
+  return `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}">
+    <div class="rl"><b>${esc(x.p.name)}</b><span>${x.ok ? '✅' : ''}</span></div>
+    ${stk(x.a)}
+    <div class="mu tl">${TYPES.filter(t => x.rows.some(r => key(r.type) === t)).map(t => {
+      const y = agg(x.rows.filter(r => key(r.type) === t));
+      return `${TL[t]} ${y.T}/${y.n}`;
+    }).join(' · ') || 'Pas de tâche SUTX'}</div>
+  </div>`;
+}
 const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb) + ncOf(x.p.rc)) ? '<span class="nb">⚠️ NC</span>' : ''}${stepsOf(x.p).length ? STEPK.map((k,i) => { const st = stepState(x.p, k); return `<em class="${st === 'T' ? 'on' : st === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : ''}</span></div>
   ${x.a.n ? stk(x.a) : ''}
   <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
@@ -447,7 +515,7 @@ async function connexionAdmin(){
   if(!email) return;
   const a = await verifAdmin(email);
   if(!a){ alert("Accès refusé : cet email n'est pas administrateur."); return; }
-  ADM = a; localStorage.setItem('pcle_adm', email); majAdminUI(); show();
+  ADM = a; localStorage.setItem('pcle_adm', email); tab = 'adm'; majAdminUI(); show();
 }
 
 async function patchTable(table, id, patch){
@@ -570,32 +638,65 @@ function m3Row(b){
 function vAdm(){
   const d0 = new Date(); if(vp !== 'all') d0.setDate(d0.getDate() - (+vp));
   const lim = vp === 'all' ? '' : d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0') + '-' + String(d0.getDate()).padStart(2,'0');
-  const okP = d => !!d && (!lim || String(d) >= lim);
-  const conf = r => r.Fait || (r.admin_etat !== 'TERMINE' && !!r.etat);
-  const T = D.all.concat(D.rc).filter(r => ['TERMINE','EN_COURS'].includes(r.admin_etat) && okP(r.admin_le));
-  const F = [];
+  const okP = d => !!d && (!lim || String(d).slice(0,10) >= lim);
+  const items = [];
+  const add = o => { if(o.date && okP(o.date)) items.push({...o, date:String(o.date).slice(0,10)}); };
+
+  // Journal SUTX : réalisations terrain et déclarations admin.
+  D.all.concat(D.rc).forEach(r => {
+    const e = eff(r), terrain = !!r.Fait;
+    if(e === 'F') return;
+    const date = terrain ? (r.date_fait || r.updated_at) : (r.admin_le || r.date_fait || r.updated_at);
+    const who = terrain ? ([r.prenom,r.nom].filter(Boolean).join(' ') || 'Terrain') : (r.admin_par || 'Admin');
+    add({date, ck:key(r.Chantier), sk:key(r.Support), ch:r.Chantier, su:r.Support,
+      titre:r.Tache || 'Tâche SUTX', type:'SUTX', source:terrain ? 'Terrain' : 'Saisie admin', who,
+      etat:e === 'T' ? '✅ Terminé' : e === 'E' ? '🟠 En cours ' + pctOf(r) + ' %' : '🚫 Annulé',
+      search:[r.Tache,r.Observation,r.explication,r.nc_description,r.Chantier,r.Support,r.fkt_num,adminFktOf(r)?.num].join(' ')});
+  });
+
+  // FBM : une seule ligne par étape, priorité au relevé terrain.
   D.ch.forEach(c => Object.values(c.s).forEach(p => {
-    if(p.b) [['Fouille','date_fouille','admin_date_fouille'],['Béton','date_beton','admin_date_beton'],['Matage','date_matage','admin_date_matage']].forEach(([l,re,ad]) => {
-      if(p.b[ad] && okP(p.b[ad])) F.push({c, p, l, date:p.b[ad], conf:!!p.b[re]});
+    if(!p.b) return;
+    const b=p.b;
+    [['Fouille','date_fouille','admin_date_fouille'],['Béton','date_beton','admin_date_beton'],['Matage','date_matage','admin_date_matage']].forEach(([label,real,adm]) => {
+      const isReal=!!b[real], date=isReal?b[real]:b[adm];
+      if(!date) return;
+      add({date,ck:c.k,sk:p.k,ch:c.name,su:p.name,titre:'FBM · '+label,type:'FBM',
+        source:isReal?'Terrain':'Saisie admin',who:isReal?'Terrain':(b.admin_par||'Admin'),etat:'✅ Réalisé',
+        search:[label,b.bl_beton,b.type_beton,b.slump,p.name,c.name].join(' '),bl:b.bl_beton});
     });
-    p.fb.forEach(r => {
-      if(r.admin_etat !== 'TERMINE' || !okP(r.admin_le)) return;
-      const t = nz(r.Tache), st = t.includes('fouille') ? 'fouille' : t.includes('beton') ? 'beton' : 'matage';
-      if(p.b && p.b['admin_date_' + st]) return;
-      F.push({c, p, l:STEPS[st][0], date:r.admin_le, conf:!!r.Fait || !!(p.b && p.b['date_' + st])});
-    });
+    // Index BL ↔ support ↔ fouille.
+    if(b.bl_beton) add({date:b.date_beton||b.admin_date_beton||b.date_fouille||b.admin_date_fouille||b.admin_maj_le,
+      ck:c.k,sk:p.k,ch:c.name,su:p.name,titre:'BL béton · '+b.bl_beton,type:'BL',source:'Fiche FBM',
+      who:b.admin_par||'—',etat:'📦 BL associé',
+      search:['BL',b.bl_beton,b.type_beton,b.slump,p.name,c.name,b.date_fouille,b.admin_date_fouille].join(' '),bl:b.bl_beton});
   }));
-  const K = D.qa.filter(isFKT).map(r => ({r, a:adminFktOf(r)})).filter(x => x.a && x.a.etat === 'DEFINITIVE' && okP(x.a.le)).map(x => ({...x, conf:key(x.r.fkt_etat) === 'DEFINITIVE'}));
-  const nc = T.filter(conf).length + F.filter(x => x.conf).length + K.filter(x => x.conf).length, tot = T.length + F.length + K.length;
-  const items = [
-    ...T.map(r => ({date:r.admin_le, ck:key(r.Chantier), sk:key(r.Support), ch:r.Chantier, su:r.Support, titre:r.Tache,
-      etat:r.admin_etat === 'TERMINE' ? '✅ Terminé' : r.admin_etat === 'ANNULE' ? '🚫 Annulé' : '🟠 ' + (r.admin_pct ?? 0) + ' %', conf:conf(r)})),
-    ...F.map(x => ({date:x.date, ck:x.c.k, sk:x.p.k, ch:x.c.name, su:x.p.name, titre:'FBM · ' + x.l, etat:'✅ Fait', conf:x.conf})),
-    ...K.map(x => ({date:x.a.le, ck:key(x.r.Chantier), sk:key(x.r.Support), ch:x.r.Chantier, su:x.r.Support, titre:'FKT définitive' + (x.a.num ? ' n° ' + x.a.num : '') + ' · ' + x.r.Tache, etat:'✅ Reçue', conf:x.conf}))
-  ].sort((a,b) => String(b.date).localeCompare(String(a.date)));
-  return sg('vp', [['7','7 jours'],['30','30 jours'],['all','Tout']], vp)
-    + `<div class="kpis">${kpi('Tâches SUTX', T.length, 'déclarées par moi', '--sx')}${kpi('Étapes FBM', F.length, 'déclarées par moi', '--fb')}${kpi('FKT définitives', K.length, 'déclarées par moi', '--gc')}${kpi('À confirmer', tot - nc, 'par le terrain', '--ec')}${kpi('Confirmées', nc, 'par le terrain', '--pose')}</div>`
-    + (items.map(i => `<div class="card qc" role="button" tabindex="0" data-c="${esc(i.ck)}" data-s="${esc(i.sk)}"><div class="rl"><b>${esc(i.titre)}</b><span class="pill" style="background:${i.conf ? 'var(--pose)' : 'var(--ec)'}">${i.conf ? 'confirmé' : 'à confirmer'}</span></div><div class="mu tl" style="margin:0">${esc(i.ch)} › ${esc(i.su)}</div><div class="tl">${i.etat} · déclaré le ${dt(i.date)}</div></div>`).join('') || '<div class="card mu">Aucune déclaration sur cette période.</div>');
+
+  // FKT terrain ou saisie admin.
+  D.rc.filter(isFKT).forEach(r => {
+    const k=fktOf(r); if(!k.def && !k.prov) return;
+    const a=adminFktOf(r), date=k.s==='A'?(a?.le):(r.date_fait||r.updated_at);
+    add({date,ck:key(r.Chantier),sk:key(r.Support),ch:r.Chantier,su:r.Support,
+      titre:'FKT '+(k.def?'définitive':'provisoire')+(k.num?' · n° '+k.num:''),type:'FKT',
+      source:k.s==='A'?'Saisie admin':'Terrain',who:k.s==='A'?(a?.par||'Admin'):'Terrain',
+      etat:k.def?'✅ Reçue':'🟠 Provisoire',
+      search:['FKT',k.num,r.Tache,r.Observation,r.Chantier,r.Support].join(' ')});
+  });
+
+  items.sort((a,b)=>b.date.localeCompare(a.date)||a.ch.localeCompare(b.ch,'fr',{numeric:true}));
+  const q=nz(admQ.trim());
+  const rows=items.filter(i=>!q || nz([i.date,i.ch,i.su,i.titre,i.type,i.source,i.who,i.search].join(' ')).includes(q));
+  const nTerrain=rows.filter(x=>x.source==='Terrain').length, nAdmin=rows.filter(x=>x.source==='Saisie admin').length;
+  const html=rows.map(i=>`<div class="card qc" role="button" tabindex="0" data-c="${esc(i.ck)}" data-s="${esc(i.sk)}">
+    <div class="rl"><b>${esc(i.titre)}</b><span class="tag">${esc(i.type)}</span></div>
+    <div class="mu tl" style="margin:0">${esc(i.ch)} › ${esc(i.su)}</div>
+    <div class="tl">${dt(i.date)} · ${esc(i.etat)} · ${esc(i.source)}${i.who&&i.who!=='Terrain'?' · '+esc(i.who):''}</div>
+    ${i.bl?`<div class="meta">BL ${esc(i.bl)} · Fouille : ${esc((D.ch.find(c=>c.k===i.ck)?.s[i.sk]?.b?.date_fouille && dt(D.ch.find(c=>c.k===i.ck).s[i.sk].b.date_fouille)) || (D.ch.find(c=>c.k===i.ck)?.s[i.sk]?.b?.admin_date_fouille && dt(D.ch.find(c=>c.k===i.ck).s[i.sk].b.admin_date_fouille)) || 'date non renseignée')}</div>`:''}
+    </div>`).join('');
+  return sg('vp',[['7','7 jours'],['30','30 jours'],['all','Tout']],vp)
+    + `<div class="admsearch"><input id="adm-search" type="search" value="${esc(admQ)}" placeholder="Rechercher : BL, support, fouille, FKT, point d'arrêt, tâche, observation…"><div class="mu tl">Recherche croisée dans les données SUTX et FBM. Un BL retrouvé renvoie au support et à sa date de fouille ; une fouille renvoie au BL associé.</div></div>`
+    + `<div class="kpis">${kpi('Événements',rows.length,'sur la période','--sx')}${kpi('Terrain',nTerrain,'relevés terrain','--pose')}${kpi('Saisie admin',nAdmin,'déclarations','--ad')}${kpi('Résultats',rows.length,'après recherche','--gc')}</div>`
+    + (html || '<div class="card mu">Aucun événement correspondant. Essaie un autre numéro de BL, de FKT, un support ou un mot-clé.</div>');
 }
 
 function show(){
@@ -605,7 +706,7 @@ function show(){
   document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === tab));
   if(tab === 'syn') $('#v').innerHTML = vSyn();
   else if(tab === 'qa') $('#v').innerHTML = vQa();
-  else if(tab === 'adm' && ADM) $('#v').innerHTML = vAdm();
+  else if(tab === 'adm' && ADM){ $('#v').innerHTML = vAdm(); const q=$('#adm-search'); if(q) q.addEventListener('input',()=>{admQ=q.value; const pos=q.selectionStart; $('#v').innerHTML=vAdm(); const nq=$('#adm-search'); nq.focus(); nq.setSelectionRange(pos,pos);}); }
   else {
     $('#v').innerHTML = '<input id="q" type="search" placeholder="Filtrer un chantier ou un support"><label class="tg"><input id="rest" type="checkbox"> Supports restants seulement</label><div class="lg">Pastilles FBM : F fouille, B béton, M matage (remplie = faite). Touche un support pour voir son détail.</div><div id="list"></div>';
     $('#q').addEventListener('input', fill); $('#rest').addEventListener('change', fill); $('#list').addEventListener('toggle', e => { const d = e.target; if(!d.dataset || !d.dataset.k) return; if(d.open) OPEN.add(d.dataset.k); else OPEN.delete(d.dataset.k); }, true); fill();
@@ -686,7 +787,7 @@ function task(r){
   if(r.brh) x.push('BRH');
   if(r.explication && e !== 'T') x.push(esc(r.explication));
   if(r.Observation) x.push(esc(r.Observation));
-  return `<div class="tk"><span class="ck${e === 'T' ? ' on' : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && !r.Fait ? adminSel(r) : ''}${isFKT(r) ? fktBlock(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
+  return `<div class="tk"><span class="ck${e === 'T' ? (viaAdmin(r) ? ' admin' : ' on') : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && !r.Fait ? adminSel(r) : ''}${isFKT(r) ? fktBlock(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
 }
 
 function openSup(ck, sk){
@@ -745,6 +846,12 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
 $('#rf').addEventListener('click', load);
 $('#v').addEventListener('change', e => { if(e.target.id === 'selc'){ sel = e.target.value; show(); } });
 $('#v').addEventListener('click', e => {
+  const st = e.target.closest('[data-sutx-type]');
+  if(st){
+    sutxType = st.dataset.sutxType === 'all' || sutxType === st.dataset.sutxType ? 'all' : st.dataset.sutxType;
+    show();
+    return;
+  }
   const pk = e.target.closest('[data-pick]');
   if(pk){ sel = pk.dataset.pick; show(); window.scrollTo(0,0); return; }
   const fl = e.target.closest('[data-cf]');
@@ -755,7 +862,7 @@ $('#v').addEventListener('click', e => {
   if(b){ if(b.dataset.sub) sub = b.dataset.sub; if(b.dataset.qf) qf = b.dataset.qf; if(b.dataset.vp) vp = b.dataset.vp; show(); return; }
   const r = e.target.closest('[data-s]'); if(r) openSup(r.dataset.c, r.dataset.s);
 });
-$('#v').addEventListener('keydown', e => { const fq = e.target.closest('[data-cf],[data-pick]'); if(fq && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fq.click(); return; } const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
+$('#v').addEventListener('keydown', e => { const fq = e.target.closest('[data-cf],[data-pick],[data-sutx-type]'); if(fq && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fq.click(); return; } const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
 dlg.addEventListener('click', e => { if(e.target === dlg){ dlg.close(); return; } const ss = e.target.closest('[data-ss]'); if(ss && ADM) adminSous(ss.dataset.t, ss.dataset.m); });
 dlg.addEventListener('change', e => {
   const el = e.target;
@@ -767,7 +874,7 @@ dlg.addEventListener('change', e => {
   if(el.dataset.adm === 'kn') adminFkt(el.dataset.id, true, el.value);
 });
 $('#adm').addEventListener('click', connexionAdmin);
-{ const dej = localStorage.getItem('pcle_adm'); if(dej) verifAdmin(dej).then(a => { if(a){ ADM = a; majAdminUI(); if(D) show(); } }); }
+{ const dej = localStorage.getItem('pcle_adm'); if(dej) verifAdmin(dej).then(a => { if(a){ ADM = a; tab = 'adm'; majAdminUI(); if(D) show(); } }); }
 document.addEventListener('visibilitychange', () => { if(!document.hidden && Date.now() - last > 300000) load(); });
 load();
 /* ---------- Export PDF (impression A4 : « Enregistrer au format PDF ») ---------- */
@@ -869,12 +976,12 @@ function rapportPdf(){
   const section = t => { ensure(44); y += 12; d.text(L, y + 9, t, 12, true, C.tx); d.rect(L, y + 14, CW, 1.6, C.tx); y += 24; };
   const legend = items => { let x = L; items.forEach(([t, c]) => { d.rect(x, y - 1, 8, 8, c); d.text(x + 11, y + 6, t, 7.5, false, C.mu); x += 11 + pdfW(t, 7.5, false) + 12; }); y += 14; };
   const bar = (x, yy, w, h, parts, n) => { d.rect(x, yy, w, h, C.sl); let cx = x; parts.forEach(([v, c]) => { if(v > 0 && n){ const pw = w * v / n; d.rect(cx, yy, pw, h, c); cx += pw; } }); };
-  const stkBar = (x, yy, w, h, s) => bar(x, yy, w, h, [[s.T - (s.Ta || 0), C.pose], [s.Ta || 0, C.ad], [s.E, C.ec], [s.A, C.mu]], s.n);
-  const fbBar = (x, yy, w, h, t, ad, n) => bar(x, yy, w, h, [[t, C.fb], [ad, C.ad]], n);
+  const stkBar = (x, yy, w, h, s) => bar(x, yy, w, h, [[s.T, C.pose], [s.E, C.ec], [s.A, C.mu]], s.n);
+  const fbBar = (x, yy, w, h, t, ad, n) => bar(x, yy, w, h, [[t + ad, C.fb]], n);
   const rowBar = (label, value, draw, color, sub) => { ensure(sub ? 40 : 31); d.text(L, y + 9, label, 9.5, true, color || C.tx); d.text(R, y + 9, value, 9.5, true, C.tx, 'r'); draw(L, y + 14, CW, 9); if(sub) d.text(L, y + 33, sub, 7.5, false, C.mu); y += sub ? 40 : 31; };
   const head = cols => { d.rect(L, y + 12, CW, 0.8, C.tx); cols.forEach(([t, x, al]) => d.text(x, y + 9, t, 7, true, C.mu, al)); y += 16; };
-  const lgS = [['Terminé (terrain)', C.pose], ['Terminé (déclaré)', C.ad], ['En cours', C.ec], ['Annulé', C.mu], ['À faire', C.sl]];
-  const lgF = [['FBM terrain', C.fb], ['FBM déclaré', C.ad]];
+  const lgS = [['Terminé', C.pose], ['En cours', C.ec], ['Annulé', C.mu], ['À faire', C.sl]];
+  const lgF = [['Étapes FBM réalisées', C.fb]];
 
   newPage(true);
   d.rect(L, y, CW, 60, C.navy); d.rect(L, y + 56, CW, 4, C.jaune);
@@ -882,7 +989,7 @@ function rapportPdf(){
   d.text(L + 14, y + 44, nomScope + ' · édité le ' + now, 9.5, false, '#c9d3df');
   y += 74;
   const kw = (CW - 24) / 4;
-  [['SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} déclaré(s) / ${a.w} tâches`, C.sx],
+  [['SUTX', a.p + ' %', `${a.T} tâches terminées / ${a.w}`, C.sx],
    ['FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets`, C.fb],
    ['FKT DÉFINITIVES', K.n ? K.p + ' %' : '—', K.n ? `${K.d} / ${K.n} reçues` : 'sans objet', C.gc],
    ['NON-CONFORMITÉS', String(nc.length), 'ouvertes', C.dep]].forEach(([t, v, s, c], i) => {
@@ -919,7 +1026,7 @@ function rapportPdf(){
     section('FBM : fouille, béton, matage');
     legend(lgF);
     rowBar('Supports complets (étapes toutes faites)', `${f.d} / ${f.tot} · ${f.p} %`, (bx, by, bw) => fbBar(bx, by, bw, 12, f.dT, f.dA, f.tot));
-    [['fouille', 'Fouille'], ['beton', 'Béton'], ['matage', 'Matage']].forEach(([k, l]) => { const x = f.s[k]; if(x.n) rowBar(l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, (bx, by, bw, bh) => fbBar(bx, by, bw, bh, x.T, x.A, x.n), null, `${x.T} terrain · ${x.A} déclaré(s)`); });
+    [['fouille', 'Fouille'], ['beton', 'Béton'], ['matage', 'Matage']].forEach(([k, l]) => { const x = f.s[k]; if(x.n) rowBar(l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, (bx, by, bw, bh) => fbBar(bx, by, bw, bh, x.T, x.A, x.n), null, `${x.T + x.A} réalisation(s)`); });
     [['Volume béton : prévu réalisé / prévu total', `${nf(f.mpr)} / ${nf(f.mp)} m³ · ${pc(f.mpr, f.mp)} %`], ['Béton réel coulé', `${nf(f.mr)} m³`], ['Écart réel - prévu (supports bétonnés)', `${f.ec > 0.049 ? '+' : ''}${nf(Math.abs(f.ec) < 0.05 ? 0 : f.ec)} m³`]].forEach(([t, v]) => { ensure(18); d.text(L, y + 9, t, 9.5, false, C.tx); d.text(R, y + 9, v, 9.5, true, C.tx, 'r'); d.rect(L, y + 14, CW, 0.5, C.ln); y += 18; });
   }
 
@@ -959,7 +1066,7 @@ function rapportPdf(){
     if(nc.length > 40){ ensure(16); d.text(L, y + 10, `… et ${nc.length - 40} autres (voir l'onglet Qualité)`, 8, false, C.mu); y += 16; }
   }
   ensure(34); y += 14;
-  pdfWrap("Document généré par SUIVI_PCLE-MMM. « Terrain » : relevés des agents ; « déclaré » : avancement saisi par l'administrateur.", CW, 7.5, false).forEach((t, i) => d.text(L, y + 8 + i * 9, t, 7.5, false, C.mu));
+  pdfWrap("Document généré par SUIVI_PCLE-MMM.", CW, 7.5, false).forEach((t, i) => d.text(L, y + 8 + i * 9, t, 7.5, false, C.mu));
 
   const n = d.count();
   for(let i = 0; i < n; i++){ d.go(i); d.rect(L, H - 34, CW, 0.6, C.ln); d.text(L, H - 22, 'SUIVI_PCLE-MMM · édité le ' + now, 7.5, false, C.mu); d.text(R, H - 22, `Page ${i + 1} / ${n}`, 7.5, false, C.mu, 'r'); }
