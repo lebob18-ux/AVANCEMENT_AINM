@@ -127,7 +127,7 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 <main>
 <div class="top">
 <header><div><h1>SUIVI_PCLE-MMM</h1><div id="st"></div></div><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button id="adm" type="button" style="font-weight:600">🔐 Admin</button><button id="inst" type="button" style="display:none;font-weight:600">📲 Installer</button><button id="pdf" type="button" style="font-weight:600">📄 PDF</button><button id="rf" type="button">Actualiser</button></span></header>
-<nav><button type="button" data-t="syn" aria-pressed="true">Synthèse</button><button type="button" data-t="ch" aria-pressed="false">Chantiers</button><button type="button" data-t="qa" aria-pressed="false" id="nqa">Qualité</button><button type="button" data-t="adm" aria-pressed="false" id="nadm" style="display:none">Admin</button></nav>
+<nav><button type="button" data-t="syn" aria-pressed="true">Synthèse</button><button type="button" data-t="ch" aria-pressed="false">Chantiers</button><button type="button" data-t="qa" aria-pressed="false" id="nqa">Qualité</button><button type="button" data-t="arc" aria-pressed="false" id="narc">Archives FBM</button><button type="button" data-t="adm" aria-pressed="false" id="nadm" style="display:none">Admin</button></nav>
 </div>
 <div id="v"></div>
 </main>
@@ -148,6 +148,7 @@ const nf = n => (Math.round(n*10)/10).toLocaleString('fr-FR');
 let D = null, tab = 'syn', sub = 'glob', qf = 'nc', sel = 'all', last = 0;
 let sutxType = 'all';
 let ADM = null, vp = 'all', admQ = '', supOuvert = null, cf = {}, OPEN = new Set();
+const ACCES_ARCHIVE = () => !!ADM;
 
 async function fetchAll(table, cols){
   let out = [], from = 0; const step = 1000;
@@ -383,7 +384,7 @@ function supList(c){
   return Object.values(c.s).map(p => {
     const a = agg(p.rows), st = stepsOf(p), fd = st.filter(k => stepState(p, k)).length;
     return {p, a, ok:(a.n + st.length) > 0 && a.T + a.A === a.n && fd === st.length};
-  }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
+  }).sort((x,y) => y.p.name.localeCompare(x.p.name, 'fr', {numeric:true}));
 }
 /* Liste des supports SUTX, filtrable par type */
 function supListSutx(c, typeFilter = 'all'){
@@ -415,7 +416,7 @@ const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${es
 /* Détail FBM d'un chantier : une ligne par support, avec l'état de chaque étape */
 function fbmDetail(c){
   const L = fbmSups(c).map(p => { const st = stepsOf(p).map(k => stepState(p, k)); return {p, st, n:st.filter(Boolean).length, ok:st.length > 0 && st.every(Boolean)}; })
-    .sort((a,b) => (a.ok - b.ok) || a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
+    .sort((a,b) => a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
   const nok = L.filter(x => x.ok).length, lib = {fouille:'F', beton:'B', matage:'M'};
   return `<div class="card"><h2>Supports FBM · ${nok} / ${L.length} complets</h2><div class="lg">F fouille · B béton · M matage. Un support compte pour 1 quand toutes ses étapes sont faites.</div>
   ${L.map(x => `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${stepsOf(x.p).map((k,i) => `<em class="${x.st[i] === 'T' ? 'on' : x.st[i] === 'A' ? 'ad' : ''}">${lib[k]}</em>`).join('')}${x.ok ? ' ✅' : ''}</span></div><div class="mu tl">${x.n} / ${x.st.length} étapes${betonTxt(x.p)}</div></div>`).join('') || '<div class="mu">Aucun support.</div>'}</div>`;
@@ -464,27 +465,58 @@ function fill(){
   }).join('') : '<div class="card mu">Aucun chantier trouvé.</div>';
 }
 
-/* ---------- Onglet Qualité (NC / en cours / annulées) ---------- */
+/* ---------- Onglet Qualité : avancement terrain, NC et suivi FKT ---------- */
 const dt = d => d ? new Date(d.length > 10 ? d : d + 'T00:00:00').toLocaleDateString('fr-FR') : '—';
-const qrow = r => { const e = eff(r), who = [r.prenom, r.nom].filter(Boolean).join(' ');
-  return `<div class="card qc" role="button" tabindex="0" data-c="${esc(key(r.Chantier))}" data-s="${esc(key(r.Support))}">
-    <div class="rl"><b>${esc(r.Tache)}</b>${e === 'E' ? `<span class="pill" style="background:var(--ec)">${pctOf(r)} %</span>` : e === 'A' ? '<span class="pill" style="background:var(--mu)">Annulé</span>' : ''}</div>
-    <div class="mu tl" style="margin:0 0 6px">${esc(r.Chantier)} › ${esc(r.Support)} · ${TL[key(r.type)]}</div>
-    ${e === 'E' ? pbar(pctOf(r), '--ec') : ''}
-    ${isFKT(r) ? fktChip(r) : ''}
-    ${r.explication && e !== 'T' ? `<div class="tl">${esc(r.explication)}</div>` : ''}
-    ${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ ${esc(r.nc_description)}</div>`) : ''}
-    ${r.pend_prov ? `<div class="nc" style="background:rgba(20,150,150,.14);color:var(--sx)">🔧 Provisoires : ${esc(r.pend_prov_depose || 0)} déposés / ${esc(r.pend_prov)} posés</div>` : ''}
-    <div class="mu tl">${esc(who) || '—'} · ${dt(r.updated_at)}</div></div>`; };
+const whoLavignon = r => nz([r.nom, r.prenom, r.admin_par].filter(Boolean).join(' ')).includes('lavignon');
+const qFktRow = r => (D.qualite || []).find(x => key(x.chantier) === key(r.Chantier) && key(x.support) === key(r.Support) && key(x.fkt_type) === key(r.Tache)) || null;
+const qualiteFktFor = (chantier,support) => (D.qualite || []).filter(x => key(x.chantier) === key(chantier) && key(x.support) === key(support)).sort((a,b)=>String(a.fkt_type).localeCompare(String(b.fkt_type),'fr'));
+const SQL_QUALITE = "Table qualite_pcle absente ou inaccessible. Dans Supabase > SQL Editor, exécute :\n\ncreate table if not exists public.qualite_pcle (id bigint generated by default as identity primary key, chantier text not null, support text not null, fkt_type text not null, fkt_edit text, fkt_amorti text, created_at timestamptz default now());\nalter table public.qualite_pcle enable row level security;\ndrop policy if exists \"qualite_pcle_app\" on public.qualite_pcle;\ncreate policy \"qualite_pcle_app\" on public.qualite_pcle for all to anon, authenticated using (true) with check (true);\ngrant select, update on public.qualite_pcle to anon, authenticated;\nnotify pgrst, 'reload schema';";
+
+function qualityFktSupportBlock(c,p){
+  const rows=qualiteFktFor(c.name,p.name);
+  if(!rows.length) return '';
+  return `<section style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><h2>Suivi FKT par type</h2>${rows.map(q=>`<div style="padding:8px 0;border-bottom:1px solid var(--ln)"><b>${esc(q.fkt_type)}</b><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px"><label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_edit" data-id="${q.id}"${q.fkt_edit?' checked':''}${ADM?'':' disabled'}> FKT reçue · à analyser</label><input type="date" data-qfkt-date="fkt_edit" data-id="${q.id}" value="${esc(q.fkt_edit||'')}"${ADM && q.fkt_edit ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%"></div><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px"><label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_amorti" data-id="${q.id}"${q.fkt_amorti?' checked':''}${ADM?'':' disabled'}> FKT analysée · amortie</label><input type="date" data-qfkt-date="fkt_amorti" data-id="${q.id}" value="${esc(q.fkt_amorti||'')}"${ADM && q.fkt_amorti ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%"></div></div>`).join('')}${!D.hasQualite?'<div class="mu tl">Table qualite_pcle à créer.</div>':''}</section>`;
+}
+
+async function saveQualiteFkt(id, field, value){
+  if(!ADM || !ACCES_ARCHIVE()) return;
+  if(!D.hasQualite){ alert(SQL_QUALITE); return; }
+  const q=(D.qualite||[]).find(x=>String(x.id)===String(id));
+  if(!q){ alert('Ligne FKT introuvable dans qualite_pcle. Vérifie le chantier, le support et le type de FKT.'); return; }
+  const patch={[field]:value||null};
+  try{
+    const resp=await fetch(`${SUPABASE_URL}/rest/v1/qualite_pcle?id=eq.${q.id}`,{method:'PATCH',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(patch)});
+    if(!resp.ok) throw new Error('Erreur '+resp.status+' — vérifie les droits RLS de qualite_pcle.');
+    const saved=await resp.json(), row=Array.isArray(saved)?saved[0]:null;
+    if(row) Object.assign(q,row); else Object.assign(q,patch);
+    rafraichirApres();
+  }catch(e){alert('Enregistrement FKT impossible : '+e.message);rafraichirApres();}
+}
+
+function qrow(r, lifted=false){
+  const who = [r.prenom, r.nom].filter(Boolean).join(' ');
+  return `<div class="card qc">
+    <div class="rl"><b>${esc(r.Tache)}</b><span class="pill" style="background:${lifted ? 'var(--pose)' : 'var(--dep)'}">${lifted ? 'Levée' : 'Ouverte'}</span></div>
+    <div class="mu tl" style="margin:0 0 6px">${esc(r.Chantier)} › ${esc(r.Support)} · ${esc(TL[key(r.type)] || r.type || '')}</div>
+    <div class="nc"${lifted ? ' style="background:rgba(47,143,99,.15);color:var(--pose)"' : ''}>${lifted ? '✅ NC levée le ' + dt(r.nc_levee_le) + (r.nc_levee_expl ? ' — ' + esc(r.nc_levee_expl) : '') : '⚠️ ' + esc(r.nc_description || 'Description non renseignée')}</div>
+    <div class="mu tl">${esc(who) || '—'} · mise à jour ${dt(r.updated_at)}</div></div>`;
+}
 
 function vQa(){
-  const prov = r => (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0);
-  const L = {nc:D.qa.filter(r => r.conforme === false && r.nc_levee !== true), ec:D.all.filter(r => eff(r) === 'E'), pv:D.all.filter(prov), fk:D.rc.filter(r => isFKT(r) && eff(r) === 'T' && !fktOf(r).def), lv:D.qa.filter(r => r.conforme === false && r.nc_levee === true), an:D.all.filter(r => eff(r) === 'A')};
-  const T = {nc:'Non-conformités ouvertes', ec:'Tâches en cours', pv:'Pendules provisoires à déposer', fk:'FKT définitive à obtenir (tâches terminées)', lv:'Non-conformités levées', an:'Tâches annulées'};
-  const rows = L[qf].slice().sort((a,b) => String(b.updated_at).localeCompare(String(a.updated_at)));
-  return sg('qf', [['nc','⚠️ ' + L.nc.length],['ec','🟠 ' + L.ec.length],['pv','🔧 ' + L.pv.length],['fk','📄 ' + L.fk.length],['lv','✅ ' + L.lv.length],['an','🚫 ' + L.an.length]], qf)
-    + `<h2 class="mu" style="margin:0 0 8px">${T[qf]}</h2>`
-    + (rows.map(qrow).join('') || '<div class="card mu">Rien à signaler.</div>');
+  const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true).sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const lv = D.qa.filter(r => r.conforme === false && r.nc_levee === true).sort((a,b) => String(b.nc_levee_le || b.updated_at || '').localeCompare(String(a.nc_levee_le || a.updated_at || '')));
+  const fkt = D.qualite || [];
+  const groupes = new Map();
+  fkt.forEach(q => { const k=[key(q.chantier),key(q.fkt_type)].join('¦'); if(!groupes.has(k)) groupes.set(k,{chantier:q.chantier,type:q.fkt_type,rows:[]}); groupes.get(k).rows.push(q); });
+  const fktGroups = [...groupes.values()].sort((a,b)=>String(a.chantier).localeCompare(String(b.chantier),'fr') || String(a.type).localeCompare(String(b.type),'fr'));
+  const planned=fkt.length, toAnalyze=fkt.filter(q=>!!q.fkt_edit&&!q.fkt_amorti).length, analyzed=fkt.filter(q=>!!q.fkt_amorti).length;
+  const fktHtml=fktGroups.map(g=>{
+    const e=g.rows.filter(q=>q.fkt_edit&&!q.fkt_amorti).length, a=g.rows.filter(q=>q.fkt_amorti).length;
+    return `<details class="card"><summary><div class="rl"><b>${esc(g.chantier)} · ${esc(g.type)}</b><span>${g.rows.length} prévu · ${e} à analyser · ${a} analysé(s)</span></div></summary><div class="in">${g.rows.slice().sort((x,y)=>String(y.support).localeCompare(String(x.support),'fr',{numeric:true})).map(q=>`<div class="sp"><div class="rl"><b>Support ${esc(q.support)}</b><span class="mu">${q.fkt_amorti?'Analysé le '+dt(q.fkt_amorti):q.fkt_edit?'À analyser depuis le '+dt(q.fkt_edit):'Prévu'}</span></div></div>`).join('')}</div></details>`;
+  }).join('');
+  return `<section class="card"><h2>Synthèse FKT</h2><div class="kpis">${kpi('Prévu',planned,'FKT à produire','--sx')}${kpi('À analyser',toAnalyze,'FKT reçues','--ec')}${kpi('Analysé',analyzed,'FKT amorties','--pose')}</div>${!D.hasQualite?'<div class="nc">Table qualite_pcle absente ou inaccessible. Vérifie son accès dans Supabase.</div>':''}${fktHtml||'<div class="mu tl">Aucun FKT prévu dans les tâches RELEVER CAT.</div>'}</section>
+    <section><h2>Non-conformités ouvertes · ${nc.length}</h2>${nc.map(r=>qrow(r,false)).join('')||'<div class="card mu">Aucune non-conformité ouverte.</div>'}</section>
+    <section><h2>Non-conformités levées · ${lv.length}</h2>${lv.map(r=>qrow(r,true)).join('')||'<div class="card mu">Aucune non-conformité levée.</div>'}</section>`;
 }
 
 /* ---------- Mode admin : déclarations + veille ---------- */
@@ -653,6 +685,25 @@ const fbmAt = (ps, t) => { const x = ps.filter(p => { const s = stepsAt(p, t); r
 const fbPer = p => stepsOf(p).filter(k => inP(stepDay(p, k), AS.from, AS.to));
 const sxPer = rows => rows.filter(r => inP(dEnd(r), AS.from, AS.to));
 
+function adminAvancementLavignon(){
+  const rows=D.qa.filter(r=>whoLavignon(r)&&!!r.updated_at).sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
+  const groups=new Map();
+  rows.forEach(r=>{const k=key(r.Chantier);if(!groups.has(k))groups.set(k,{name:r.Chantier,rows:[]});groups.get(k).rows.push(r);});
+  const html=[...groups.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),'fr')).map(g=>{
+    const done=g.rows.filter(r=>eff(r)==='T').length, enc=g.rows.filter(r=>eff(r)==='E').length;
+    return `<details class="card"><summary><div class="rl"><b>${esc(g.name)}</b><span>${done}/${g.rows.length} terminées · ${enc} en cours</span></div>${pbar(pc(done,g.rows.length),'--sx')}</summary><div class="in">${g.rows.map(r=>`<div class="sp"><div class="rl"><b>${esc(r.Support)} · ${esc(r.Tache)}</b><span class="mu">${eff(r)==='T'?'Terminé':eff(r)==='E'?'En cours '+pctOf(r)+' %':eff(r)==='A'?'Annulé':'À faire'}</span></div><div class="mu tl">Mise à jour ${dt(r.updated_at)} · ${esc([r.prenom,r.nom].filter(Boolean).join(' '))}</div></div>`).join('')}</div></details>`;
+  }).join('');
+  const fb=rows.filter(isFBM), supports=new Map();
+  fb.forEach(r=>{const k=key(r.Chantier)+'¦'+key(r.Support);if(!supports.has(k))supports.set(k,{chantier:r.Chantier,support:r.Support,rows:[]});supports.get(k).rows.push(r);});
+  const fbHtml=[...supports.values()].sort((a,b)=>String(a.chantier).localeCompare(String(b.chantier),'fr')||String(a.support).localeCompare(String(b.support),'fr',{numeric:true})).map(x=>{
+    const c=D.ch.find(z=>z.k===key(x.chantier)), p=c&&c.s[key(x.support)], b=p&&p.b||{};
+    const labels=[['fouille','F','Fouille'],['beton','B','Béton'],['matage','M','Matage']];
+    const chips=labels.map(([k,l])=>{const t=x.rows.some(r=>nz(r.Tache).includes(k)&&eff(r)==='T'), d=b['date_'+k]||b['admin_date_'+k];return `<em class="${t||d?'on':''}">${l}</em>`;}).join('');
+    return `<div class="sp"><div class="rl"><b>${esc(x.chantier)} · ${esc(x.support)}</b><span class="chips">${chips}</span></div><div class="mu tl">${x.rows.map(r=>`${esc(r.Tache)} : ${eff(r)==='T'?'terminé':eff(r)==='E'?'en cours '+pctOf(r)+' %':'à suivre'} (${dt(r.updated_at)})`).join(' · ')}</div></div>`;
+  }).join('');
+  return `<section class="card"><h2>Avancement relevé par LAVIGNON</h2><div class="mu tl">Consultation des mises à jour attribuées à LAVIGNON.</div><div class="kpis">${kpi('Tâches relevées',rows.length,'SUTX / GC','--sx')}${kpi('Supports FBM',supports.size,'fouilles mises à jour','--fb')}</div>${html||'<div class="mu tl">Aucune tâche SUTX attribuée à LAVIGNON trouvée.</div>'}<h3 style="margin-top:14px">Suivi FBM</h3>${fbHtml||'<div class="mu tl">Aucune fiche FBM attribuée à LAVIGNON trouvée.</div>'}</section>`;
+}
+
 function vAdm(){
   if(!AS.date){ AS.date = AS.to = jour(); AS.from = addD(jour(), -6); }
   const per = AS.mode === 'per', A = per ? AS.to : AS.date, c = AS.ch && D.ch.find(x => x.k === AS.ch);
@@ -687,6 +738,7 @@ function vAdm(){
     const L = Object.values(c.s).filter(p => p.rows.length && (!per || sxPer(p.rows).length)).sort(byName);
     h += `<div class="card"><h2>Supports SUTX · ${L.length}</h2>` + (L.map(p => { const x = sutxAt(p.rows, A); return `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(p.k)}"><div class="rl"><b>${esc(p.name)}</b><span>${x.t} / ${x.n}</span></div>${pbar(x.p, '--sx')}${per ? `<div class="mu tl">${sxPer(p.rows).map(r => esc(r.Tache)).join(' · ')}</div>` : ''}</div>`; }).join('') || '<div class="mu">Aucun support.</div>') + '</div>';
   }
+  h += adminAvancementLavignon();
   return h;
 }
 
@@ -840,13 +892,99 @@ function adminPdf(){
   return {bytes:d.build(), name:'PCLE-MMM_Rapport_Activite_' + (c ? c.name.replace(/[^\w-]+/g, '_') : 'Tous') + '_' + (per ? AS.from + '_au_' + AS.to : AS.date) + '.pdf'};
 }
 
+
+/* ---------- Archives FBM ---------- */
+function archiveRowFor(chantier, support){
+  return (D.archives || []).filter(a =>
+    key(a.chantier) === key(chantier) && key(a.support) === key(support)
+  ).sort((a,b) => Number(b.id) - Number(a.id))[0] || null;
+}
+function archiveBlock(c, p){
+  const a = archiveRowFor(c.name, p.name) || {};
+  const b = p.b;
+  const date = (b && (b.date_fouille || b.admin_date_fouille)) || a.date_fouille || '';
+  const fields = [['fbm','FBM'],['carotte','Carotte'],['matage','Matage'],['beton','Béton']];
+  return `<section style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)">
+    <h2>Archive des opérations</h2>
+    <div class="mu tl">Informations conservées séparément de l'avancement des tâches.</div>
+    <div class="mu tl">Date de fouille : ${date ? dt(date) : '—'}</div>
+    ${fields.map(([k,l]) => `<label class="tg"><input type="checkbox" data-archive="${k}"${a[k] === true ? ' checked' : ''}${ADM ? '' : ' disabled'}> ${l}</label>`).join('')}
+    ${ADM ? '<div class="mu tl">Enregistrement automatique à chaque modification.</div>' : '<div class="mu tl">Consultation seule — accès Admin nécessaire pour modifier.</div>'}
+  </section>`;
+}
+function vArc(){
+  const rows = (D.archives || []).slice().sort((a,b) =>
+    key(a.chantier).localeCompare(key(b.chantier),'fr') ||
+    key(b.support).localeCompare(key(a.support),'fr',{numeric:true}) ||
+    String(b.date_fouille || '').localeCompare(String(a.date_fouille || ''))
+  );
+  return `<input id="archive-q" type="search" placeholder="Filtrer un chantier ou un support">
+    <div class="lg">${rows.length} archive(s) enregistrée(s)</div>
+    <div id="archive-list">${rows.map(a => `<div class="card">
+      <div class="rl"><b>${esc(a.chantier)} › ${esc(a.support)}</b><span class="mu">${dt(a.date_fouille)}</span></div>
+      <div class="chips">${[['fbm','FBM'],['carotte','Carotte'],['matage','Matage'],['beton','Béton']].map(([k,l]) => `<em class="${a[k] ? 'on' : ''}">${l}</em>`).join('')}</div>
+      <div class="mu tl">Créée le ${dt(a.created_at)}${a.updated_at ? ' · Modifiée le ' + dt(a.updated_at) : ''}</div>
+    </div>`).join('') || '<div class="card mu">Aucune archive FBM pour le moment.</div>'}</div>`;
+}
+async function saveArchive(ck, sk, field, value){
+  if(!ADM || !ACCES_ARCHIVE()) return;
+  const c = D.ch.find(x => x.k === ck), p = c && c.s[sk];
+  if(!c || !p) return;
+  const existing = archiveRowFor(c.name, p.name), b = p.b;
+  const patch = {
+    chantier:c.name, support:p.name,
+    date_fouille:(b && (b.date_fouille || b.admin_date_fouille)) || (existing && existing.date_fouille) || null,
+    [field]:!!value, updated_at:new Date().toISOString()
+  };
+  try{
+    const url = existing
+      ? `${SUPABASE_URL}/rest/v1/archives_fbm?id=eq.${existing.id}`
+      : `${SUPABASE_URL}/rest/v1/archives_fbm`;
+    const body = existing ? patch : {
+      ...patch,
+      fbm:field === 'fbm' ? !!value : false,
+      carotte:field === 'carotte' ? !!value : false,
+      matage:field === 'matage' ? !!value : false,
+      beton:field === 'beton' ? !!value : false
+    };
+    const r = await fetch(url,{
+      method:existing ? 'PATCH' : 'POST',
+      headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=representation'},
+      body:JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error('Erreur ' + r.status + ' — vérifie les droits RLS de archives_fbm');
+    const data = await r.json();
+    const saved = Array.isArray(data) ? data[0] : null;
+    if(saved){
+      if(existing) Object.assign(existing,saved);
+      else D.archives.push(saved);
+    }
+    rafraichirApres();
+  }catch(e){
+    alert('Enregistrement de l’archive impossible : ' + e.message);
+    rafraichirApres();
+  }
+}
+
 function show(){
   if(!D) return;
+  if(tab === 'arc' && !ACCES_ARCHIVE()) tab = 'syn';
+$('#narc').style.display = ACCES_ARCHIVE() ? '' : 'none';
   const n = ncOf(D.qa);
   $('#nqa').textContent = 'Qualité' + (n ? ' (' + n + ')' : '');
   document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === tab));
   if(tab === 'syn') $('#v').innerHTML = vSyn();
   else if(tab === 'qa') $('#v').innerHTML = vQa();
+else if(tab === 'arc' && ACCES_ARCHIVE()) {
+  $('#v').innerHTML = vArc();
+  const aq = $('#archive-q');
+  if(aq) aq.addEventListener('input', () => {
+    const q = key(aq.value);
+    document.querySelectorAll('#archive-list .card').forEach(el =>
+      el.style.display = !q || key(el.textContent).includes(q) ? '' : 'none'
+    );
+  });
+}
   else if(tab === 'adm' && ADM){ $('#v').innerHTML = vAdm(); admBind(); }
   else {
     $('#v').innerHTML = '<input id="q" type="search" placeholder="Filtrer un chantier ou un support"><label class="tg"><input id="rest" type="checkbox"> Supports restants seulement</label><div class="lg">Pastilles FBM : F fouille, B béton, M matage (remplie = faite). Touche un support pour voir son détail.</div><div id="list"></div>';
@@ -890,13 +1028,12 @@ function sousEtat(r, sous){
 function sousHtml(r){
   const mods = modsOf(r);
   if(!mods.length) return '';
-  const adm = ADM && !r.Fait;
   return `<div class="tl" style="margin-top:6px">${mods.map(m => {
     const st = sousState(r, m), nc = st === 'N' || st === 'AN', ad = st === 'A' || st === 'AN';
     const txt = `${st === 'T' || st === 'A' ? '☑' : nc ? '⊘' : '☐'} ${esc(m.libelle)}${nc ? ' (N/C)' : ''}${ad ? ' 📌' : ''}`;
     const sty = (ad ? 'color:var(--ad);font-weight:600;' : '') + (nc ? 'opacity:.55;' : '');
-    return adm && st !== 'T' && st !== 'N' ? `<div class="ss" role="button" tabindex="0" data-ss="1" data-t="${r.id}" data-m="${m.id}" style="${sty}">${txt}</div>` : `<div style="${sty}">${txt}</div>`;
-  }).join('')}${adm ? '<div class="mu" style="margin-top:4px">Touche une sous-tâche : ☐ → ☑ (fait) → ⊘ (non concerné) → ☐</div>' : ''}</div>`;
+    return `<div style="${sty}">${txt}</div>`;
+  }).join('')}</div>`;
 }
 
 function adminSel(r){
@@ -928,7 +1065,26 @@ function task(r){
   if(r.brh) x.push('BRH');
   if(r.explication && e !== 'T') x.push(esc(r.explication));
   if(r.Observation) x.push(esc(r.Observation));
-  return `<div class="tk"><span class="ck${e === 'T' ? (viaAdmin(r) ? ' admin' : ' on') : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && !r.Fait ? adminSel(r) : ''}${isFKT(r) ? fktBlock(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
+  return `<div class="tk"><span class="ck${e === 'T' ? (viaAdmin(r) ? ' admin' : ' on') : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && isFKT(r) && !(fktOf(r).def && fktOf(r).s === 'T') ? `<button type="button" data-fkt-open="${r.id}" style="margin-top:8px">📄 Saisir / mettre à jour la FKT</button>` : ''}${isFKT(r) ? fktChip(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
+}
+
+function openFktEntry(id){
+  if(!ADM || !ACCES_ARCHIVE()) return;
+  const r=D.qa.find(x=>String(x.id)===String(id));
+  if(!r) return;
+  const f=adminFktOf(r)||{}, on=f.etat==='DEFINITIVE';
+  const c= D.ch.find(x=>x.k===key(r.Chantier));
+  dlg.innerHTML=`<div class="dh"><div><b>RELEVER CAT · Saisie FKT</b><div class="mu tl" style="margin:0">${esc(r.Chantier)} · Support ${esc(r.Support)}</div></div><button type="button" id="dx">Fermer</button></div>
+    <div class="db"><div class="card"><b>${esc(r.Tache)}</b><div class="mu tl">${esc(r.type||'RELEVER CAT')}</div></div>
+    <label class="tg"><input type="checkbox" id="fkt-def" ${on?'checked':''}> FKT définitive reçue</label>
+    <label class="mu tl" style="display:block;margin-top:10px">Numéro de FKT<input id="fkt-num" type="text" value="${esc(f.num||'')}" placeholder="N° de FKT" ${on?'':'disabled'} style="width:100%;min-height:40px;padding:8px"></label>
+    ${on&&f.le?`<div class="mu tl">Saisie le ${dt(f.le)} par ${esc(f.par||'Admin')}</div>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px"><button type="button" id="fkt-save" style="flex:1">Enregistrer</button><button type="button" id="fkt-cancel">Retour au support</button></div></div>`;
+  $('#dx').onclick=()=>dlg.close();
+  $('#fkt-cancel').onclick=()=>{if(supOuvert)openSup(supOuvert.ck,supOuvert.sk);else dlg.close();};
+  $('#fkt-def').onchange=e=>{$('#fkt-num').disabled=!e.target.checked;};
+  $('#fkt-save').onclick=()=>adminFkt(r.id,$('#fkt-def').checked,$('#fkt-num').value);
+  if(!dlg.open) dlg.showModal();
 }
 
 function openSup(ck, sk){
@@ -953,7 +1109,7 @@ function openSup(ck, sk){
     return L.length ? `<div class="th" style="color:var(${TC[t]})">${TL[t]}</div>` + L.map(task).join('') : '';
   }).join('') : '<div class="mu">Aucune tâche SUTX.</div>';
   dlg.innerHTML = `<div class="dh"><div><b>${esc(p.name)}</b><div class="mu tl" style="margin:0">${esc(c.name)}</div></div><button type="button" id="dx">Fermer</button></div>
-    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}</div>`;
+    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}${(p.fb.length || b || archiveRowFor(c.name, p.name)) ? archiveBlock(c, p) : ''}${ADM ? qualityFktSupportBlock(c,p) : ''}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}</div>`;
   if(!dlg.open) dlg.showModal();
   $('#dx').onclick = () => dlg.close();
 }
@@ -966,13 +1122,16 @@ async function load(){
     const probe = c => fetch(`${SUPABASE_URL}/rest/v1/suivi_sutx_v2?select=${c}&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? c : null).catch(() => null);
     const have = (await Promise.all(['admin_sous','admin_fkt','fkt_etat','fkt_num','saisie'].map(probe))).filter(Boolean);
         const haveB = await fetch(`${SUPABASE_URL}/rest/v1/blindage?select=admin_m3_reel&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? ['admin_m3_reel'] : []).catch(() => []);
-    const [sx, bl] = await Promise.all([
+    let hasQualite = true;
+    const [sx, bl, archives, qualite] = await Promise.all([
       fetchAll('suivi_sutx_v2', SXC + have.map(c => ',' + c).join('')),
-      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton' + haveB.map(c => ',' + c).join(''))
+      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton' + haveB.map(c => ',' + c).join('')),
+      fetchAll('archives_fbm', 'id,chantier,support,date_fouille,fbm,carotte,matage,beton,created_at,updated_at').catch(() => []),
+      fetchAll('qualite_pcle', 'id,chantier,support,fkt_type,fkt_edit,fkt_amorti,created_at').catch(() => { hasQualite = false; return []; })
     ]);
     const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
     const suivi = await fetchAll('sous_travaux_suivi', 'id,tache_id,modele_id,statut').catch(() => []);
-    D = stats(sx, bl); last = Date.now();
+    D = stats(sx, bl); D.archives = archives; D.qualite = qualite; D.hasQualite = hasQualite; last = Date.now();
     D.mod = mod; D.hasSous = have.includes('admin_sous'); D.hasFkt = have.includes('admin_fkt'); D.sidx = new Map(); D.hasM3 = haveB.length > 0;
     suivi.forEach(x => { const k = String(x.tache_id); if(!D.sidx.has(k)) D.sidx.set(k, new Map()); D.sidx.get(k).set(String(x.modele_id), x.statut); });
     $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
@@ -1004,15 +1163,32 @@ $('#v').addEventListener('click', e => {
   const r = e.target.closest('[data-s]'); if(r) openSup(r.dataset.c, r.dataset.s);
 });
 $('#v').addEventListener('keydown', e => { const fq = e.target.closest('[data-cf],[data-pick],[data-sutx-type]'); if(fq && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fq.click(); return; } const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
-dlg.addEventListener('click', e => { if(e.target === dlg){ dlg.close(); return; } const ss = e.target.closest('[data-ss]'); if(ss && ADM) adminSous(ss.dataset.t, ss.dataset.m); });
+dlg.addEventListener('click', e => {
+  if(e.target === dlg){ dlg.close(); return; }
+  const f=e.target.closest('[data-fkt-open]');
+  if(f){ e.preventDefault(); openFktEntry(f.dataset.fktOpen); }
+});
 dlg.addEventListener('change', e => {
   const el = e.target;
+  if(el.dataset.archive){
+    if(!ADM || !supOuvert) return;
+    saveArchive(supOuvert.ck, supOuvert.sk, el.dataset.archive, el.checked);
+    return;
+  }
+  if(el.dataset.qfkt){
+    const field=el.dataset.qfkt, dateEl=dlg.querySelector(`[data-qfkt-date="${field}"][data-id="${el.dataset.id}"]`);
+    if(dateEl){ dateEl.disabled=!el.checked; if(!el.checked) dateEl.value=''; else if(!dateEl.value) dateEl.value=jour(); }
+    saveQualiteFkt(el.dataset.id,field,el.checked?((dateEl&&dateEl.value)||jour()):null);
+    return;
+  }
+  if(el.dataset.qfktDate){
+    const field=el.dataset.qfktDate, check=dlg.querySelector(`[data-qfkt="${field}"][data-id="${el.dataset.id}"]`);
+    if(check&&check.checked) saveQualiteFkt(el.dataset.id,field,el.value||jour());
+    return;
+  }
   if(el.dataset.adm === 'm') adminM3(el.dataset.id, el.value);
   if(!ADM || !el.dataset) return;
-  if(el.dataset.adm === 't') adminTache(el.dataset.id, el.checked ? 'TERMINE' : 'CLEAR');
   if(el.dataset.adm === 'f') adminFbm(el.dataset.id, el.dataset.col, el.value);
-  if(el.dataset.adm === 'k') adminFkt(el.dataset.id, el.checked, null);
-  if(el.dataset.adm === 'kn') adminFkt(el.dataset.id, true, el.value);
 });
 $('#adm').addEventListener('click', connexionAdmin);
 { const dej = localStorage.getItem('pcle_adm'); if(dej) verifAdmin(dej).then(a => { if(a){ ADM = a; tab = 'adm'; majAdminUI(); if(D) show(); } }); }
@@ -1179,7 +1355,7 @@ function rapportPdf(){
         return {p, b, pv, rl, ec: pv !== null && rl !== null ? rl - pv : null,
           date: b.date_beton || b.admin_date_beton || ''};
       })
-      .sort((a,b) => String(a.b.chantier || '').localeCompare(String(b.b.chantier || ''), 'fr') || a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
+      .sort((a,b) => String(a.b.chantier || '').localeCompare(String(b.b.chantier || ''), 'fr') || b.p.name.localeCompare(a.p.name, 'fr', {numeric:true}));
 
     if(betonRows.length){
       ensure(42);
