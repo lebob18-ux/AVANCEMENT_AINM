@@ -230,6 +230,20 @@ function stepState(p, k){
 const fbmSups = c => Object.values(c.s).filter(p => p.b || p.fb.length);
 const num = v => { if(v === null || v === undefined || v === '') return null; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; };
 const m3r = b => b ? (num(b.m3_reel) ?? num(b.admin_m3_reel)) : null;
+const PLG_SLUMP = {S1:[10,40], S2:[50,90], S3:[100,150], S4:[160,210]};
+/* Slump en mm : une valeur saisie en cm (ex. 20,5) est reconnue grâce à la plage de la classe S1-S4 */
+const slumpMm = (v, cl) => {
+  if(v === null || v === undefined) return null;
+  const p = PLG_SLUMP[cl];
+  if(!p) return Math.round(v < 50 ? v * 10 : v);
+  const dist = x => x < p[0] ? p[0] - x : x > p[1] ? x - p[1] : 0;
+  return Math.round(dist(v * 10) < dist(v) ? v * 10 : v);
+};
+const blInfo = b => {
+  const bls = ((D.blLiens && b) ? (D.blLiens.get(String(b.id)) || []) : []).map(x => ({...x, s: slumpMm(x.s, x.cl)}));
+  const types = [...new Set(bls.map(x => x.t).filter(Boolean))];
+  return {bls, types};
+};
 function aggF(ps){
   const o = {n:ps.length, tot:ps.length, mp:0, mr:0, mpr:0, ec:0, sr:0, d:0, dT:0, dA:0, pE:0, s:{fouille:{T:0,A:0,n:0}, beton:{T:0,A:0,n:0}, matage:{T:0,A:0,n:0}}};
   ps.forEach(p => {
@@ -297,8 +311,9 @@ function vAct(act){
 
 /* ---------- Onglet Synthèse (sous-menus + choix du chantier) ---------- */
 function scope(){
-  const c = sel === 'all' ? null : D.ch.find(x => x.k === sel);
-  if(!c) sel = 'all';
+  const k = (tab === 'qa' && qCh) ? qCh : sel;
+  const c = k === 'all' ? null : D.ch.find(x => x.k === k);
+  if(!c && k === sel) sel = 'all';
   return c ? {c, rows:c.rows, bl:c.bl, fb:c.fb, rc:c.rc, ps:fbmSups(c)} : {c:null, rows:D.all, bl:D.bl, fb:D.fb, rc:D.rc, ps:D.ch.flatMap(fbmSups)};
 }
 
@@ -522,20 +537,27 @@ const qBlock = (title, L, W, lab) => {
   return `<details class="card"><summary><div class="rl"><b>${title}</b><span>${x.n} au total · ${x.e} ${W[1].toLowerCase()} · ${x.c} ${W[0].toLowerCase()}</span></div>${qBar(x)}</summary><div class="in">${qLines(L, W, lab) || '<div class="mu tl">Aucune ligne.</div>'}</div></details>`;
 };
 
+let qCh = '';
 function vQa(){
-  const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true).sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
-  const lv = D.qa.filter(r => r.conforme === false && r.nc_levee === true).sort((a,b) => String(b.nc_levee_le || b.updated_at || '').localeCompare(String(a.nc_levee_le || a.updated_at || '')));
-  const Q = D.qualite || [], F = Q.filter(q => qCat(q) === 'FKT'), FA = Q.filter(q => qCat(q) === 'FA'), PA = Q.filter(q => qCat(q) === 'PA');
-  const types = QT.concat([...new Set(F.map(q => key(q.fkt_type)).filter(t => t && !QT.includes(t)))]);
+  const QA = D.qualite || [];
+  const chn = {}; D.ch.forEach(c => chn[c.k] = c.name); QA.forEach(q => { const k = key(q.chantier); if(k && !chn[k]) chn[k] = String(q.chantier).trim(); });
+  const ks = Object.keys(chn).sort((a,b) => chn[a].localeCompare(chn[b], 'fr', {numeric:true}));
+  if(qCh && !ks.includes(qCh)) qCh = '';
+  const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true && (!qCh || key(r.Chantier) === qCh)).sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const lv = D.qa.filter(r => r.conforme === false && r.nc_levee === true && (!qCh || key(r.Chantier) === qCh)).sort((a,b) => String(b.nc_levee_le || b.updated_at || '').localeCompare(String(a.nc_levee_le || a.updated_at || '')));
+  const Q = QA.filter(q => !qCh || key(q.chantier) === qCh), F = Q.filter(q => qCat(q) === 'FKT'), FA = Q.filter(q => qCat(q) === 'FA'), PA = Q.filter(q => qCat(q) === 'PA');
+  const types = QT.concat([...new Set(F.map(q => key(q.fkt_type)).filter(t => t && !QT.includes(t)))]).filter(t => !qCh || F.some(q => key(q.fkt_type) === t));
   const has = (c, o, s) => PA.some(q => key(q.origine) === o && key(q.chantier) === c.k && key(q.support) === key(s));
   let manq = 0;
-  D.ch.forEach(c => {
+  D.ch.filter(c => !qCh || c.k === qCh).forEach(c => {
     fbmSups(c).filter(p => stepsOf(p).includes('fouille')).forEach(p => { if(!has(c, 'FOUILLE', p.name)) manq++; });
     F.filter(q => key(q.chantier) === c.k && key(q.fkt_type) === 'FKT_AT').forEach(q => { if(!has(c, 'FKT_AT', q.support)) manq++; });
   });
   const f = qCnt(F), a = qCnt(FA), p = qCnt(PA);
-  return `<section class="card"><h2>Synthèse qualité</h2><div class="kpis">${kpi('FKT', f.c + ' / ' + f.n, f.e + ' à analyser', '--sx')}${kpi('PA', p.c + ' / ' + p.n, p.e + ' éditée(s), non levée(s)', '--fb')}${kpi('FA', a.c + ' / ' + a.n, a.e + ' éditée(s), non amortie(s)', '--ec')}${kpi('PA obligatoires', manq, 'à créer (fouilles, FKT AT)', '--dep')}</div>${!D.hasQualite ? '<div class="nc">Table qualite_pcle absente ou inaccessible. Vérifie son accès dans Supabase.</div>' : ''}</section>
-    <section><h2>FKT</h2>${types.map(t => qBlock(QL[t] || esc(t), F.filter(q => key(q.fkt_type) === t), WF, labF)).join('')}</section>
+  return `<section class="card"><h2>Synthèse qualité</h2>
+    <div class="admsearch"><select id="qch"><option value="">Tous les chantiers</option>${ks.map(k => `<option value="${esc(k)}"${k === qCh ? ' selected' : ''}>${esc(chn[k])}</option>`).join('')}</select></div>
+    <div class="kpis">${kpi('FKT', f.c + ' / ' + f.n, f.e + ' à analyser', '--sx')}${kpi('PA', p.c + ' / ' + p.n, p.e + ' éditée(s), non levée(s)', '--fb')}${kpi('FA', a.c + ' / ' + a.n, a.e + ' éditée(s), non amortie(s)', '--ec')}${kpi('PA obligatoires', manq, 'à créer (fouilles, FKT AT)', '--dep')}</div>${!D.hasQualite ? '<div class="nc">Table qualite_pcle absente ou inaccessible. Vérifie son accès dans Supabase.</div>' : ''}</section>
+    <section><h2>FKT</h2>${types.map(t => qBlock(QL[t] || esc(t), F.filter(q => key(q.fkt_type) === t), WF, labF)).join('') || '<div class="card mu">Aucune FKT.</div>'}</section>
     <section><h2>PA</h2>${qBlock('Points d’arrêt', PA, WP, labN)}</section>
     <section><h2>FA</h2>${qBlock('Fiches d’anomalie', FA, WA, labN)}</section>
     <section><h2>Non-conformités ouvertes · ${nc.length}</h2>${nc.map(r => qrow(r, false)).join('') || '<div class="card mu">Aucune non-conformité ouverte.</div>'}</section>
@@ -877,16 +899,18 @@ function adminPdf(){
       y += 20;
 
       items.forEach(({ p, steps }) => {
-        if(y + 16 > BOT) page();
+	    const bi = steps.includes('beton') && p.b ? blInfo(p.b) : {bls:[], types:[]};
+        const bt = [...bi.bls.map(x => 'BL ' + x.n + (x.dest === 'carotte' ? ' (carotte)' : '') + (x.q !== null ? ' ' + nf(x.q) + ' m³' : '') + (x.s !== null ? ' slump ' + x.s + ' mm' + (x.cl ? ' ' + x.cl : '') : '')), ...bi.types].join(' · ');
+        const btL = bt ? pdfWrap(bt, 440, 7.5, false) : [];
+        if(y + 16 + btL.length * 10 > BOT) page();
         const stepLabels = steps.map(k => ({fouille:'Fouille', beton:'Béton', matage:'Matage'}[k])).join(', ');
         d.text(L + 10, y + 10, pdfFit(`- Support ${p.name} : ${stepLabels}`, 340, 8.5, false), 8.5, false, K.tx);
-        
         if(steps.includes('beton') && p.b){
           const m3Val = m3r(p.b);
-          const volTxt = m3Val !== null ? `${nf(m3Val)} m³` : 'Volume non saisi';
-          d.text(R, y + 10, volTxt, 8.5, true, K.fb, 'r');
+          d.text(R, y + 10, m3Val !== null ? `${nf(m3Val)} m³` : 'Volume non saisi', 8.5, true, K.fb, 'r');
         }
         y += 14;
+        btL.forEach(t => { d.text(L + 20, y + 7, t, 7.5, false, K.mu); y += 10; });
       });
       y += 6;
     });
@@ -1106,9 +1130,7 @@ function openSup(ck, sk){
   const beton = b ? `<h2 style="margin-top:16px">Béton et dates</h2>
     <div class="rl"><span>Béton m³ : prévu</span><b>${vv(num(b.m3_prevu))}</b></div>
     ${m3Row(b)}
-    <div class="rl"><span>Type de béton</span><b>${vv(b.type_beton)}</b></div>
-    <div class="rl"><span>Slump</span><b>${vv(b.slump)}</b></div>
-    <div class="rl"><span>BL béton</span><b>${vv(b.bl_beton)}</b></div>
+    ${(bi => (bi.types.length ? bi.types.map(t => `<div class="rl"><span>Type de béton</span><b>${esc(t)}</b></div>`).join('') : '<div class="rl"><span>Type de béton</span><b>—</b></div>') + (bi.bls.map(x => `<div class="rl"><span>BL ${esc(x.n)}${x.dest === 'carotte' ? ' (carotte)' : ''}</span><b>${x.q !== null ? nf(x.q) + ' m³' : ''}${x.s !== null ? ' · slump ' + x.s + ' mm' + (x.cl ? ' ' + esc(x.cl) : '') : ''}</b></div>`).join('') || '<div class="rl"><span>BL béton</span><b>—</b></div>'))(blInfo(b))}
     ${stepRow(b, 'Fouille', b.date_fouille, b.admin_date_fouille, 'admin_date_fouille')}
     ${stepRow(b, 'Béton', b.date_beton, b.admin_date_beton, 'admin_date_beton')}
     ${stepRow(b, 'Matage', b.date_matage, b.admin_date_matage, 'admin_date_matage')}` : '';
@@ -1144,6 +1166,15 @@ async function load(){
     bl = bl.filter(r => !EXCLUS.includes(key(r.chantier)));
     archives = archives.filter(a => !EXCLUS.includes(key(a.chantier)));
     qualite = qualite.filter(q => !EXCLUS.includes(key(q.chantier)));
+	    let liens = await fetchAll('blindage_beton_bl_liaison', 'id,blindage_id,beton_bl_id,destination,date_coulage').catch(() => []);
+    const fiches = await fetchAll('beton_bl', 'id,chantier,numero_bl,type_beton,quantite_beton,slump,classe_slump').catch(() => []);
+    const fm = new Map(fiches.map(r => [String(r.id), r]));
+    const blLiens = new Map();
+    liens.forEach(l => {
+      const r = fm.get(String(l.beton_bl_id)); if(!r) return;
+      const k = String(l.blindage_id); if(!blLiens.has(k)) blLiens.set(k, []);
+      blLiens.get(k).push({n:r.numero_bl, q:num(r.quantite_beton), s:num(r.slump), cl:r.classe_slump || '', t:r.type_beton || '', dest:l.destination || 'massif', d:l.date_coulage || ''});
+    });
     // -------------------------------------------------------------
 
     const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
@@ -1159,6 +1190,7 @@ async function load(){
     D.hasFkt = have.includes('admin_fkt'); 
     D.sidx = new Map(); 
     D.hasM3 = haveB.length > 0;
+	D.blLiens = blLiens;
     
     suivi.forEach(x => { const k = String(x.tache_id); if(!D.sidx.has(k)) D.sidx.set(k, new Map()); D.sidx.get(k).set(String(x.modele_id), x.statut); });
     $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
@@ -1172,6 +1204,7 @@ async function load(){
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.t; show(); window.scrollTo(0,0); }));
 $('#rf').addEventListener('click', load);
 $('#v').addEventListener('change', e => { if(e.target.id === 'selc'){ sel = e.target.value; show(); } });
+$('#v').addEventListener('change', e => { if(e.target.id === 'qch'){ qCh = e.target.value; show(); } });
 $('#v').addEventListener('click', e => {
   const st = e.target.closest('[data-sutx-type]');
   if(st){
@@ -1383,50 +1416,66 @@ function rapportPdf(){
       .sort((a,b) => String(a.b.chantier || '').localeCompare(String(b.b.chantier || ''), 'fr') || b.p.name.localeCompare(a.p.name, 'fr', {numeric:true}));
 
     if(betonRows.length){
-      ensure(42);
+      ensure(60);
       y += 8;
       d.text(L, y + 9, 'Détail des quantités par support', 10.5, true, C.tx);
       y += 18;
-      const bx = [L, L+112, L+166, L+226, L+372, L+425, R];
-      const bh = [['CHANTIER / SUPPORT',bx[0]],['DATE BÉTON',bx[1]],['BL',bx[2]],['TYPE / SLUMP',bx[3]],['THÉORIQUE',bx[4],'r'],['RÉEL COULÉ',bx[5],'r'],['ÉCART',bx[6],'r']];
-      d.rect(L, y + 12, CW, 0.8, C.tx);
-      bh.forEach(([t,x,al]) => d.text(x, y + 9, t, 6.5, true, C.mu, al));
-      y += 16;
-      let totalPv = 0, totalRl = 0, totalEc = 0, nPv = 0, nRl = 0, nEc = 0;
-      betonRows.forEach(({p,b,pv,rl,ec,date}) => {
-        const h = 27;
-        if(y + h > BOT){
-          newPage(false);
-          d.text(L, y + 9, 'Détail des quantités béton par support (suite)', 9.5, true, C.tx);
-          y += 13;
-          d.rect(L, y + 12, CW, 0.8, C.tx);
-          bh.forEach(([t,x,al]) => d.text(x, y + 9, t, 6.5, true, C.mu, al));
-          y += 16;
+      const bx = [L, L+104, L+150, L+256, L+392, L+447, R];
+      const bh = [['SUPPORT',bx[0]],['DATE BÉTON',bx[1]],['BL',bx[2]],['TYPE / SLUMP',bx[3]],['THÉORIQUE',bx[4],'r'],['RÉEL COULÉ',bx[5],'r'],['ÉCART',bx[6],'r']];
+      const hd = () => { d.rect(L, y + 12, CW, 0.8, C.tx); bh.forEach(([t,x,al]) => d.text(x, y + 9, t, 6.5, true, C.mu, al)); y += 16; };
+      const fe = v => (v > 0.049 ? '+' : '') + nf(Math.abs(v) < 0.05 ? 0 : v);
+      const T = () => ({pv:0, rl:0, ec:0, nPv:0, nRl:0, nEc:0});
+      const add = (t, pv, rl, ec) => { if(pv !== null){ t.pv += pv; t.nPv++; } if(rl !== null){ t.rl += rl; t.nRl++; } if(ec !== null){ t.ec += ec; t.nEc++; } };
+      const ligneTot = (lib, t, big) => {
+        const f = big ? 8 : 7.5, o = big ? 12 : 10;
+        d.text(L, y + o, lib, f, true, big ? C.tx : C.fb);
+        d.text(bx[4], y + o, t.nPv ? nf(t.pv) : '—', f, true, C.tx, 'r');
+        d.text(bx[5], y + o, t.nRl ? nf(t.rl) : '—', f, true, C.tx, 'r');
+        d.text(bx[6], y + o, t.nEc ? fe(t.ec) : '—', f, true, C.tx, 'r');
+      };
+      hd();
+      const parCh = new Map();
+      betonRows.forEach(r => { const k = String(r.b.chantier || (S.c && S.c.name) || '—').trim(); if(!parCh.has(k)) parCh.set(k, []); parCh.get(k).push(r); });
+      const tot = T();
+      [...parCh.keys()].sort((a, b) => a.localeCompare(b, 'fr', {numeric:true})).forEach(chNom => {
+        const lst = parCh.get(chNom).sort((a, b) => a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
+        const st = T();
+        if(!S.c){
+          if(y + 51 > BOT){ newPage(false); hd(); }
+          y += 4;
+          d.rect(L, y, CW, 13, '#efe6ee'); d.rect(L, y, 3, 13, C.fb);
+          d.text(L + 8, y + 9.2, chNom, 9, true, C.fb);
+          d.text(R - 4, y + 9.2, lst.length + ' support(s)', 7.5, false, C.mu, 'r');
+          y += 15;
         }
-        const chantier = b.chantier || (S.c && S.c.name) || '';
-        const nom = pdfFit(chantier + ' / ' + p.name, 106, 7.5, true);
-        const type = pdfWrap(b.type_beton || '—', 138, 7, false);
-        const slump = b.slump ? 'Slump ' + b.slump : '';
-        d.text(bx[0], y + 10, nom, 7.5, true, C.tx);
-        d.text(bx[1], y + 10, date ? dt(date) : '—', 7.2, false, C.tx);
-        d.text(bx[2], y + 10, pdfFit(b.bl_beton || '—', 54, 7.2, false), 7.2, false, C.tx);
-        d.text(bx[3], y + 9, type[0] || '—', 7, false, C.tx);
-        if(slump) d.text(bx[3], y + 19, pdfFit(slump, 138, 6.5, false), 6.5, false, C.mu);
-        d.text(bx[4], y + 10, pv === null ? '—' : nf(pv), 7.5, false, C.tx, 'r');
-        d.text(bx[5], y + 10, rl === null ? '—' : nf(rl), 7.5, true, C.tx, 'r');
-        d.text(bx[6], y + 10, ec === null ? '—' : (ec > 0.049 ? '+' : '') + nf(Math.abs(ec) < 0.05 ? 0 : ec), 7.5, true, ec !== null && Math.abs(ec) >= 0.05 ? C.dep : C.tx, 'r');
-        d.rect(L, y + 25, CW, 0.5, C.ln);
-        y += h;
-        if(pv !== null){ totalPv += pv; nPv++; }
-        if(rl !== null){ totalRl += rl; nRl++; }
-        if(ec !== null){ totalEc += ec; nEc++; }
+        lst.forEach(({p, b, pv, rl, ec, date}) => {
+          const bi = blInfo(b);
+          const blL = bi.bls.length ? bi.bls.flatMap(x => pdfWrap(x.n + (x.dest === 'carotte' ? ' (carotte)' : '') + (x.q !== null ? ' · ' + nf(x.q) + ' m³' : ''), 100, 7.2, false)) : ['—'];
+          const slL = bi.bls.filter(x => x.s !== null).flatMap(x => pdfWrap('Slump ' + x.s + ' mm' + (x.cl ? ' · ' + x.cl : '') + (bi.bls.length > 1 ? ' (…' + String(x.n).slice(-4) + ')' : ''), 112, 6.8, true));
+          const tyL = bi.types.length ? bi.types.flatMap(t => pdfWrap(t, 112, 7, false)) : ['—'];
+          const h = Math.max(blL.length, slL.length + tyL.length, 2) * 9 + 9;
+          if(y + h > BOT){
+            newPage(false);
+            d.text(L, y + 9, 'Détail des quantités béton par support (suite)' + (S.c ? '' : ' · ' + chNom), 9.5, true, C.tx);
+            y += 13; hd();
+          }
+          d.text(bx[0], y + 10, pdfFit(p.name, 98, 7.5, true), 7.5, true, C.tx);
+          d.text(bx[1], y + 10, date ? dt(date) : '—', 7.2, false, C.tx);
+          blL.forEach((t, i) => d.text(bx[2], y + 10 + i * 9, t, 7.2, false, C.tx));
+          tyL.forEach((t, i) => d.text(bx[3], y + 10 + i * 9, t, 7, false, C.tx));
+          slL.forEach((t, i) => d.text(bx[3], y + 10 + (tyL.length + i) * 9, t, 6.8, true, C.fb));
+          d.text(bx[4], y + 10, pv === null ? '—' : nf(pv), 7.5, false, C.tx, 'r');
+          d.text(bx[5], y + 10, rl === null ? '—' : nf(rl), 7.5, true, C.tx, 'r');
+          d.text(bx[6], y + 10, ec === null ? '—' : fe(ec), 7.5, true, ec !== null && Math.abs(ec) >= 0.05 ? C.dep : C.tx, 'r');
+          d.rect(L, y + h - 2, CW, 0.5, C.ln);
+          y += h;
+          add(st, pv, rl, ec); add(tot, pv, rl, ec);
+        });
+        if(!S.c){ ensure(16); ligneTot('Sous-total ' + chNom, st, false); y += 16; }
       });
       ensure(20);
       d.rect(L, y + 1, CW, 0.8, C.tx);
-      d.text(L, y + 12, `TOTAL · ${betonRows.length} support(s)`, 8, true, C.tx);
-      d.text(bx[4], y + 12, nPv ? nf(totalPv) : '—', 8, true, C.tx, 'r');
-      d.text(bx[5], y + 12, nRl ? nf(totalRl) : '—', 8, true, C.tx, 'r');
-      d.text(bx[6], y + 12, nEc ? (totalEc > 0.049 ? '+' : '') + nf(Math.abs(totalEc) < 0.05 ? 0 : totalEc) : '—', 8, true, C.tx, 'r');
+      ligneTot('TOTAL · ' + betonRows.length + ' support(s)', tot, true);
       y += 20;
       d.text(L, y + 8, 'Volumes en m³ · réel = valeur terrain prioritaire, sinon valeur saisie par admin. Écart calculé uniquement si théorique et réel sont renseignés.', 6.8, false, C.mu);
       y += 12;
@@ -1436,17 +1485,15 @@ function rapportPdf(){
   if(S.c){
     const Ls = supList(S.c);
     section(`Détail des supports : ${Ls.filter(x => x.ok).length} / ${Ls.length} terminés`);
-    const cols = [['SUPPORT', L], ['SUTX', L + 120], ['FBM', L + 330], ['ÉTAT', L + 410]];
+        const cols = [['SUPPORT', L], ['SUTX', L + 120], ['FBM', L + 330]];
     head(cols);
     Ls.forEach(x => {
       if(y + 28 > BOT){ newPage(false); head(cols); }
-      const st = stepsOf(x.p), fd = st.filter(k => stepState(x.p, k)).length;
-      const e = x.ok ? ['Terminé', C.pose] : (x.a.T + x.a.A + x.a.E + fd) ? ['En cours', C.ec] : ['À faire', C.mu];
+      const st = stepsOf(x.p);
       d.text(L, y + 12, pdfFit(x.p.name, 110, 9.5, true), 9.5, true, C.tx);
       if(x.a.n){ stkBar(L + 120, y + 5, 170, 8, x.a); d.text(L + 120, y + 22, `${x.a.T} / ${x.a.n}`, 7.5, false, C.mu); } else d.text(L + 120, y + 12, '—', 8, false, C.mu);
       if(st.length) STEPK.forEach((k, i) => { const s = stepState(x.p, k), cx = L + 330 + i * 16; if(s) d.rect(cx, y + 3, 13, 13, s === 'T' ? C.fb : C.ad); else d.rect(cx, y + 3, 13, 13, '#ffffff', C.fb, 0.7); d.text(cx + 6.5, y + 12.5, 'FBM'[i], 7.5, true, s ? '#ffffff' : C.mu, 'c'); });
       else d.text(L + 330, y + 12, '—', 8, false, C.mu);
-      d.text(L + 410, y + 12, e[0], 9, true, e[1]);
       d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
     });
   }
