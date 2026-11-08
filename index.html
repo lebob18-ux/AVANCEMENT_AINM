@@ -397,7 +397,7 @@ function supList(c){
   return Object.values(c.s).map(p => {
     const a = agg(p.rows), st = stepsOf(p), fd = st.filter(k => stepState(p, k)).length;
     return {p, a, ok:(a.n + st.length) > 0 && a.T + a.A === a.n && fd === st.length};
-  }).sort((x,y) => y.p.name.localeCompare(x.p.name, 'fr', {numeric:true}));
+  }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true})); // Inversé pour un tri croissant naturel
 }
 function supListSutx(c, typeFilter = 'all'){
   return Object.values(c.s).map(p => {
@@ -407,7 +407,7 @@ function supListSutx(c, typeFilter = 'all'){
     if(!rows.length) return null;
     const a = agg(rows);
     return {p, rows, a, ok:a.n > 0 && a.T + a.A === a.n};
-  }).filter(Boolean).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true}));
+  }).filter(Boolean).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true})); // Déjà en croissant ici
 }
 
 function sRowSutx(x, ck){
@@ -484,7 +484,25 @@ const SQL_QUALITE = "Table qualite_pcle absente ou inaccessible. Dans Supabase >
 function qualityFktSupportBlock(c,p){
   const rows=qualiteFktFor(c.name,p.name);
   if(!rows.length) return '';
-  return `<section style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><h2>Suivi FKT par type</h2>${rows.map(q=>`<div style="padding:8px 0;border-bottom:1px solid var(--ln)"><b>${esc(q.fkt_type)}</b><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px"><label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_edit" data-id="${q.id}"${q.fkt_edit?' checked':''}${ADM?'':' disabled'}> FKT reçue · à analyser</label><input type="date" data-qfkt-date="fkt_edit" data-id="${q.id}" value="${esc(q.fkt_edit||'')}"${ADM && q.fkt_edit ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%"></div><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px"><label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_amorti" data-id="${q.id}"${q.fkt_amorti?' checked':''}${ADM?'':' disabled'}> FKT analysée · amortie</label><input type="date" data-qfkt-date="fkt_amorti" data-id="${q.id}" value="${esc(q.fkt_amorti||'')}"${ADM && q.fkt_amorti ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%"></div></div>`).join('')}${!D.hasQualite?'<div class="mu tl">Table qualite_pcle à créer.</div>':''}</section>`;
+  return `<section style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><h2>Suivi FKT par type</h2>${rows.map(q=>`<div style="padding:8px 0;border-bottom:1px solid var(--ln)"><b>${esc(q.fkt_type)}</b>
+    
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px">
+      <label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_edit" data-id="${q.id}"${q.fkt_edit?' checked':''}${ADM?'':' disabled'}> FKT reçue · à analyser</label>
+      <input type="date" data-qfkt-date="fkt_edit" data-id="${q.id}" value="${esc(q.fkt_edit||'')}"${ADM && q.fkt_edit ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%">
+    </div>
+    
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px">
+      <label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_amorti" data-id="${q.id}"${q.fkt_amorti?' checked':''}${ADM?'':' disabled'}> FKT analysée · amortie</label>
+      <input type="date" data-qfkt-date="fkt_amorti" data-id="${q.id}" value="${esc(q.fkt_amorti||'')}"${ADM && q.fkt_amorti ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%">
+    </div>
+
+    <!-- Témoin Refus ajouté -->
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px">
+      <label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_refus" data-id="${q.id}"${q.fkt_refus?' checked':''}${ADM?'':' disabled'}> Refuser</label>
+      <input type="date" data-qfkt-date="fkt_refus" data-id="${q.id}" value="${esc(q.fkt_refus||'')}"${ADM && q.fkt_refus ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%">
+    </div>
+
+  </div>`).join('')}${!D.hasQualite?'<div class="mu tl">Table qualite_pcle à créer.</div>':''}</section>`;
 }
 
 async function saveQualiteFkt(id, field, value){
@@ -513,10 +531,16 @@ function qrow(r, lifted=false){
 
 const QT = ['FKT_AT','FKT_ARMEMENT','FKT_FBM','FKT_DEROULAGE'];
 const QL = {FKT_AT:'FKT AT · appareil tendeur', FKT_ARMEMENT:'FKT armement', FKT_FBM:'FKT FBM', FKT_DEROULAGE:'FKT déroulage'};
-const WF = ['Analysées','À analyser','Prévues'], WA = ['Amorties','Éditées','À éditer'], WP = ['Levées','Éditées','À éditer'];
+
+const WF = ['Analysées','Refusées','À analyser','Prévues'], WA = ['Amorties','Éditées','À éditer'], WP = ['Levées','Éditées','À éditer'];
 const qCat = q => key(q.categorie || 'FKT');
-const qCnt = L => ({n:L.length, e:L.filter(q => q.fkt_edit && !q.fkt_amorti).length, c:L.filter(q => q.fkt_amorti).length});
-const qSort = L => L.slice().sort((a,b) => String(a.support || a.numero || '').localeCompare(String(b.support || b.numero || ''), 'fr', {numeric:true}));
+const qCnt = L => ({
+  n: L.length, 
+  c: L.filter(q => q.fkt_amorti).length,
+  r: L.filter(q => q.fkt_refus).length, // Nombre exact de refusés
+  e: L.filter(q => q.fkt_edit && !q.fkt_amorti).length
+});
+const qSort = L => L.slice().sort((a,b) => String(a.support || a.numero || '').localeCompare(String(a.support || a.numero || ''), 'fr', {numeric:true}));
 const qBar = x => `<div class="sb"><i style="width:${x.n ? x.c / x.n * 100 : 0}%;background:var(--pose)"></i><i style="width:${x.n ? x.e / x.n * 100 : 0}%;background:var(--ec)"></i></div>`;
 const labF = q => esc(q.support), labN = q => esc(q.numero || '—') + (q.support ? ' (S' + esc(q.support) + ')' : '');
 
@@ -525,16 +549,25 @@ function qLines(L, W, lab){
   L.forEach(q => { const k = key(q.chantier); if(!g.has(k)) g.set(k, {name:q.chantier, rows:[]}); g.get(k).rows.push(q); });
   return [...g.values()].sort((a,b) => String(a.name).localeCompare(String(b.name), 'fr')).map(c => {
     const x = qCnt(c.rows);
-    const parts = [[W[0], q => q.fkt_amorti], [W[1], q => q.fkt_edit && !q.fkt_amorti], [W[2], q => !q.fkt_edit]].map(([t, f]) => {
+    // On garde les listes indépendantes pour que le support apparaisse partout où ses cases sont cochées
+    const parts = [
+      [W[0], q => q.fkt_amorti], 
+      [W[1], q => q.fkt_refus], 
+      [W[2], q => q.fkt_edit && !q.fkt_amorti], 
+      [W[3], q => !q.fkt_edit && !q.fkt_amorti && !q.fkt_refus]
+    ].map(([t, f]) => {
       const v = qSort(c.rows.filter(f)).map(lab).join(', ');
       return v ? `<div class="mu tl"><b>${t} :</b> ${v}</div>` : '';
     }).join('');
     return `<div class="sp" style="cursor:default"><div class="rl"><b>${esc(c.name)}</b><span>${x.c} / ${x.n} · ${pc(x.c, x.n)} %</span></div>${qBar(x)}${parts}</div>`;
   }).join('');
 }
+
+
 const qBlock = (title, L, W, lab) => {
   const x = qCnt(L);
-  return `<details class="card"><summary><div class="rl"><b>${title}</b><span>${x.n} au total · ${x.e} ${W[1].toLowerCase()} · ${x.c} ${W[0].toLowerCase()}</span></div>${qBar(x)}</summary><div class="in">${qLines(L, W, lab) || '<div class="mu tl">Aucune ligne.</div>'}</div></details>`;
+  // On affiche le nombre de refusés (x.r) dans l'en-tête
+  return `<details class="card"><summary><div class="rl"><b>${title}</b><span>${x.n} au total · ${x.r} refusées · ${x.e} ${W[2].toLowerCase()} · ${x.c} ${W[0].toLowerCase()}</span></div>${qBar(x)}</summary><div class="in">${qLines(L, W, lab) || '<div class="mu tl">Aucune ligne.</div>'}</div></details>`;
 };
 
 let qCh = '';
@@ -1158,7 +1191,7 @@ async function load(){
       fetchAll('suivi_sutx_v2', SXC + have.map(c => ',' + c).join('')),
       fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton' + haveB.map(c => ',' + c).join('')),
       fetchAll('archives_fbm', 'id,chantier,support,date_fouille,fbm,carotte,matage,beton,created_at,updated_at').catch(() => []),
-      fetchAll('qualite_pcle', 'id,chantier,support,fkt_type,fkt_edit,fkt_amorti,categorie,numero,libelle,origine,created_at').catch(() => { hasQualite = false; return []; })
+      fetchAll('qualite_pcle', 'id,chantier,support,fkt_type,fkt_edit,fkt_amorti,fkt_refus,categorie,numero,libelle,origine,created_at').catch(() => { hasQualite = false; return []; })
     ]);
 
     // --- FILTRAGE GLOBAL : EXCLUSION DE MELUN ET TEST_BOB PARTOUT ---
