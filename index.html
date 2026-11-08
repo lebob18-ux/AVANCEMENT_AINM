@@ -1515,10 +1515,60 @@ function rapportPdf(){
     }
   }
 
+  // --- SECTION SUIVI FKT / QUALITÉ INTÉGRÉE ---
+  const QA = D.qualite || [];
+  const inFktS = r => !S.c || key(r.chantier) === S.c.k;
+  const fktList = QA.filter(q => (q.categorie || 'FKT') === 'FKT' && inFktS(q));
+
+  if(fktList.length){
+    section('Suivi FKT / Qualité');
+    
+    const totFkt = fktList.length;
+    const editFkt = fktList.filter(q => q.fkt_edit && !q.fkt_amorti && !q.fkt_refus).length;
+    const refFkt = fktList.filter(q => q.fkt_refus).length;
+    const amortFkt = fktList.filter(q => q.fkt_amorti).length;
+    const prevFkt = fktList.filter(q => !q.fkt_edit && !q.fkt_amorti && !q.fkt_refus).length;
+
+    rowBar('FKT FBM / Qualité (Amorties)', `${amortFkt} / ${totFkt} · ${pc(amortFkt, totFkt)} %`, (bx, by, bw) => {
+      d.rect(bx, by, bw, 12, C.sl);
+      let cx = bx;
+      if(amortFkt){ const w = bw * amortFkt / totFkt; d.rect(cx, by, w, 12, C.pose); cx += w; }
+      if(editFkt){ const w = bw * editFkt / totFkt; d.rect(cx, by, w, 12, C.ec); cx += w; }
+    });
+
+    const statsFkt = [
+      ['FKT analysées (amorties)', `${amortFkt}`],
+      ['FKT refusées', `${refFkt}`],
+      ['FKT reçues (à analyser)', `${editFkt}`],
+      ['FKT prévues (non reçues)', `${prevFkt}`]
+    ];
+
+    statsFkt.forEach(([label, val]) => {
+      ensure(18);
+      d.text(L, y + 9, label, 9.5, false, C.tx);
+      d.text(R, y + 9, val, 9.5, true, label.includes('refusées') && refFkt > 0 ? C.dep : C.tx, 'r');
+      d.rect(L, y + 14, CW, 0.5, C.ln);
+      y += 18;
+    });
+
+    if(refFkt > 0){
+      const supsRef = fktList.filter(q => q.fkt_refus).map(q => q.support).filter(Boolean).join(', ');
+      ensure(22);
+      d.text(L, y + 9, 'Supports refusés : ' + pdfFit(supsRef, CW - 120, 8.5, false), 8.5, true, C.dep);
+      y += 16;
+    }
+    if(editFkt > 0){
+      const supsEdit = fktList.filter(q => q.fkt_edit && !q.fkt_amorti && !q.fkt_refus).map(q => q.support).filter(Boolean).join(', ');
+      ensure(22);
+      d.text(L, y + 9, 'Supports à analyser : ' + pdfFit(supsEdit, CW - 130, 8.5, false), 8.5, false, C.tx);
+      y += 16;
+    }
+  }
+
   if(S.c){
     const Ls = supList(S.c);
     section(`Détail des supports : ${Ls.filter(x => x.ok).length} / ${Ls.length} terminés`);
-        const cols = [['SUPPORT', L], ['SUTX', L + 120], ['FBM', L + 330]];
+    const cols = [['SUPPORT', L], ['SUTX', L + 120], ['FBM', L + 330]];
     head(cols);
     Ls.forEach(x => {
       if(y + 28 > BOT){ newPage(false); head(cols); }
