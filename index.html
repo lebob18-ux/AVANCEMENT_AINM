@@ -1372,6 +1372,10 @@ function pdfDoc(){
 function rapportPdf(){
   if(window.PDF_ADMIN){ const f = window.PDF_ADMIN; window.PDF_ADMIN = null; return f(); }
   const S = scope(), a = agg(S.rows), f = aggF(S.ps), K = aggK(S.rc);
+  const isGlob = (sub !== 'sutx' && sub !== 'fbm');
+  const isSutx = sub === 'sutx';
+  const isFbm = sub === 'fbm';
+  const vueLabel = isSutx ? 'SUTX' : isFbm ? 'FBM' : 'Vue d\'ensemble';
   const inS = r => !S.c || key(r.Chantier) === S.c.k;
   const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true && inS(r));
   const fk = D.rc.filter(r => inS(r) && isFKT(r) && eff(r) === 'T' && !fktOf(r).def).length;
@@ -1381,7 +1385,7 @@ function rapportPdf(){
   const C = {sx:'#2f6f9f', fb:'#8a5fb0', ad:'#0e9aa7', pose:'#2f8f63', ec:'#e08a1e', dep:'#c4543b', gc:'#b7881a', mu:'#6b7884', ln:'#d9dee2', sl:'#e3e7ea', tx:'#1a232c', navy:'#0b2545', jaune:'#f2c200'};
   const d = pdfDoc(), W = d.W, H = d.H, L = 32, R = W - 32, CW = R - L, BOT = H - 46;
   let y = 0;
-  const newPage = prem => { d.page(); y = 36; if(!prem){ d.text(L, 24, "SUIVI PCLE-MMM · Rapport d'avancement · " + nomScope, 7.5, false, C.mu); d.rect(L, 29, CW, 0.6, C.ln); y = 42; } };
+  const newPage = prem => { d.page(); y = 36; if(!prem){ d.text(L, 24, "SUIVI PCLE-MMM · " + vueLabel + " · " + nomScope, 7.5, false, C.mu); d.rect(L, 29, CW, 0.6, C.ln); y = 42; } };
   const ensure = h => { if(y + h > BOT) newPage(false); };
   const section = t => { ensure(44); y += 12; d.text(L, y + 9, t, 12, true, C.tx); d.rect(L, y + 14, CW, 1.6, C.tx); y += 24; };
   const legend = items => { let x = L; items.forEach(([t, c]) => { d.rect(x, y - 1, 8, 8, c); d.text(x + 11, y + 6, t, 7.5, false, C.mu); x += 11 + pdfW(t, 7.5, false) + 12; }); y += 14; };
@@ -1395,14 +1399,18 @@ function rapportPdf(){
 
   newPage(true);
   d.rect(L, y, CW, 60, C.navy); d.rect(L, y + 56, CW, 4, C.jaune);
-  d.text(L + 14, y + 27, "SUIVI PCLE-MMM · Rapport d'avancement", 17, true, '#ffffff');
+  d.text(L + 14, y + 27, "SUIVI PCLE-MMM · " + vueLabel, 17, true, '#ffffff');
   d.text(L + 14, y + 44, nomScope + ' · édité le ' + now, 9.5, false, '#c9d3df');
   y += 74;
-  const kw = (CW - 24) / 4;
-  [['SUTX', a.p + ' %', `${a.T} tâches terminées / ${a.w}`, C.sx],
-   ['FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets`, C.fb],
-   ['FKT DÉFINITIVES', K.n ? K.p + ' %' : '—', K.n ? `${K.d} / ${K.n} reçues` : 'sans objet', C.gc],
-   ['NON-CONFORMITÉS', String(nc.length), 'ouvertes', C.dep]].forEach(([t, v, s, c], i) => {
+
+  // KPIs selon la vue
+  const kpiItems = [];
+  if(isGlob || isSutx) kpiItems.push(['SUTX', a.p + ' %', `${a.T} tâches terminées / ${a.w}`, C.sx]);
+  if(isGlob || isFbm) kpiItems.push(['FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets`, C.fb]);
+  if(isGlob || isFbm) kpiItems.push(['FKT DÉFINITIVES', K.n ? K.p + ' %' : '—', K.n ? `${K.d} / ${K.n} reçues` : 'sans objet', C.gc]);
+  kpiItems.push(['NON-CONFORMITÉS', String(nc.length), 'ouvertes', C.dep]);
+  const kw = (CW - 24) / Math.max(kpiItems.length, 1);
+  kpiItems.forEach(([t, v, s, c], i) => {
     const x = L + i * (kw + 8);
     d.rect(x, y, kw, 66, '#ffffff', C.ln, 0.8); d.rect(x, y, kw, 3.5, c);
     d.text(x + 9, y + 17, t, 7.5, true, C.mu);
@@ -1411,7 +1419,7 @@ function rapportPdf(){
   });
   y += 74;
 
-  if(!S.c){
+  if(!S.c && isGlob){
     section('Avancement par chantier');
     legend(lgS); legend(lgF);
     const cols = [['CHANTIER', L], ['SUTX', L + 130], ['FBM (SUPPORTS COMPLETS)', L + 310], ['NC', R, 'r']];
@@ -1426,13 +1434,43 @@ function rapportPdf(){
       d.rect(L, y + 30, CW, 0.5, C.ln); y += 32;
     });
   }
+  if(!S.c && isSutx){
+    section('Avancement SUTX par chantier');
+    legend(lgS);
+    const cols = [['CHANTIER', L], ['SUTX', L + 160], ['NC', R, 'r']];
+    head(cols);
+    D.ch.forEach(c => {
+      const x = agg(c.rows), nn = x.nc;
+      if(y + 32 > BOT){ newPage(false); head(cols); }
+      d.text(L, y + 12, pdfFit(c.name, 150, 9.5, true), 9.5, true, C.tx);
+      stkBar(L + 160, y + 5, 200, 9, x); d.text(L + 160, y + 25, x.p + ' %', 7.5, false, C.mu);
+      d.text(R, y + 12, nn ? String(nn) : '—', 9.5, nn > 0, nn ? C.dep : C.mu, 'r');
+      d.rect(L, y + 30, CW, 0.5, C.ln); y += 32;
+    });
+  }
+  if(!S.c && isFbm){
+    section('Avancement FBM par chantier');
+    legend(lgF);
+    const cols = [['CHANTIER', L], ['FBM (SUPPORTS COMPLETS)', L + 160], ['NC', R, 'r']];
+    head(cols);
+    D.ch.forEach(c => {
+      const yv = aggF(fbmSups(c)), nn = ncOf(c.fb) + ncOf(c.rc);
+      if(y + 32 > BOT){ newPage(false); head(cols); }
+      d.text(L, y + 12, pdfFit(c.name, 150, 9.5, true), 9.5, true, C.tx);
+      fbBar(L + 160, y + 5, 200, 9, yv.dT, yv.dA, yv.tot); d.text(L + 160, y + 25, `${yv.d} / ${yv.tot} · ${yv.p} %`, 7.5, false, C.mu);
+      d.text(R, y + 12, nn ? String(nn) : '—', 9.5, nn > 0, nn ? C.dep : C.mu, 'r');
+      d.rect(L, y + 30, CW, 0.5, C.ln); y += 32;
+    });
+  }
 
-  section('SUTX par type de tâche');
-  if(S.c) legend(lgS);
-  const cT = {GC:C.gc, DEPOSE:C.dep, POSE:C.pose};
-  TYPES.forEach(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); if(x.n) rowBar(TL[t], `${x.T} / ${x.w} · ${x.p} %`, (bx, by, bw, bh) => stkBar(bx, by, bw, bh, x), cT[t]); });
+  if(isGlob || isSutx){
+    section('SUTX par type de tâche');
+    if(S.c) legend(lgS);
+    const cT = {GC:C.gc, DEPOSE:C.dep, POSE:C.pose};
+    TYPES.forEach(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); if(x.n) rowBar(TL[t], `${x.T} / ${x.w} · ${x.p} %`, (bx, by, bw, bh) => stkBar(bx, by, bw, bh, x), cT[t]); });
+  }
 
-  if(f.tot){
+  if((isGlob || isFbm) && f.tot){
     section('FBM : fouille, béton, matage');
     legend(lgF);
     rowBar('Supports complets (étapes toutes faites)', `${f.d} / ${f.tot} · ${f.p} %`, (bx, by, bw) => fbBar(bx, by, bw, 12, f.dT, f.dA, f.tot));
@@ -1516,12 +1554,15 @@ function rapportPdf(){
   }
 
   // --- SECTION SUIVI FKT / QUALITÉ INTÉGRÉE ---
+  // Affiché en Vue d'ensemble et en FBM. En FBM on ne garde que les FKT_FBM.
   const QA = D.qualite || [];
   const inFktS = r => !S.c || key(r.chantier) === S.c.k;
-  const fktList = QA.filter(q => (q.categorie || 'FKT') === 'FKT' && inFktS(q));
+  let fktList = QA.filter(q => (q.categorie || 'FKT') === 'FKT' && inFktS(q));
+  if(isFbm) fktList = fktList.filter(q => key(q.fkt_type) === 'FKT_FBM');
+  if(isSutx) fktList = []; // pas de FKT dans la vue SUTX pure
 
-  if(fktList.length){
-    section('Suivi FKT / Qualité');
+  if((isGlob || isFbm) && fktList.length){
+    section(isFbm ? 'Suivi FKT FBM / Qualité' : 'Suivi FKT / Qualité');
     
     const totFkt = fktList.length;
     const editFkt = fktList.filter(q => q.fkt_edit && !q.fkt_amorti && !q.fkt_refus).length;
@@ -1565,7 +1606,7 @@ function rapportPdf(){
     }
   }
 
-  if(S.c){
+  if(S.c && isGlob){
     const Ls = supList(S.c);
     section(`Détail des supports : ${Ls.filter(x => x.ok).length} / ${Ls.length} terminés`);
     const cols = [['SUPPORT', L], ['SUTX', L + 120], ['FBM', L + 330]];
@@ -1580,9 +1621,36 @@ function rapportPdf(){
       d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
     });
   }
+  if(S.c && isSutx){
+    const Ls = supListSutx(S.c, 'all');
+    section(`Détail des supports SUTX : ${Ls.filter(x => x.ok).length} / ${Ls.length} terminés`);
+    const cols = [['SUPPORT', L], ['SUTX', L + 160]];
+    head(cols);
+    Ls.forEach(x => {
+      if(y + 28 > BOT){ newPage(false); head(cols); }
+      d.text(L, y + 12, pdfFit(x.p.name, 150, 9.5, true), 9.5, true, C.tx);
+      if(x.a.n){ stkBar(L + 160, y + 5, 220, 8, x.a); d.text(L + 160, y + 22, `${x.a.T} / ${x.a.n}`, 7.5, false, C.mu); } else d.text(L + 160, y + 12, '—', 8, false, C.mu);
+      d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
+    });
+  }
+  if(S.c && isFbm){
+    const Ls = fbmSups(S.c).map(p => { const st = stepsOf(p).map(k => stepState(p, k)); return {p, st, n:st.filter(Boolean).length, ok:st.length > 0 && st.every(Boolean)}; }).sort((a,b) => a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
+    section(`Détail des supports FBM : ${Ls.filter(x => x.ok).length} / ${Ls.length} complets`);
+    const cols = [['SUPPORT', L], ['FBM', L + 200]];
+    head(cols);
+    Ls.forEach(x => {
+      if(y + 28 > BOT){ newPage(false); head(cols); }
+      d.text(L, y + 12, pdfFit(x.p.name, 180, 9.5, true), 9.5, true, C.tx);
+      STEPK.forEach((k, i) => { const s = x.st[i], cx = L + 200 + i * 20; if(s) d.rect(cx, y + 3, 16, 16, s === 'T' ? C.fb : C.ad); else d.rect(cx, y + 3, 16, 16, '#ffffff', C.fb, 0.7); d.text(cx + 8, y + 14, 'FBM'[i], 8, true, s ? '#ffffff' : C.mu, 'c'); });
+      d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
+    });
+  }
 
   section("Points d'attention");
-  [['Non-conformités ouvertes', nc.length, true], ['FKT définitives à obtenir (tâches terminées)', fk], ['Pendules provisoires à déposer', pv]].forEach(([t, v, rouge]) => {
+  const attn = [['Non-conformités ouvertes', nc.length, true]];
+  if(isGlob || isFbm) attn.push(['FKT définitives à obtenir (tâches terminées)', fk]);
+  if(isGlob || isSutx) attn.push(['Pendules provisoires à déposer', pv]);
+  attn.forEach(([t, v, rouge]) => {
     ensure(18); d.text(L, y + 9, t, 9.5, false, C.tx); d.text(R, y + 9, String(v), 9.5, true, rouge && v ? C.dep : C.tx, 'r'); d.rect(L, y + 14, CW, 0.5, C.ln); y += 18;
   });
   if(nc.length){
@@ -1603,8 +1671,10 @@ function rapportPdf(){
 
   const n = d.count();
   for(let i = 0; i < n; i++){ d.go(i); d.rect(L, H - 34, CW, 0.6, C.ln); d.text(L, H - 22, 'SUIVI_PCLE-MMM · édité le ' + now, 7.5, false, C.mu); d.text(R, H - 22, `Page ${i + 1} / ${n}`, 7.5, false, C.mu, 'r'); }
-  return {bytes:d.build(), name:'PCLE-MMM_' + (S.c ? S.c.name.replace(/[^\w-]+/g, '_') : 'Tous_chantiers') + '_' + jour() + '.pdf'};
+  const vueFile = isSutx ? 'SUTX' : isFbm ? 'FBM' : 'Ensemble';
+  return {bytes:d.build(), name:'PCLE-MMM_' + vueFile + '_' + (S.c ? S.c.name.replace(/[^\w-]+/g, '_') : 'Tous_chantiers') + '_' + jour() + '.pdf'};
 }
+
 
 $('#pdf').addEventListener('click', () => {
   if(!D) return;
