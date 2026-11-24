@@ -77,7 +77,27 @@
   .foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--ln);font-size:12px;color:var(--mu);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
   .loading{padding:40px;text-align:center;color:var(--mu)}
   .err{background:#fff3f0;border:1px solid var(--dep);color:var(--dep);padding:16px;border-radius:12px;margin-bottom:20px}
+  .clickable{cursor:pointer;border-radius:8px;transition:background .15s}
+  .clickable:hover{background:#f0f4f8}
+  .clickable .lab::after{content:" ›";opacity:.4;font-weight:700}
+  .detail-panel{
+    margin-top:10px;padding:12px 14px;background:var(--sl);border-radius:10px;
+    border:1px solid var(--ln);font-size:13px;display:none
+  }
+  .detail-panel.open{display:block}
+  .detail-panel .dh{font-weight:700;margin-bottom:8px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mu)}
+  .detail-panel .item{
+    display:flex;justify-content:space-between;gap:12px;padding:5px 0;
+    border-bottom:1px solid var(--ln);font-variant-numeric:tabular-nums
+  }
+  .detail-panel .item:last-child{border-bottom:0}
+  .detail-panel .ok{color:var(--pose);font-weight:600}
+  .detail-panel .ko{color:var(--mu)}
+  .detail-panel .more{margin-top:8px;font-size:12px;color:var(--mu)}
   @media print{
+    .clickable .lab::after{content:none}
+    .detail-panel{display:none!important}
+
     @page{size:A4;margin:11mm}
     body{background:#fff;padding:0}
     .nav,.no-print{display:none!important}
@@ -182,13 +202,17 @@ function metrics(rows) {
   const ardrox = cnt(rows, r => key(r.Tache) === "ARDROX");
   const fktArm = cnt(rows, r => key(r.Tache) === "FKT ARMEMENT");
   const fktAt = cnt(rows, r => key(r.Tache) === "FKT APPAREIL TENDEUR");
+  const hauban = cnt(rows, r => /HAUBAN ANCRAGE/i.test(r.Tache || "") && isAnc(r.Support));
+  const ardroxAnc = cnt(rows, r => key(r.Tache) === "ARDROX" && isAnc(r.Support));
+  const ardroxReg = cnt(rows, r => key(r.Tache) === "ARDROX" && !isAnc(r.Support));
   return {
     fReg, fAnc, mReg, mAnc,
     betonReg: volBeton(rows, false),
     betonAnc: volBeton(rows, true),
     betonAll: volBeton(rows, null),
     console: console_, armement, double: double_, connexion,
-    de, goudron, ardrox, fktArm, fktAt
+    de, goudron, ardrox, ardroxAnc, ardroxReg, hauban, fktArm, fktAt,
+    _rows: rows
   };
 }
 
@@ -202,6 +226,84 @@ function metricsDepose(rows) {
     de: cnt(dep, r => key(r.Tache) === "DE"),
     massif: cnt(dep, r => /MASSIF/i.test(r.Tache || ""))
   };
+}
+
+
+function listSupports(rows, pred, onlyDone) {
+  const map = new Map();
+  rows.filter(pred).forEach(r => {
+    const s = r.Support || "—";
+    if (!map.has(s)) map.set(s, { support: s, done: false, tache: r.Tache });
+    if (done(r)) map.get(s).done = true;
+  });
+  let list = [...map.values()].sort((a,b) => a.support.localeCompare(b.support, "fr"));
+  if (onlyDone) list = list.filter(x => x.done);
+  return list;
+}
+
+function detailHtml(title, list) {
+  if (!list.length) return `<div class="detail-panel open"><div class="dh">${title}</div><div class="ko">Aucun support</div></div>`;
+  const max = 40;
+  const shown = list.slice(0, max);
+  const items = shown.map(x =>
+    `<div class="item"><span>${x.support}</span><span class="${x.done?"ok":"ko"}">${x.done?"Fait":"À faire"}</span></div>`
+  ).join("");
+  const more = list.length > max ? `<div class="more">… et ${list.length - max} autres</div>` : "";
+  const doneN = list.filter(x => x.done).length;
+  return `<div class="detail-panel open"><div class="dh">${title} · ${doneN}/${list.length}</div>${items}${more}</div>`;
+}
+
+function bindClicks(root, rows) {
+  root.querySelectorAll("[data-task]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const task = el.dataset.task;
+      const scope = el.dataset.scope || "all"; // reg | anc | all
+      let panel = el.nextElementSibling;
+      if (panel && panel.classList.contains("detail-panel")) {
+        panel.classList.toggle("open");
+        if (!panel.classList.contains("open")) return;
+      }
+      // remove other open panels in same card
+      const card = el.closest(".col-card, .bigs, section");
+      if (card) card.querySelectorAll(".detail-panel.open").forEach(p => {
+        if (p !== panel) p.classList.remove("open");
+      });
+
+      let pred;
+      if (task === "fouille") pred = r => key(r.Tache)==="FOUILLE" && key(r.type)==="GC";
+      else if (task === "matage") pred = r => key(r.Tache)==="MATAGE" && key(r.type)==="GC";
+      else if (task === "console") pred = r => key(r.type)==="POSE" && /CONSOLE DE LIGNE/i.test(r.Tache||"");
+      else if (task === "armement") pred = r => key(r.type)==="POSE" && key(r.Tache)==="ARMEMENT";
+      else if (task === "double") pred = r => key(r.type)==="POSE" && key(r.Tache)==="ARMEMENT DOUBLE";
+      else if (task === "connexion") pred = r => key(r.type)==="POSE" && key(r.Tache)==="CONNEXION";
+      else if (task === "de") pred = r => key(r.Tache)==="DE" && key(r.type)==="GC";
+      else if (task === "goudron") pred = r => key(r.Tache)==="GOUDRON";
+      else if (task === "ardrox") pred = r => key(r.Tache)==="ARDROX";
+      else if (task === "hauban") pred = r => /HAUBAN ANCRAGE/i.test(r.Tache||"");
+      else if (task === "fktArm") pred = r => key(r.Tache)==="FKT ARMEMENT";
+      else if (task === "fktAt") pred = r => key(r.Tache)==="FKT APPAREIL TENDEUR";
+      else if (task === "dep-console") pred = r => key(r.type)==="DEPOSE" && /CONSOLE DE LIGNE/i.test(r.Tache||"");
+      else if (task === "dep-armement") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="ARMEMENT";
+      else if (task === "dep-double") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="ARMEMENT DOUBLE";
+      else if (task === "dep-connexion") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="CONNEXION";
+      else if (task === "dep-de") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="DE";
+      else if (task === "dep-massif") pred = r => key(r.type)==="DEPOSE" && /MASSIF/i.test(r.Tache||"");
+      else pred = () => false;
+
+      if (scope === "reg") pred = (orig => r => orig(r) && !isAnc(r.Support))(pred);
+      if (scope === "anc") pred = (orig => r => orig(r) && isAnc(r.Support))(pred);
+
+      const list = listSupports(rows, pred, false);
+      const title = el.querySelector(".lab")?.textContent?.replace(/\s*›\s*$/,"").trim() || task;
+      const htmlPanel = detailHtml(title, list);
+      if (panel && panel.classList.contains("detail-panel")) {
+        panel.outerHTML = htmlPanel;
+      } else {
+        el.insertAdjacentHTML("afterend", htmlPanel);
+      }
+    });
+  });
 }
 
 function pie(doneN, total, color, label) {
@@ -221,16 +323,18 @@ function pie(doneN, total, color, label) {
   </div>`;
 }
 
-function rowInd(lab, pair, color) {
+function rowInd(lab, pair, color, task, scope) {
   const [d, t] = pair;
-  return `<div class="row-ind"><div><div class="lab">${lab}</div>
+  const attrs = task ? ` data-task="${task}" data-scope="${scope||"all"}" class="row-ind clickable"` : ` class="row-ind"`;
+  return `<div${attrs}><div><div class="lab">${lab}</div>
     <div class="prog"><i style="width:${pct(d,t)}%;background:${color}"></i></div></div>
     <div class="val">${d} <span class="sub">/ ${t}</span></div></div>`;
 }
 
-function big(lab, pair, sub, color) {
+function big(lab, pair, sub, color, task, scope) {
   const [d, t] = pair;
-  return `<div class="big"><div class="bar" style="background:${color}"></div>
+  const attrs = task ? ` data-task="${task}" data-scope="${scope||"all"}" class="big clickable"` : ` class="big"`;
+  return `<div${attrs}><div class="bar" style="background:${color}"></div>
     <div class="content"><div class="lab">${lab}</div><div class="val">${d} / ${t}</div>
     <div class="sub">${sub}</div></div><div class="right">${pct(d,t)} %</div></div>`;
 }
@@ -262,19 +366,20 @@ function renderPose(ch) {
 
   html += `<section><h2>Supports classiques / Supports Ancrage</h2><div class="split">
     <div class="col-card"><h3>Supports classiques <span class="tag reg">hors Anc</span></h3>
-      ${rowInd("Fouilles", m.fReg, "var(--gc)")}
-      ${rowInd("Supports (matage hors Anc)", m.mReg, "var(--fb)")}
+      ${rowInd("Fouilles", m.fReg, "var(--gc)", "fouille", "reg")}
+      ${rowInd("Supports (matage hors Anc)", m.mReg, "var(--fb)", "matage", "reg")}
       <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${nf(m.betonReg)} m³</div></div>
-      ${rowInd("Consoles de ligne", m.console, "var(--pose)")}
-      ${rowInd("Armements", m.armement, "var(--pose)")}
-      ${rowInd("Armements doubles", m.double, "var(--pose)")}
-      ${rowInd("Connexions", m.connexion, "var(--sx)")}
+      ${rowInd("Consoles de ligne", m.console, "var(--pose)", "console", "reg")}
+      ${rowInd("Armements", m.armement, "var(--pose)", "armement", "reg")}
+      ${rowInd("Armements doubles", m.double, "var(--pose)", "double", "reg")}
+      ${rowInd("Connexions", m.connexion, "var(--sx)", "connexion", "reg")}
     </div>
     <div class="col-card"><h3>Supports Ancrage <span class="tag anc">contient Anc</span></h3>
-      ${rowInd("Fouilles", m.fAnc, "var(--gc)")}
-      ${rowInd("Supports Ancrage (matage)", m.mAnc, "var(--fb)")}
+      ${rowInd("Fouilles", m.fAnc, "var(--gc)", "fouille", "anc")}
+      ${rowInd("Supports Ancrage (matage)", m.mAnc, "var(--fb)", "matage", "anc")}
       <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${nf(m.betonAnc)} m³</div></div>
-      <div class="row-ind"><div><div class="lab">Consoles / Armements / Connexions</div></div><div class="val" style="font-size:14px">— <span class="sub">non concernées</span></div></div>
+      ${rowInd("Hauban ancrage", m.hauban, "var(--ad)", "hauban", "anc")}
+      ${rowInd("Ardrox", m.ardroxAnc, "var(--gc)", "ardrox", "anc")}
     </div>
   </div></section>`;
 
@@ -285,18 +390,17 @@ function renderPose(ch) {
   </div></section>`;
 
   html += `<section><h2>Pose — Avancement</h2><div class="bigs">
-    ${big("Consoles de ligne", m.console, "type POSE", "var(--pose)")}
-    ${big("Armements", m.armement, "type POSE", "var(--pose)")}
-    ${big("Armements doubles", m.double, "type POSE", "var(--pose)")}
-    ${big("Connexions", m.connexion, "type POSE", "var(--sx)")}
-    ${big("DE", m.de, "type GC — hors dépose", "var(--gc)")}
-    ${big("Goudron", m.goudron, "tâches GOUDRON", "var(--gc)")}
-    ${big("Ardrox", m.ardrox, "tâches ARDROX", "var(--gc)")}
+    ${big("Consoles de ligne", m.console, "type POSE — cliquer pour la liste", "var(--pose)", "console")}
+    ${big("Armements", m.armement, "type POSE", "var(--pose)", "armement")}
+    ${big("Armements doubles", m.double, "type POSE", "var(--pose)", "double")}
+    ${big("Connexions", m.connexion, "type POSE", "var(--sx)", "connexion")}
+    ${big("DE", m.de, "type GC — hors dépose", "var(--gc)", "de")}
+    ${big("Goudron", m.goudron, "tâches GOUDRON", "var(--gc)", "goudron")}
   </div></section>`;
 
   html += `<section><h2>Suivi FKT</h2><div class="bigs">
-    ${big("FKT Armement", m.fktArm, "tâches FKT ARMEMENT", "var(--gc)")}
-    ${big("FKT Appareil tendeur", m.fktAt, "tâches FKT APPAREIL TENDEUR", "var(--gc)")}
+    ${big("FKT Armement", m.fktArm, "tâches FKT ARMEMENT", "var(--gc)", "fktArm")}
+    ${big("FKT Appareil tendeur", m.fktAt, "tâches FKT APPAREIL TENDEUR", "var(--gc)", "fktAt")}
   </div></section>`;
 
   if (ch === "ALL") {
@@ -317,6 +421,7 @@ function renderPose(ch) {
   }
 
   document.getElementById("content").innerHTML = html;
+  bindClicks(document.getElementById("content"), rows);
 }
 
 function renderDepose(ch) {
@@ -343,15 +448,16 @@ function renderDepose(ch) {
   </div>`;
 
   html += `<section><h2>Dépose — Avancement</h2><div class="bigs">
-    ${big("Consoles de ligne", d.console, "dépose CONSOLE DE LIGNE (+ variantes)", "var(--pose)")}
-    ${big("Armements", d.armement, "dépose ARMEMENT", "var(--pose)")}
-    ${big("Armements doubles", d.double, "dépose ARMEMENT DOUBLE", "var(--pose)")}
-    ${big("Connexions", d.connexion, "dépose CONNEXION", "var(--sx)")}
-    ${big("DE", d.de, "dépose DE", "var(--gc)")}
-    ${big("Massif / Haut massif", d.massif, "MASSIF + HAUT MASSIF", "var(--dep)")}
+    ${big("Consoles de ligne", d.console, "dépose CONSOLE DE LIGNE (+ variantes)", "var(--pose)", "dep-console")}
+    ${big("Armements", d.armement, "dépose ARMEMENT", "var(--pose)", "dep-armement")}
+    ${big("Armements doubles", d.double, "dépose ARMEMENT DOUBLE", "var(--pose)", "dep-double")}
+    ${big("Connexions", d.connexion, "dépose CONNEXION", "var(--sx)", "dep-connexion")}
+    ${big("DE", d.de, "dépose DE", "var(--gc)", "dep-de")}
+    ${big("Massif / Haut massif", d.massif, "MASSIF + HAUT MASSIF", "var(--dep)", "dep-massif")}
   </div></section>`;
 
   document.getElementById("content").innerHTML = html;
+  bindClicks(document.getElementById("content"), rows);
 }
 
 function go() {
