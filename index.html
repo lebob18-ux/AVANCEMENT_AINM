@@ -168,22 +168,50 @@
     <button type="button" data-ch="CEPOY">CEPOY</button>
     <button type="button" data-ch="SAMOIS">SAMOIS</button>
     <button type="button" data-ch="BOIS LE ROI">BOIS LE ROI</button>
+  </nav>
+  <nav class="nav no-print" style="margin-top:-12px">
+    <button type="button" data-mode="pose" class="on">1 · Pose</button>
+    <button type="button" data-mode="depose">2 · Dépose</button>
     <button type="button" class="primary-action" onclick="window.print()">📄 PDF de cette vue</button>
   </nav>
 
   <div id="content"></div>
 
   <div class="foot">
-    <span>SUIVI PCLE-MMM — Synthèse direction (standalone)</span>
-    <span>Supports Anc = n° contenant « Anc » · TEST_BOB exclu</span>
+    <span>SUIVI PCLE-MMM — Synthèse direction </span>
   </div>
 </div>
 
 <script>
+
+const DEPOSE = {
+  "ALL": {
+    console: [0,69], armement: [0,76], double: [0,6], connexion: [0,19],
+    de: [0,31], massif: [0,134]
+  },
+  "THOMERY": {
+    console: [0,20], armement: [0,24], double: [0,2], connexion: [0,3],
+    de: [0,10], massif: [0,61]
+  },
+  "CEPOY": {
+    console: [0,8], armement: [0,11], double: [0,1], connexion: [0,15],
+    de: [0,14], massif: [0,25]
+  },
+  "SAMOIS": {
+    console: [0,3], armement: [0,4], double: [0,1], connexion: [0,1],
+    de: [0,1], massif: [0,5]
+  },
+  "BOIS LE ROI": {
+    console: [0,38], armement: [0,37], double: [0,2], connexion: [0,0],
+    de: [0,6], massif: [0,43]
+  }
+};
+let MODE = "pose";
+
 const DATA = {
   "ALL": {
     title: "Synthèse Direction — Tous les chantiers",
-    sub: "Avancement global — Supports classiques vs Supports Ancrage",
+    sub: "Avancement global",
     meta: "THOMERY · CEPOY · SAMOIS · BOIS LE ROI",
     kpi: [
       ["Fouilles (tous)", "66 %", "90 / 137", ""],
@@ -191,7 +219,7 @@ const DATA = {
       ["Béton coulé", "349 m³", "219 + 130 (Anc)", "gc"],
       ["Consoles de ligne", "11 %", "17 / 156 (classiques)", "pose"]
     ],
-    class: { fouille: [53,90], matage: [53,90], beton: "219,1", prevu: "303,1", console: [17,156], armement: [0,168], double: [0,16], connexion: [0,143] },
+    class: { fouille: [53,90], matage: [53,90], beton: "219,1", prevu: "303,1", console: [17,156], armement: [0,168], double: [0,16], connexion: [0,143], de: [0,160], goudron: [0,137], ardrox: [0,49] },
     anc:   { fouille: [37,47], matage: [37,47], beton: "129,8", prevu: "155,1" },
     fkt: { armement: [0,94], at: [0,16], r1r2: [0,12], feeder: [0,6] },
     showTable: true,
@@ -219,7 +247,7 @@ const DATA = {
       ["Béton coulé", "144 m³", "79,8 + 64,6 (Anc)", "gc"],
       ["Consoles", "13 %", "6 / 45", "pose"]
     ],
-    class: { fouille: [27,27], matage: [27,27], beton: "79,8", prevu: "—", console: [6,45], armement: [0,53], double: [0,6], connexion: [0,30] },
+    class: { fouille: [27,27], matage: [27,27], beton: "79,8", prevu: "—", console: [6,45], armement: [0,53], double: [0,6], connexion: [0,30], de: [0,68], goudron: [0,45], ardrox: [0,18] },
     anc:   { fouille: [18,18], matage: [18,18], beton: "64,6", prevu: "—" },
     showTable: false,
     attn: [
@@ -238,7 +266,7 @@ const DATA = {
       ["Béton coulé", "162 m³", "108,6 + 53,0 (Anc)", "gc"],
       ["Consoles", "50 %", "11 / 22", "pose"]
     ],
-    class: { fouille: [22,22], matage: [22,22], beton: "108,6", prevu: "—", console: [11,22], armement: [0,25], double: [0,3], connexion: [0,59] },
+    class: { fouille: [22,22], matage: [22,22], beton: "108,6", prevu: "—", console: [11,22], armement: [0,25], double: [0,3], connexion: [0,59], de: [0,39], goudron: [0,39], ardrox: [0,17] },
     anc:   { fouille: [17,17], matage: [17,17], beton: "53,0", prevu: "—" },
     showTable: false,
     attn: [
@@ -257,7 +285,7 @@ const DATA = {
       ["Béton coulé", "43 m³", "30,8 + 12,2 (Anc)", "gc"],
       ["Consoles", "0 %", "0 / 7", "pose"]
     ],
-    class: { fouille: [4,4], matage: [4,4], beton: "30,8", prevu: "—", console: [0,7], armement: [0,9], double: [0,3], connexion: [0,8] },
+    class: { fouille: [4,4], matage: [4,4], beton: "30,8", prevu: "—", console: [0,7], armement: [0,9], double: [0,3], connexion: [0,8], de: [0,6], goudron: [0,6], ardrox: [0,4] },
     anc:   { fouille: [2,2], matage: [2,2], beton: "12,2", prevu: "—" },
     showTable: false,
     attn: [
@@ -276,7 +304,7 @@ const DATA = {
       ["Béton coulé", "—", "non démarré", "gc"],
       ["Consoles", "0 %", "0 / 82", "pose"]
     ],
-    class: { fouille: [0,37], matage: [0,37], beton: "0", prevu: "—", console: [0,82], armement: [0,81], double: [0,4], connexion: [0,46] },
+    class: { fouille: [0,37], matage: [0,37], beton: "0", prevu: "—", console: [0,82], armement: [0,81], double: [0,4], connexion: [0,46], de: [0,47], goudron: [0,47], ardrox: [0,10] },
     anc:   { fouille: [0,10], matage: [0,10], beton: "0", prevu: "—" },
     showTable: false,
     attn: [
@@ -310,6 +338,7 @@ function render(key) {
   document.getElementById("hero-sub").textContent = D.sub;
   document.getElementById("hero-meta").textContent = D.meta;
   document.querySelectorAll(".nav button[data-ch]").forEach(b => b.classList.toggle("on", b.dataset.ch === key));
+  document.querySelectorAll(".nav button[data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === "pose"));
 
   const c = D.class, a = D.anc;
   let html = "";
@@ -346,12 +375,16 @@ function render(key) {
     ${pie(c.console[0], c.console[1], "#2f8f63", "Consoles")}
   </div></section>`;
 
-  // Pose section
-  html += `<section><h2>Pose — Armements & Connexions</h2><div class="bigs">
+  // Pose section (type POSE + DE/GOUDRON/ARDROX côté GC)
+  const de = c.de || [0,0], goudron = c.goudron || [0,0], ardrox = c.ardrox || [0,0];
+  html += `<section><h2>Pose — Avancement</h2><div class="bigs">
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Consoles de ligne</div><div class="val">${c.console[0]} / ${c.console[1]}</div></div><div class="right">${pct(c.console[0],c.console[1])} %</div></div>
     <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements</div><div class="val">${c.armement[0]} / ${c.armement[1]}</div></div><div class="right">${pct(c.armement[0],c.armement[1])} %</div></div>
     <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements doubles</div><div class="val">${c.double[0]} / ${c.double[1]}</div></div><div class="right">${pct(c.double[0],c.double[1])} %</div></div>
     <div class="big"><div class="bar" style="background:var(--sx)"></div><div class="content"><div class="lab">Connexions</div><div class="val">${c.connexion[0]} / ${c.connexion[1]}</div></div><div class="right">${pct(c.connexion[0],c.connexion[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Consoles de ligne</div><div class="val">${c.console[0]} / ${c.console[1]}</div></div><div class="right">${pct(c.console[0],c.console[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">DE</div><div class="val">${de[0]} / ${de[1]}</div></div><div class="right">${pct(de[0],de[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">Goudron</div><div class="val">${goudron[0]} / ${goudron[1]}</div></div><div class="right">${pct(goudron[0],goudron[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">Ardrox</div><div class="val">${ardrox[0]} / ${ardrox[1]}</div></div><div class="right">${pct(ardrox[0],ardrox[1])} %</div></div>
   </div></section>`;
 
   // FKT section (depuis tâches RELEVER CAT / FKT)
@@ -364,7 +397,7 @@ function render(key) {
   // Table globale only
   if (D.showTable) {
     html += `<section><h2>Synthèse par chantier</h2><table>
-      <thead><tr><th>Chantier</th><th class="n">Fouilles Support.</th><th class="n">Fouilles Anc</th><th class="n">Supports</th><th class="n">Béton</th><th class="n">Consoles</th></tr></thead>
+      <thead><tr><th>Chantier</th><th class="n">Fouilles class.</th><th class="n">Fouilles Anc</th><th class="n">Supports</th><th class="n">Béton</th><th class="n">Consoles</th></tr></thead>
       <tbody>`;
     D.table.forEach(([n, fc, fa, m, b, c, ok]) => {
       html += `<tr><td><strong>${n}</strong></td>
@@ -388,10 +421,62 @@ function render(key) {
   document.getElementById("content").innerHTML = html;
 }
 
+let CURRENT_CH = "ALL";
+
+function renderDepose(key) {
+  const D = DATA[key];
+  const dep = DEPOSE[key] || DEPOSE.ALL;
+  document.getElementById("hero-title").textContent = (key === "ALL" ? "Synthèse Direction — Dépose" : "Dépose — " + key);
+  document.getElementById("hero-sub").textContent = "Page 2 · Tâches de dépose (mêmes familles que la pose + DE + MASSIF)";
+  document.getElementById("hero-meta").textContent = key === "ALL" ? "THOMERY · CEPOY · SAMOIS · BOIS LE ROI" : "Chantier " + key;
+  document.querySelectorAll(".nav button[data-ch]").forEach(b => b.classList.toggle("on", b.dataset.ch === key));
+  document.querySelectorAll(".nav button[data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === "depose"));
+
+  let html = "";
+  // KPI dépose
+  const totalTasks = dep.console[1]+dep.armement[1]+dep.double[1]+dep.connexion[1]+dep.de[1]+dep.massif[1];
+  const totalDone = dep.console[0]+dep.armement[0]+dep.double[0]+dep.connexion[0]+dep.de[0]+dep.massif[0];
+  html += `<div class="kpis">
+    <div class="kpi"><div class="lab">Dépose totale</div><div class="val">${pct(totalDone,totalTasks)} %</div><div class="sub">${totalDone} / ${totalTasks} tâches suivies</div></div>
+    <div class="kpi fb"><div class="lab">Consoles déposées</div><div class="val">${dep.console[0]}</div><div class="sub">/ ${dep.console[1]}</div></div>
+    <div class="kpi gc"><div class="lab">Massifs</div><div class="val">${dep.massif[0]}</div><div class="sub">/ ${dep.massif[1]} (MASSIF + HAUT MASSIF)</div></div>
+    <div class="kpi pose"><div class="lab">Armements déposés</div><div class="val">${dep.armement[0]}</div><div class="sub">/ ${dep.armement[1]}</div></div>
+  </div>`;
+
+  html += `<section><h2>Dépose — Avancement</h2><div class="bigs">
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Consoles de ligne</div><div class="val">${dep.console[0]} / ${dep.console[1]}</div><div class="right">${pct(dep.console[0],dep.console[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements</div><div class="val">${dep.armement[0]} / ${dep.armement[1]}</div></div><div class="right">${pct(dep.armement[0],dep.armement[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements doubles</div><div class="val">${dep.double[0]} / ${dep.double[1]}</div></div><div class="right">${pct(dep.double[0],dep.double[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--sx)"></div><div class="content"><div class="lab">Connexions</div><div class="val">${dep.connexion[0]} / ${dep.connexion[1]}</div></div><div class="right">${pct(dep.connexion[0],dep.connexion[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">DE</div><div class="val">${dep.de[0]} / ${dep.de[1]}</div><div class="right">${pct(dep.de[0],dep.de[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--dep)"></div><div class="content"><div class="lab">Massif / Haut massif</div><div class="val">${dep.massif[0]} / ${dep.massif[1]}</div</div><div class="right">${pct(dep.massif[0],dep.massif[1])} %</div></div>
+  </div></section>`;
+
+  html += `<section><h2>Points d’attention</h2><div class="bigs">
+    <div class="big"><div class="bar" style="background:var(--mu)"></div>
+      <div class="content"><div class="lab">Dépose</div>
+      <div class="val" style="font-size:17px">${totalDone === 0 ? "Aucune tâche de dépose terminée" : totalDone + " tâche(s) terminée(s)"}</div>
+      <div class="sub">Suivi limité aux mêmes familles que la pose + DE + MASSIF</div></div>
+    </div>
+  </div></section>`;
+
+  document.getElementById("content").innerHTML = html;
+}
+
+function go(ch, mode) {
+  CURRENT_CH = ch || CURRENT_CH;
+  MODE = mode || MODE;
+  if (MODE === "depose") renderDepose(CURRENT_CH);
+  else render(CURRENT_CH);
+}
+
 document.querySelectorAll(".nav button[data-ch]").forEach(b => {
-  b.addEventListener("click", () => render(b.dataset.ch));
+  b.addEventListener("click", () => go(b.dataset.ch, MODE));
 });
-render("ALL");
+document.querySelectorAll(".nav button[data-mode]").forEach(b => {
+  b.addEventListener("click", () => go(CURRENT_CH, b.dataset.mode));
+});
+go("ALL", "pose");
 </script>
 </body>
 </html>
