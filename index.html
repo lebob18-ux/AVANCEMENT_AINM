@@ -15,308 +15,197 @@
 <title>SUIVI PCLE-MMM · Synthèse Direction</title>
 <style>
   :root {
-    --navy: #0b2545; --jaune: #f2c200; --sx: #2f6f9f; --fb: #8a5fb0;
-    --pose: #2f8f63; --ec: #e08a1e; --dep: #c4543b; --gc: #b7881a;
-    --ad: #0e9aa7; --mu: #6b7884; --ln: #d9dee2; --sl: #eef1f3;
-    --tx: #1a232c; --card: #ffffff;
+    --navy:#0b2545; --jaune:#f2c200; --sx:#2f6f9f; --fb:#8a5fb0;
+    --pose:#2f8f63; --ec:#e08a1e; --dep:#c4543b; --gc:#b7881a;
+    --ad:#0e9aa7; --mu:#6b7884; --ln:#d9dee2; --sl:#eef1f3;
+    --tx:#1a232c; --card:#fff;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font: 15px/1.45 system-ui, "Segoe UI", Roboto, sans-serif;
-    background: var(--sl); color: var(--tx); padding: 24px 16px 48px;
-  }
-  .wrap { max-width: 960px; margin: 0 auto; }
-
-  .hero {
-    background: var(--navy); color: #fff; border-radius: 12px;
-    padding: 28px 32px 24px; position: relative; overflow: hidden; margin-bottom: 20px;
-  }
-  .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--jaune); }
-  .hero h1 { font-size: 22px; letter-spacing: .3px; margin-bottom: 6px; }
-  .hero p { opacity: .85; font-size: 14px; }
-  .hero .meta { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: .75; }
-
-  /* Navigation chantiers */
-  .nav {
-    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
-  }
-  .nav button {
-    font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 10px;
-    border: 1px solid var(--ln); background: var(--card); cursor: pointer; min-height: 42px;
-  }
-  .nav button.on {
-    background: var(--navy); color: #fff; border-color: var(--navy);
-  }
-  .nav button.primary-action {
-    background: var(--jaune); color: var(--navy); border-color: var(--jaune); margin-left: auto;
-  }
-
-  .kpis {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px;
-  }
-  @media (max-width: 720px) { .kpis { grid-template-columns: 1fr 1fr; } }
-  .kpi {
-    background: var(--card); border: 1px solid var(--ln); border-radius: 12px;
-    padding: 16px 18px; border-top: 4px solid var(--sx);
-  }
-  .kpi.fb { border-top-color: var(--fb); }
-  .kpi.gc { border-top-color: var(--gc); }
-  .kpi.pose { border-top-color: var(--pose); }
-  .kpi .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mu); margin-bottom: 6px; }
-  .kpi .val { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
-  .kpi .sub { font-size: 12px; color: var(--mu); margin-top: 4px; }
-
-  section { margin-bottom: 28px; }
-  h2 {
-    font-size: 15px; font-weight: 700; border-bottom: 2px solid var(--tx);
-    padding-bottom: 6px; margin-bottom: 16px;
-  }
-
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
-
-  .col-card {
-    background: var(--card); border: 1px solid var(--ln); border-radius: 14px; padding: 20px;
-  }
-  .col-card h3 {
-    font-size: 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
-  }
-  .col-card h3 .tag {
-    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff;
-  }
-  .tag.reg { background: var(--sx); }
-  .tag.anc { background: var(--ad); }
-
-  .row-ind {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 8px 0; border-bottom: 1px solid var(--ln);
-  }
-  .row-ind:last-child { border-bottom: 0; }
-  .row-ind .lab { font-size: 13px; color: var(--mu); }
-  .row-ind .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .row-ind .sub { font-size: 12px; color: var(--mu); }
-  .prog { height: 8px; background: var(--sl); border-radius: 4px; overflow: hidden; margin-top: 6px; }
-  .prog i { display: block; height: 100%; border-radius: 4px; }
-
-  .pies { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  @media (max-width: 700px) { .pies { grid-template-columns: 1fr; } }
-  .pie-card {
-    background: var(--card); border: 1px solid var(--ln); border-radius: 14px;
-    padding: 18px 14px; text-align: center;
-  }
-  .pie-card svg { display: block; margin: 0 auto 10px; }
-  .pie-card .title { font-weight: 700; font-size: 13px; }
-  .pie-card .pct { font-size: 20px; font-weight: 700; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
-  .pie-card .detail { font-size: 12px; color: var(--mu); }
-
-  .bigs { display: grid; gap: 12px; }
-  .big {
-    background: var(--card); border: 1px solid var(--ln); border-radius: 12px;
-    padding: 16px 20px; display: flex; align-items: center; gap: 18px;
-  }
-  .big .bar { width: 6px; align-self: stretch; border-radius: 3px; flex-shrink: 0; }
-  .big .content { flex: 1; min-width: 0; }
-  .big .lab { font-size: 12px; color: var(--mu); text-transform: uppercase; letter-spacing: .04em; }
-  .big .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
-  .big .sub { font-size: 13px; color: var(--mu); margin-top: 2px; }
-  .big .right { text-align: right; font-size: 13px; color: var(--mu); white-space: nowrap; }
-
-  table {
-    width: 100%; border-collapse: collapse; background: var(--card);
-    border-radius: 12px; overflow: hidden; border: 1px solid var(--ln);
-    font-variant-numeric: tabular-nums;
-  }
-  th {
-    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
-    color: var(--mu); padding: 12px; border-bottom: 1px solid var(--tx); background: #f8f9fa;
-  }
-  td { padding: 11px 12px; border-bottom: 1px solid var(--ln); font-size: 13px; }
-  tr:last-child td { border-bottom: 0; }
-  td.n { text-align: right; }
-  td.ok { color: var(--pose); font-weight: 600; }
-  td.bad { color: var(--dep); font-weight: 600; }
-
-  .foot {
-    margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--ln);
-    font-size: 12px; color: var(--mu); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-  }
-
-  @media print {
-    @page { size: A4; margin: 11mm; }
-    body { background: #fff; padding: 0; }
-    .nav, .no-print { display: none !important; }
-    .hero, .col-card, .big, tr, .pie-card { break-inside: avoid; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:15px/1.45 system-ui,"Segoe UI",Roboto,sans-serif;background:var(--sl);color:var(--tx);padding:24px 16px 48px}
+  .wrap{max-width:960px;margin:0 auto}
+  .hero{background:var(--navy);color:#fff;border-radius:12px;padding:28px 32px 24px;position:relative;overflow:hidden;margin-bottom:20px}
+  .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--jaune)}
+  .hero h1{font-size:22px;letter-spacing:.3px;margin-bottom:6px}
+  .hero p{opacity:.85;font-size:14px}
+  .hero .meta{margin-top:12px;display:flex;flex-wrap:wrap;gap:14px;font-size:13px;opacity:.75}
+  .nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .nav button{font:inherit;font-weight:600;padding:10px 16px;border-radius:10px;border:1px solid var(--ln);background:var(--card);cursor:pointer;min-height:42px}
+  .nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .nav button.primary-action{background:var(--jaune);color:var(--navy);border-color:var(--jaune);margin-left:auto}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+  @media(max-width:720px){.kpis{grid-template-columns:1fr 1fr}}
+  .kpi{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:16px 18px;border-top:4px solid var(--sx)}
+  .kpi.fb{border-top-color:var(--fb)}.kpi.gc{border-top-color:var(--gc)}.kpi.pose{border-top-color:var(--pose)}.kpi.ad{border-top-color:var(--ad)}
+  .kpi .lab{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:6px}
+  .kpi .val{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .sub{font-size:12px;color:var(--mu);margin-top:4px}
+  section{margin-bottom:28px}
+  h2{font-size:15px;font-weight:700;border-bottom:2px solid var(--tx);padding-bottom:6px;margin-bottom:16px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:700px){.split{grid-template-columns:1fr}}
+  .col-card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:20px}
+  .col-card h3{font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff}
+  .tag.reg{background:var(--sx)}.tag.anc{background:var(--ad)}
+  .row-ind{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--ln)}
+  .row-ind:last-child{border-bottom:0}
+  .row-ind .lab{font-size:13px;color:var(--mu)}
+  .row-ind .val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .row-ind .sub{font-size:12px;color:var(--mu)}
+  .prog{height:8px;background:var(--sl);border-radius:4px;overflow:hidden;margin-top:6px}
+  .prog i{display:block;height:100%;border-radius:4px}
+  .pies{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  @media(max-width:700px){.pies{grid-template-columns:1fr}}
+  .pie-card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:18px 14px;text-align:center}
+  .pie-card svg{display:block;margin:0 auto 10px}
+  .pie-card .title{font-weight:700;font-size:13px}
+  .pie-card .pct{font-size:20px;font-weight:700;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+  .pie-card .detail{font-size:12px;color:var(--mu)}
+  .bigs{display:grid;gap:12px}
+  .big{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:18px}
+  .big .bar{width:6px;align-self:stretch;border-radius:3px;flex-shrink:0}
+  .big .content{flex:1;min-width:0}
+  .big .lab{font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+  .big .val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+  .big .sub{font-size:13px;color:var(--mu);margin-top:2px}
+  .big .right{text-align:right;font-size:13px;color:var(--mu);white-space:nowrap}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--ln);font-variant-numeric:tabular-nums}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);padding:12px;border-bottom:1px solid var(--tx);background:#f8f9fa}
+  td{padding:11px 12px;border-bottom:1px solid var(--ln);font-size:13px}
+  tr:last-child td{border-bottom:0}
+  td.n{text-align:right} td.ok{color:var(--pose);font-weight:600} td.bad{color:var(--dep);font-weight:600}
+  .foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--ln);font-size:12px;color:var(--mu);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .loading{padding:40px;text-align:center;color:var(--mu)}
+  .err{background:#fff3f0;border:1px solid var(--dep);color:var(--dep);padding:16px;border-radius:12px;margin-bottom:20px}
+  @media print{
+    @page{size:A4;margin:11mm}
+    body{background:#fff;padding:0}
+    .nav,.no-print{display:none!important}
+    .hero,.col-card,.big,tr,.pie-card{break-inside:avoid}
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-
   <header class="hero">
     <h1 id="hero-title">SUIVI PCLE-MMM · Synthèse Direction</h1>
-    <p id="hero-sub">Avancement global — Supports classiques vs Supports Ancrage</p>
+    <p id="hero-sub">Chargement des données Supabase…</p>
     <div class="meta">
-      <span id="hero-meta">THOMERY · CEPOY · SAMOIS · BOIS LE ROI</span>
-      <span>Export 24/11/2026</span>
+      <span id="hero-meta">—</span>
+      <span id="hero-date"></span>
       <span>TEST_BOB exclu</span>
     </div>
   </header>
 
-  <nav class="nav no-print">
-    <button type="button" data-ch="ALL" class="on">Tous les chantiers</button>
-    <button type="button" data-ch="THOMERY">THOMERY</button>
-    <button type="button" data-ch="CEPOY">CEPOY</button>
-    <button type="button" data-ch="SAMOIS">SAMOIS</button>
-    <button type="button" data-ch="BOIS LE ROI">BOIS LE ROI</button>
-  </nav>
-  <nav class="nav no-print" style="margin-top:-12px">
-    <button type="button" data-mode="pose" class="on">1 · Pose</button>
-    <button type="button" data-mode="depose">2 · Dépose</button>
+  <nav class="nav no-print" id="nav-ch"></nav>
+  <nav class="nav no-print" style="margin-top:-8px">
+    <button type="button" data-mode="pose" class="on" id="btn-pose">1 · Pose</button>
+    <button type="button" data-mode="depose" id="btn-depose">2 · Dépose</button>
     <button type="button" class="primary-action" onclick="window.print()">📄 PDF de cette vue</button>
+    <button type="button" id="btn-refresh">Actualiser</button>
   </nav>
 
-  <div id="content"></div>
+  <div id="content"><div class="loading">Chargement depuis Supabase…</div></div>
 
   <div class="foot">
-    <span>SUIVI PCLE-MMM — Synthèse direction </span>
+    <span>SUIVI PCLE-MMM — Synthèse direction (live Supabase)</span>
+    <span>Supports Anc = n° contenant « Anc »</span>
   </div>
 </div>
 
 <script>
+const SUPABASE_URL = "https://thbqkeugjvsxbryfnzuo.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_2-Ij-nrTPeK6rB-kSD-QTg_b42zNakq";
+const EXCLUS = ["TEST_BOB", "MELUN"];
 
-const DEPOSE = {
-  "ALL": {
-    console: [0,69], armement: [0,76], double: [0,6], connexion: [0,19],
-    de: [0,31], massif: [0,134]
-  },
-  "THOMERY": {
-    console: [0,20], armement: [0,24], double: [0,2], connexion: [0,3],
-    de: [0,10], massif: [0,61]
-  },
-  "CEPOY": {
-    console: [0,8], armement: [0,11], double: [0,1], connexion: [0,15],
-    de: [0,14], massif: [0,25]
-  },
-  "SAMOIS": {
-    console: [0,3], armement: [0,4], double: [0,1], connexion: [0,1],
-    de: [0,1], massif: [0,5]
-  },
-  "BOIS LE ROI": {
-    console: [0,38], armement: [0,37], double: [0,2], connexion: [0,0],
-    de: [0,6], massif: [0,43]
-  }
-};
+let ROWS = [];
+let CURRENT_CH = "ALL";
 let MODE = "pose";
 
-const DATA = {
-  "ALL": {
-    title: "Synthèse Direction — Tous les chantiers",
-    sub: "Avancement global",
-    meta: "THOMERY · CEPOY · SAMOIS · BOIS LE ROI",
-    kpi: [
-      ["Fouilles (tous)", "66 %", "90 / 137", ""],
-      ["Supports matés", "53", "hors Anc (90 − 37 Anc)", "fb"],
-      ["Béton coulé", "349 m³", "219 + 130 (Anc)", "gc"],
-      ["Consoles de ligne", "11 %", "17 / 156 (classiques)", "pose"]
-    ],
-    class: { fouille: [53,90], matage: [53,90], beton: "219,1", prevu: "303,1", console: [17,156], armement: [0,168], double: [0,16], connexion: [0,143], de: [0,160], goudron: [0,137], ardrox: [0,49] },
-    anc:   { fouille: [37,47], matage: [37,47], beton: "129,8", prevu: "155,1" },
-    fkt: { armement: [0,94], at: [0,16], r1r2: [0,12], feeder: [0,6] },
-    showTable: true,
-    table: [
-      ["THOMERY", "terminé", "terminé", "45", "144,4 m³", "6 / 45", true],
-      ["CEPOY", "terminé", "terminé", "39", "161,6 m³", "11 / 22", true],
-      ["SAMOIS", "terminé", "terminé", "6", "43,0 m³", "0 / 7", true],
-      ["BOIS LE ROI", "0 / 37", "0 / 10", "0", "—", "0 / 82", false]
-    ],
-    attn: [
-      ["BOIS LE ROI", "Aucune fouille / matage démarré", "47 supports GC encore à 0 %", "dep"],
-      ["Pose des consoles de ligne", "Seulement 11 % réalisées", "17 sur 156 — uniquement supports classiques", "ec"],
-      ["Armements & Connexions", "0 réalisé", "0/168 armements · 0/16 doubles · 0/143 connexions", "dep"],
-      ["Poutres", "0 posée sur 13", "Aucune tâche « POUTRE » terminée", "mu"]
-    ]
-  },
-  "THOMERY": {
-    fkt: { armement: [0,28], at: [0,6], r1r2: [0,0], feeder: [0,0] },
-    title: "Synthèse Direction — THOMERY",
-    sub: "Détail du chantier THOMERY",
-    meta: "Chantier THOMERY",
-    kpi: [
-      ["Fouilles", "100 %", "45 / 45", ""],
-      ["Supports", "27", "hors Anc (45 − 18 Anc)", "fb"],
-      ["Béton coulé", "144 m³", "79,8 + 64,6 (Anc)", "gc"],
-      ["Consoles", "13 %", "6 / 45", "pose"]
-    ],
-    class: { fouille: [27,27], matage: [27,27], beton: "79,8", prevu: "—", console: [6,45], armement: [0,53], double: [0,6], connexion: [0,30], de: [0,68], goudron: [0,45], ardrox: [0,18] },
-    anc:   { fouille: [18,18], matage: [18,18], beton: "64,6", prevu: "—" },
-    showTable: false,
-    attn: [
-      ["GC terminé", "Fouilles & matages 100 %", "Supports classiques et Ancrage terminés", "pose"],
-      ["Pose en retard", "Consoles 6/45 · Armements 0 · Connexions 0", "La phase pose n’a quasiment pas démarré", "ec"]
-    ]
-  },
-  "CEPOY": {
-    fkt: { armement: [0,13], at: [0,6], r1r2: [0,9], feeder: [0,5] },
-    title: "Synthèse Direction — CEPOY",
-    sub: "Détail du chantier CEPOY",
-    meta: "Chantier CEPOY",
-    kpi: [
-      ["Fouilles", "100 %", "39 / 39", ""],
-      ["Supports", "22", "hors Anc (39 − 17 Anc)", "fb"],
-      ["Béton coulé", "162 m³", "108,6 + 53,0 (Anc)", "gc"],
-      ["Consoles", "50 %", "11 / 22", "pose"]
-    ],
-    class: { fouille: [22,22], matage: [22,22], beton: "108,6", prevu: "—", console: [11,22], armement: [0,25], double: [0,3], connexion: [0,59], de: [0,39], goudron: [0,39], ardrox: [0,17] },
-    anc:   { fouille: [17,17], matage: [17,17], beton: "53,0", prevu: "—" },
-    showTable: false,
-    attn: [
-      ["GC terminé", "Fouilles & matages 100 %", "Meilleur avancement pose (consoles 50 %)", "pose"],
-      ["Armements & Connexions", "Toujours à 0", "0/25 armements · 0/59 connexions", "ec"]
-    ]
-  },
-  "SAMOIS": {
-    fkt: { armement: [0,6], at: [0,0], r1r2: [0,3], feeder: [0,1] },
-    title: "Synthèse Direction — SAMOIS",
-    sub: "Détail du chantier SAMOIS",
-    meta: "Chantier SAMOIS",
-    kpi: [
-      ["Fouilles", "100 %", "6 / 6", ""],
-      ["Supports", "4", "hors Anc (6 − 2 Anc)", "fb"],
-      ["Béton coulé", "43 m³", "30,8 + 12,2 (Anc)", "gc"],
-      ["Consoles", "0 %", "0 / 7", "pose"]
-    ],
-    class: { fouille: [4,4], matage: [4,4], beton: "30,8", prevu: "—", console: [0,7], armement: [0,9], double: [0,3], connexion: [0,8], de: [0,6], goudron: [0,6], ardrox: [0,4] },
-    anc:   { fouille: [2,2], matage: [2,2], beton: "12,2", prevu: "—" },
-    showTable: false,
-    attn: [
-      ["GC terminé", "Fouilles & matages 100 %", "Petit chantier, GC achevé", "pose"],
-      ["Pose non démarrée", "0 console · 0 armement · 0 connexion", "Toute la phase pose reste à faire", "dep"]
-    ]
-  },
-  "BOIS LE ROI": {
-    fkt: { armement: [0,47], at: [0,4], r1r2: [0,0], feeder: [0,0] },
-    title: "Synthèse Direction — BOIS LE ROI",
-    sub: "Détail du chantier BOIS LE ROI",
-    meta: "Chantier BOIS LE ROI",
-    kpi: [
-      ["Fouilles", "0 %", "0 / 47", ""],
-      ["Supports", "0", "hors Anc", "fb"],
-      ["Béton coulé", "—", "non démarré", "gc"],
-      ["Consoles", "0 %", "0 / 82", "pose"]
-    ],
-    class: { fouille: [0,37], matage: [0,37], beton: "0", prevu: "—", console: [0,82], armement: [0,81], double: [0,4], connexion: [0,46], de: [0,47], goudron: [0,47], ardrox: [0,10] },
-    anc:   { fouille: [0,10], matage: [0,10], beton: "0", prevu: "—" },
-    showTable: false,
-    attn: [
-      ["Chantier non démarré", "Aucune fouille / matage", "37 supports classiques + 10 Anc à 0 %", "dep"],
-      ["Pose", "0 sur tout", "82 consoles · 81 armements · 46 connexions en attente", "mu"]
-    ]
-  }
-};
+const isAnc = s => /anc/i.test(String(s || ""));
+const done = r => r.Fait === true || r.Fait === "true" || r.admin_etat === "TERMINE" || r.etat === "TERMINE";
+const key = s => String(s || "").trim().toUpperCase();
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+const nf = n => (Math.round(n * 10) / 10).toLocaleString("fr-FR");
 
-function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
-function pie(done, total, color, label) {
-  const p = pct(done, total);
+async function fetchAll() {
+  let out = [], from = 0, step = 1000;
+  const cols = "id,Chantier,Support,Tache,type,Fait,etat,admin_etat,beton_prevu,beton_coule";
+  for (;;) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suivi_sutx_v2?select=${cols}&order=id.asc`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + SUPABASE_ANON_KEY,
+        "Range-Unit": "items",
+        Range: `${from}-${from + step - 1}`
+      }
+    });
+    if (!r.ok) throw new Error("Supabase " + r.status);
+    const a = await r.json();
+    out = out.concat(a);
+    if (a.length < step) break;
+    from += step;
+  }
+  return out.filter(r => !EXCLUS.includes(key(r.Chantier)));
+}
+
+function filterCh(rows, ch) {
+  return ch === "ALL" ? rows : rows.filter(r => key(r.Chantier) === key(ch));
+}
+
+function cnt(rows, pred) {
+  const sub = rows.filter(pred);
+  return [sub.filter(done).length, sub.length];
+}
+
+function volBeton(rows, ancFilter) {
+  // ancFilter: true = only Anc, false = only non-Anc, null = all
+  let sub = rows.filter(r => key(r.Tache) === "BETON" && done(r));
+  if (ancFilter === true) sub = sub.filter(r => isAnc(r.Support));
+  if (ancFilter === false) sub = sub.filter(r => !isAnc(r.Support));
+  return sub.reduce((s, r) => s + (parseFloat(r.beton_coule) || 0), 0);
+}
+
+function metrics(rows) {
+  const fouille = r => key(r.Tache) === "FOUILLE" && key(r.type) === "GC";
+  const matage = r => key(r.Tache) === "MATAGE" && key(r.type) === "GC";
+  const fReg = cnt(rows, r => fouille(r) && !isAnc(r.Support));
+  const fAnc = cnt(rows, r => fouille(r) && isAnc(r.Support));
+  const mReg = cnt(rows, r => matage(r) && !isAnc(r.Support));
+  const mAnc = cnt(rows, r => matage(r) && isAnc(r.Support));
+  const console_ = cnt(rows, r => key(r.type) === "POSE" && /CONSOLE DE LIGNE/i.test(r.Tache || ""));
+  const armement = cnt(rows, r => key(r.type) === "POSE" && key(r.Tache) === "ARMEMENT");
+  const double_ = cnt(rows, r => key(r.type) === "POSE" && key(r.Tache) === "ARMEMENT DOUBLE");
+  const connexion = cnt(rows, r => key(r.type) === "POSE" && key(r.Tache) === "CONNEXION");
+  const de = cnt(rows, r => key(r.Tache) === "DE" && key(r.type) === "GC");
+  const goudron = cnt(rows, r => key(r.Tache) === "GOUDRON");
+  const ardrox = cnt(rows, r => key(r.Tache) === "ARDROX");
+  const fktArm = cnt(rows, r => key(r.Tache) === "FKT ARMEMENT");
+  const fktAt = cnt(rows, r => key(r.Tache) === "FKT APPAREIL TENDEUR");
+  return {
+    fReg, fAnc, mReg, mAnc,
+    betonReg: volBeton(rows, false),
+    betonAnc: volBeton(rows, true),
+    betonAll: volBeton(rows, null),
+    console: console_, armement, double: double_, connexion,
+    de, goudron, ardrox, fktArm, fktAt
+  };
+}
+
+function metricsDepose(rows) {
+  const dep = rows.filter(r => key(r.type) === "DEPOSE");
+  return {
+    console: cnt(dep, r => /CONSOLE DE LIGNE/i.test(r.Tache || "")),
+    armement: cnt(dep, r => key(r.Tache) === "ARMEMENT"),
+    double: cnt(dep, r => key(r.Tache) === "ARMEMENT DOUBLE"),
+    connexion: cnt(dep, r => key(r.Tache) === "CONNEXION"),
+    de: cnt(dep, r => key(r.Tache) === "DE"),
+    massif: cnt(dep, r => /MASSIF/i.test(r.Tache || ""))
+  };
+}
+
+function pie(doneN, total, color, label) {
+  const p = pct(doneN, total);
   const circ = 2 * Math.PI * 50;
   const dash = (p / 100) * circ;
   return `<div class="pie-card">
@@ -328,155 +217,179 @@ function pie(done, total, color, label) {
       <text x="65" y="78" text-anchor="middle" font-size="10" fill="#6b7884">${label}</text>
     </svg>
     <div class="title">${label}</div>
-    <div class="pct" style="color:${color}">${done} / ${total}</div>
+    <div class="pct" style="color:${color}">${doneN} / ${total}</div>
   </div>`;
 }
 
-function render(key) {
-  const D = DATA[key];
-  document.getElementById("hero-title").textContent = D.title;
-  document.getElementById("hero-sub").textContent = D.sub;
-  document.getElementById("hero-meta").textContent = D.meta;
-  document.querySelectorAll(".nav button[data-ch]").forEach(b => b.classList.toggle("on", b.dataset.ch === key));
-  document.querySelectorAll(".nav button[data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === "pose"));
+function rowInd(lab, pair, color) {
+  const [d, t] = pair;
+  return `<div class="row-ind"><div><div class="lab">${lab}</div>
+    <div class="prog"><i style="width:${pct(d,t)}%;background:${color}"></i></div></div>
+    <div class="val">${d} <span class="sub">/ ${t}</span></div></div>`;
+}
 
-  const c = D.class, a = D.anc;
-  let html = "";
+function big(lab, pair, sub, color) {
+  const [d, t] = pair;
+  return `<div class="big"><div class="bar" style="background:${color}"></div>
+    <div class="content"><div class="lab">${lab}</div><div class="val">${d} / ${t}</div>
+    <div class="sub">${sub}</div></div><div class="right">${pct(d,t)} %</div></div>`;
+}
 
-  // KPIs
-  html += `<div class="kpis">`;
-  D.kpi.forEach(([lab, val, sub, cls]) => {
-    html += `<div class="kpi ${cls||""}"><div class="lab">${lab}</div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;
-  });
-  html += `</div>`;
+function renderPose(ch) {
+  const rows = filterCh(ROWS, ch);
+  const m = metrics(rows);
+  const fouilleAll = m.fReg[0] + m.fAnc[0];
+  const fouilleTot = m.fReg[1] + m.fAnc[1];
+  const supportDone = m.mReg[0]; // supports = matage hors Anc
+  const supportTot = m.mReg[1];
 
-  // Split class / anc
-  html += `<section><h2>Supports classiques / Supports Ancrage</h2><div class="split">`;
-  html += `<div class="col-card"><h3>Supports classiques <span class="tag reg">hors Anc</span></h3>
-    <div class="row-ind"><div><div class="lab">Fouilles</div><div class="prog"><i style="width:${pct(c.fouille[0],c.fouille[1])}%;background:var(--gc)"></i></div></div><div class="val">${c.fouille[0]} <span class="sub">/ ${c.fouille[1]}</span></div></div>
-    <div class="row-ind"><div><div class="lab">Supports (matage hors Anc)</div><div class="prog"><i style="width:${pct(c.matage[0],c.matage[1])}%;background:var(--fb)"></i></div></div><div class="val">${c.matage[0]} <span class="sub">/ ${c.matage[1]}</span></div></div>
-    <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${c.beton} m³</div></div>
-    <div class="row-ind"><div><div class="lab">Consoles de ligne</div><div class="prog"><i style="width:${pct(c.console[0],c.console[1])}%;background:var(--pose)"></i></div></div><div class="val">${c.console[0]} <span class="sub">/ ${c.console[1]}</span></div></div>
-    <div class="row-ind"><div><div class="lab">Armements</div><div class="prog"><i style="width:${pct(c.armement[0],c.armement[1])}%;background:var(--pose)"></i></div></div><div class="val">${c.armement[0]} <span class="sub">/ ${c.armement[1]}</span></div></div>
-    <div class="row-ind"><div><div class="lab">Armements doubles</div><div class="prog"><i style="width:${pct(c.double[0],c.double[1])}%;background:var(--pose)"></i></div></div><div class="val">${c.double[0]} <span class="sub">/ ${c.double[1]}</span></div></div>
-    <div class="row-ind"><div><div class="lab">Connexions</div><div class="prog"><i style="width:${pct(c.connexion[0],c.connexion[1])}%;background:var(--sx)"></i></div></div><div class="val">${c.connexion[0]} <span class="sub">/ ${c.connexion[1]}</span></div></div>
+  document.getElementById("hero-title").textContent =
+    ch === "ALL" ? "SUIVI PCLE-MMM · Synthèse Direction" : "Synthèse — " + ch;
+  document.getElementById("hero-sub").textContent = "1 · Pose — Supports classiques vs Ancrage (live Supabase)";
+  document.getElementById("hero-meta").textContent =
+    ch === "ALL" ? [...new Set(ROWS.map(r => r.Chantier))].sort().join(" · ") : "Chantier " + ch;
+
+  document.querySelectorAll("[data-ch]").forEach(b => b.classList.toggle("on", b.dataset.ch === ch));
+  document.getElementById("btn-pose").classList.add("on");
+  document.getElementById("btn-depose").classList.remove("on");
+
+  let html = `<div class="kpis">
+    <div class="kpi"><div class="lab">Fouilles (tous)</div><div class="val">${pct(fouilleAll,fouilleTot)} %</div><div class="sub">${fouilleAll} / ${fouilleTot}</div></div>
+    <div class="kpi fb"><div class="lab">Supports (hors Anc)</div><div class="val">${supportDone}</div><div class="sub">matage − Anc · ${supportDone}/${supportTot}</div></div>
+    <div class="kpi gc"><div class="lab">Béton coulé</div><div class="val">${nf(m.betonAll)} m³</div><div class="sub">${nf(m.betonReg)} + ${nf(m.betonAnc)} Anc</div></div>
+    <div class="kpi pose"><div class="lab">Consoles de ligne</div><div class="val">${pct(m.console[0],m.console[1])} %</div><div class="sub">${m.console[0]} / ${m.console[1]}</div></div>
   </div>`;
-  html += `<div class="col-card"><h3>Supports Ancrage <span class="tag anc">contient Anc</span></h3>
-    <div class="row-ind"><div><div class="lab">Fouilles</div><div class="prog"><i style="width:${pct(a.fouille[0],a.fouille[1])}%;background:var(--gc)"></i></div></div><div class="val">${a.fouille[0]} <span class="sub">/ ${a.fouille[1]}</span></div></div>
-    <div class="row-ind"><div><div class="lab">Supports Ancrage (matage)</div><div class="prog"><i style="width:${pct(a.matage[0],a.matage[1])}%;background:var(--fb)"></i></div></div><div class="val">${a.matage[0]} <span class="sub">/ ${a.matage[1]}</span></div></div>
-    <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${a.beton} m³</div></div>
-    <div class="row-ind"><div><div class="lab">Consoles / Armements / Connexions</div></div><div class="val" style="font-size:14px">— <span class="sub">non concernées</span></div></div>
-  </div></div></section>`;
 
-  // Pies
+  html += `<section><h2>Supports classiques / Supports Ancrage</h2><div class="split">
+    <div class="col-card"><h3>Supports classiques <span class="tag reg">hors Anc</span></h3>
+      ${rowInd("Fouilles", m.fReg, "var(--gc)")}
+      ${rowInd("Supports (matage hors Anc)", m.mReg, "var(--fb)")}
+      <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${nf(m.betonReg)} m³</div></div>
+      ${rowInd("Consoles de ligne", m.console, "var(--pose)")}
+      ${rowInd("Armements", m.armement, "var(--pose)")}
+      ${rowInd("Armements doubles", m.double, "var(--pose)")}
+      ${rowInd("Connexions", m.connexion, "var(--sx)")}
+    </div>
+    <div class="col-card"><h3>Supports Ancrage <span class="tag anc">contient Anc</span></h3>
+      ${rowInd("Fouilles", m.fAnc, "var(--gc)")}
+      ${rowInd("Supports Ancrage (matage)", m.mAnc, "var(--fb)")}
+      <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${nf(m.betonAnc)} m³</div></div>
+      <div class="row-ind"><div><div class="lab">Consoles / Armements / Connexions</div></div><div class="val" style="font-size:14px">— <span class="sub">non concernées</span></div></div>
+    </div>
+  </div></section>`;
+
   html += `<section><h2>Avancement visuel</h2><div class="pies">
-    ${pie(c.fouille[0], c.fouille[1], "#2f6f9f", "Classiques")}
-    ${pie(a.fouille[0], a.fouille[1], "#0e9aa7", "Ancrages")}
-    ${pie(c.console[0], c.console[1], "#2f8f63", "Consoles")}
+    ${pie(m.fReg[0], m.fReg[1], "#2f6f9f", "Classiques")}
+    ${pie(m.fAnc[0], m.fAnc[1], "#0e9aa7", "Ancrages")}
+    ${pie(m.console[0], m.console[1], "#2f8f63", "Consoles")}
   </div></section>`;
 
-  // Pose section (type POSE + DE/GOUDRON/ARDROX côté GC)
-  const de = c.de || [0,0], goudron = c.goudron || [0,0], ardrox = c.ardrox || [0,0];
   html += `<section><h2>Pose — Avancement</h2><div class="bigs">
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Consoles de ligne</div><div class="val">${c.console[0]} / ${c.console[1]}</div></div><div class="right">${pct(c.console[0],c.console[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements</div><div class="val">${c.armement[0]} / ${c.armement[1]}</div></div><div class="right">${pct(c.armement[0],c.armement[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements doubles</div><div class="val">${c.double[0]} / ${c.double[1]}</div></div><div class="right">${pct(c.double[0],c.double[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--sx)"></div><div class="content"><div class="lab">Connexions</div><div class="val">${c.connexion[0]} / ${c.connexion[1]}</div></div><div class="right">${pct(c.connexion[0],c.connexion[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">DE</div><div class="val">${de[0]} / ${de[1]}</div></div><div class="right">${pct(de[0],de[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">Goudron</div><div class="val">${goudron[0]} / ${goudron[1]}</div></div><div class="right">${pct(goudron[0],goudron[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">Ardrox</div><div class="val">${ardrox[0]} / ${ardrox[1]}</div></div><div class="right">${pct(ardrox[0],ardrox[1])} %</div></div>
+    ${big("Consoles de ligne", m.console, "type POSE", "var(--pose)")}
+    ${big("Armements", m.armement, "type POSE", "var(--pose)")}
+    ${big("Armements doubles", m.double, "type POSE", "var(--pose)")}
+    ${big("Connexions", m.connexion, "type POSE", "var(--sx)")}
+    ${big("DE", m.de, "type GC — hors dépose", "var(--gc)")}
+    ${big("Goudron", m.goudron, "tâches GOUDRON", "var(--gc)")}
+    ${big("Ardrox", m.ardrox, "tâches ARDROX", "var(--gc)")}
   </div></section>`;
 
-  // FKT section (depuis tâches RELEVER CAT / FKT)
-  const fkt = D.fkt || { armement: [0,94], at: [0,16], r1r2: [0,12], feeder: [0,6] };
   html += `<section><h2>Suivi FKT</h2><div class="bigs">
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Armement</div><div class="val">${fkt.armement[0]} / ${fkt.armement[1]}</div></div><div class="right">${pct(fkt.armement[0],fkt.armement[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Appareil tendeur</div><div class="val">${fkt.at[0]} / ${fkt.at[1]}</div></div><div class="right">${pct(fkt.at[0],fkt.at[1])} %</div></div>
+    ${big("FKT Armement", m.fktArm, "tâches FKT ARMEMENT", "var(--gc)")}
+    ${big("FKT Appareil tendeur", m.fktAt, "tâches FKT APPAREIL TENDEUR", "var(--gc)")}
   </div></section>`;
 
-  // Table globale only
-  if (D.showTable) {
+  if (ch === "ALL") {
+    const chantiers = [...new Set(ROWS.map(r => r.Chantier))].sort((a, b) => a.localeCompare(b, "fr"));
     html += `<section><h2>Synthèse par chantier</h2><table>
-      <thead><tr><th>Chantier</th><th class="n">Fouilles class.</th><th class="n">Fouilles Anc</th><th class="n">Supports</th><th class="n">Béton</th><th class="n">Consoles</th></tr></thead>
-      <tbody>`;
-    D.table.forEach(([n, fc, fa, m, b, c, ok]) => {
-      html += `<tr><td><strong>${n}</strong></td>
-        <td class="n ${ok?"ok":"bad"}">${fc}</td>
-        <td class="n ${ok?"ok":"bad"}">${fa}</td>
-        <td class="n ${ok?"ok":"bad"}">${m}</td>
-        <td class="n">${b}</td>
-        <td class="n">${c}</td></tr>`;
+      <thead><tr><th>Chantier</th><th class="n">Fouilles class.</th><th class="n">Fouilles Anc</th><th class="n">Supports</th><th class="n">Béton</th><th class="n">Consoles</th></tr></thead><tbody>`;
+    chantiers.forEach(c => {
+      const mm = metrics(filterCh(ROWS, c));
+      const ok = mm.fReg[0] + mm.fAnc[0] > 0;
+      html += `<tr><td><strong>${c}</strong></td>
+        <td class="n ${mm.fReg[0]===mm.fReg[1]&&mm.fReg[1]? "ok": mm.fReg[0]?"":"bad"}">${mm.fReg[0]}/${mm.fReg[1]}</td>
+        <td class="n ${mm.fAnc[0]===mm.fAnc[1]&&mm.fAnc[1]? "ok": mm.fAnc[0]?"":"bad"}">${mm.fAnc[0]}/${mm.fAnc[1]}</td>
+        <td class="n">${mm.mReg[0]}/${mm.mReg[1]}</td>
+        <td class="n">${nf(mm.betonAll)} m³</td>
+        <td class="n">${mm.console[0]}/${mm.console[1]}</td></tr>`;
     });
     html += `</tbody></table></section>`;
   }
 
-  // Attention
-  html += `<section><h2>Points d’attention</h2><div class="bigs">`;
-  D.attn.forEach(([lab, val, sub, col]) => {
-    html += `<div class="big"><div class="bar" style="background:var(--${col})"></div>
-      <div class="content"><div class="lab">${lab}</div><div class="val" style="font-size:17px">${val}</div><div class="sub">${sub}</div></div></div>`;
-  });
-  html += `</div></section>`;
-
   document.getElementById("content").innerHTML = html;
 }
 
-let CURRENT_CH = "ALL";
+function renderDepose(ch) {
+  const rows = filterCh(ROWS, ch);
+  const d = metricsDepose(rows);
+  const totalT = d.console[1]+d.armement[1]+d.double[1]+d.connexion[1]+d.de[1]+d.massif[1];
+  const totalD = d.console[0]+d.armement[0]+d.double[0]+d.connexion[0]+d.de[0]+d.massif[0];
 
-function renderDepose(key) {
-  const D = DATA[key];
-  const dep = DEPOSE[key] || DEPOSE.ALL;
-  document.getElementById("hero-title").textContent = (key === "ALL" ? "Synthèse Direction — Dépose" : "Dépose — " + key);
-  document.getElementById("hero-sub").textContent = "Page 2 · Tâches de dépose (mêmes familles que la pose + DE + MASSIF)";
-  document.getElementById("hero-meta").textContent = key === "ALL" ? "THOMERY · CEPOY · SAMOIS · BOIS LE ROI" : "Chantier " + key;
-  document.querySelectorAll(".nav button[data-ch]").forEach(b => b.classList.toggle("on", b.dataset.ch === key));
-  document.querySelectorAll(".nav button[data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === "depose"));
+  document.getElementById("hero-title").textContent =
+    ch === "ALL" ? "Synthèse Direction — Dépose" : "Dépose — " + ch;
+  document.getElementById("hero-sub").textContent = "2 · Dépose — mêmes familles que la pose + DE + MASSIF (live Supabase)";
+  document.getElementById("hero-meta").textContent =
+    ch === "ALL" ? [...new Set(ROWS.map(r => r.Chantier))].sort().join(" · ") : "Chantier " + ch;
 
-  let html = "";
-  // KPI dépose
-  const totalTasks = dep.console[1]+dep.armement[1]+dep.double[1]+dep.connexion[1]+dep.de[1]+dep.massif[1];
-  const totalDone = dep.console[0]+dep.armement[0]+dep.double[0]+dep.connexion[0]+dep.de[0]+dep.massif[0];
-  html += `<div class="kpis">
-    <div class="kpi"><div class="lab">Dépose totale</div><div class="val">${pct(totalDone,totalTasks)} %</div><div class="sub">${totalDone} / ${totalTasks} tâches suivies</div></div>
-    <div class="kpi fb"><div class="lab">Consoles déposées</div><div class="val">${dep.console[0]}</div><div class="sub">/ ${dep.console[1]}</div></div>
-    <div class="kpi gc"><div class="lab">Massifs</div><div class="val">${dep.massif[0]}</div><div class="sub">/ ${dep.massif[1]} (MASSIF + HAUT MASSIF)</div></div>
-    <div class="kpi pose"><div class="lab">Armements déposés</div><div class="val">${dep.armement[0]}</div><div class="sub">/ ${dep.armement[1]}</div></div>
+  document.querySelectorAll("[data-ch]").forEach(b => b.classList.toggle("on", b.dataset.ch === ch));
+  document.getElementById("btn-pose").classList.remove("on");
+  document.getElementById("btn-depose").classList.add("on");
+
+  let html = `<div class="kpis">
+    <div class="kpi"><div class="lab">Dépose totale</div><div class="val">${pct(totalD,totalT)} %</div><div class="sub">${totalD} / ${totalT} tâches suivies</div></div>
+    <div class="kpi fb"><div class="lab">Consoles déposées</div><div class="val">${d.console[0]}</div><div class="sub">/ ${d.console[1]}</div></div>
+    <div class="kpi gc"><div class="lab">Massifs</div><div class="val">${d.massif[0]}</div><div class="sub">/ ${d.massif[1]}</div></div>
+    <div class="kpi pose"><div class="lab">Armements déposés</div><div class="val">${d.armement[0]}</div><div class="sub">/ ${d.armement[1]}</div></div>
   </div>`;
 
   html += `<section><h2>Dépose — Avancement</h2><div class="bigs">
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Consoles de ligne</div><div class="val">${dep.console[0]} / ${dep.console[1]}</div><div class="right">${pct(dep.console[0],dep.console[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements</div><div class="val">${dep.armement[0]} / ${dep.armement[1]}</div></div><div class="right">${pct(dep.armement[0],dep.armement[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements doubles</div><div class="val">${dep.double[0]} / ${dep.double[1]}</div></div><div class="right">${pct(dep.double[0],dep.double[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--sx)"></div><div class="content"><div class="lab">Connexions</div><div class="val">${dep.connexion[0]} / ${dep.connexion[1]}</div></div><div class="right">${pct(dep.connexion[0],dep.connexion[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">DE</div><div class="val">${dep.de[0]} / ${dep.de[1]}</div><div class="right">${pct(dep.de[0],dep.de[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--dep)"></div><div class="content"><div class="lab">Massif / Haut massif</div><div class="val">${dep.massif[0]} / ${dep.massif[1]}</div</div><div class="right">${pct(dep.massif[0],dep.massif[1])} %</div></div>
-  </div></section>`;
-
-  html += `<section><h2>Points d’attention</h2><div class="bigs">
-    <div class="big"><div class="bar" style="background:var(--mu)"></div>
-      <div class="content"><div class="lab">Dépose</div>
-      <div class="val" style="font-size:17px">${totalDone === 0 ? "Aucune tâche de dépose terminée" : totalDone + " tâche(s) terminée(s)"}</div>
-      <div class="sub">Suivi limité aux mêmes familles que la pose + DE + MASSIF</div></div>
-    </div>
+    ${big("Consoles de ligne", d.console, "dépose CONSOLE DE LIGNE (+ variantes)", "var(--pose)")}
+    ${big("Armements", d.armement, "dépose ARMEMENT", "var(--pose)")}
+    ${big("Armements doubles", d.double, "dépose ARMEMENT DOUBLE", "var(--pose)")}
+    ${big("Connexions", d.connexion, "dépose CONNEXION", "var(--sx)")}
+    ${big("DE", d.de, "dépose DE", "var(--gc)")}
+    ${big("Massif / Haut massif", d.massif, "MASSIF + HAUT MASSIF", "var(--dep)")}
   </div></section>`;
 
   document.getElementById("content").innerHTML = html;
 }
 
-function go(ch, mode) {
-  CURRENT_CH = ch || CURRENT_CH;
-  MODE = mode || MODE;
+function go() {
   if (MODE === "depose") renderDepose(CURRENT_CH);
-  else render(CURRENT_CH);
+  else renderPose(CURRENT_CH);
 }
 
-document.querySelectorAll(".nav button[data-ch]").forEach(b => {
-  b.addEventListener("click", () => go(b.dataset.ch, MODE));
-});
-document.querySelectorAll(".nav button[data-mode]").forEach(b => {
-  b.addEventListener("click", () => go(CURRENT_CH, b.dataset.mode));
-});
-go("ALL", "pose");
+function buildNav() {
+  const chantiers = ["ALL", ...[...new Set(ROWS.map(r => r.Chantier))].sort((a, b) => a.localeCompare(b, "fr"))];
+  const nav = document.getElementById("nav-ch");
+  nav.innerHTML = chantiers.map(c =>
+    `<button type="button" data-ch="${c}">${c === "ALL" ? "Tous les chantiers" : c}</button>`
+  ).join("");
+  nav.querySelectorAll("[data-ch]").forEach(b => b.addEventListener("click", () => {
+    CURRENT_CH = b.dataset.ch;
+    go();
+  }));
+}
+
+async function load() {
+  document.getElementById("content").innerHTML = `<div class="loading">Chargement depuis Supabase…</div>`;
+  try {
+    ROWS = await fetchAll();
+    document.getElementById("hero-date").textContent =
+      "Mis à jour à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    buildNav();
+    go();
+  } catch (e) {
+    document.getElementById("content").innerHTML =
+      `<div class="err">Impossible de lire Supabase : ${e.message}<br>
+      Vérifie l’URL, la clé anon et les droits RLS sur suivi_sutx_v2.</div>`;
+  }
+}
+
+document.getElementById("btn-pose").onclick = () => { MODE = "pose"; go(); };
+document.getElementById("btn-depose").onclick = () => { MODE = "depose"; go(); };
+document.getElementById("btn-refresh").onclick = load;
+load();
 </script>
 </body>
 </html>
