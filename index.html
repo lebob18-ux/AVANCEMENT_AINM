@@ -4,1705 +4,394 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b2545">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PCLE Synthèse">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="PCLE MMM">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>SUIVI_PCLE-MMM</title>
+<title>SUIVI PCLE-MMM · Synthèse Direction</title>
 <style>
-:root{--bg:#eef1f3;--card:#fff;--tx:#1a232c;--mu:#6b7884;--ln:#d9dee2;--sl:#dde2e6;--gc:#b7881a;--dep:#c4543b;--pose:#2f8f63;--sx:#2f6f9f;--fb:#8a5fb0;--ec:#e08a1e;--ad:#0e9aa7}
-@media(prefers-color-scheme:dark){:root{--bg:#10171e;--card:#1a2530;--tx:#e8edf1;--mu:#8fa0ad;--ln:#2b3946;--sl:#2f3d4a;--gc:#d9a928;--dep:#e0705a;--pose:#4cb485;--sx:#5aa0d2;--fb:#b08ad4;--ec:#f0a23a;--ad:#3cc4d0}}
-*{box-sizing:border-box}
-html,body{margin:0}
-body{background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;padding:0 0 env(safe-area-inset-bottom,0px)}
-main{max-width:760px;margin:0 auto;padding:0 12px 24px}
-.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top,0px) + 10px) 0 8px}
-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-h1{font-size:18px;margin:0;letter-spacing:.3px}
-h2{font-size:15px;margin:0 0 10px}
-.mu{color:var(--mu)}
-#st{font-size:12px;color:var(--mu)}
-select{font:inherit;color:var(--tx);border:1px solid var(--ln);background:var(--card);border-radius:10px;padding:8px 12px;min-height:44px;width:100%;font-weight:600}
-button,input{font:inherit;color:var(--tx);border:1px solid var(--ln);background:var(--card);border-radius:8px;padding:8px 12px;min-height:42px}
-nav{display:flex;gap:6px}
-nav button{flex:1;font-weight:600}
-nav button[aria-pressed=true]{background:var(--sx);border-color:var(--sx);color:#fff}
-.seg{display:flex;gap:4px;background:var(--sl);padding:3px;border-radius:10px;margin:12px 0}
-.seg button{flex:1;border:0;background:transparent;min-height:38px;border-radius:8px;font-size:13px;padding:4px 6px}
-.seg button[aria-pressed=true]{background:var(--card);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-input[type=search]{width:100%;margin:12px 0 4px}
-.tg{display:flex;align-items:center;gap:8px;min-height:42px}
-.tg input{width:20px;height:20px;min-height:0;margin:0}
-.lg{font-size:12px;color:var(--mu);margin:0 0 12px}
-.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:12px}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.kpi{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
-.kpi b{font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
-.rings{display:flex;justify-content:space-around;gap:10px}
-.ring{text-align:center;width:46%;font-size:13px;color:var(--mu)}
-.row{margin:12px 0}
-.rl{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:5px}
-.rl b{font-variant-numeric:tabular-nums}
-.bar,.sb{height:12px;border-radius:6px;background:var(--sl);overflow:hidden;display:flex}
-.big{height:20px;border-radius:10px}
-.bar i,.sb i{display:block;height:100%}
-.bar i{background-image:repeating-linear-gradient(90deg,transparent 0 6px,rgba(0,0,0,.22) 6px 8px)}
-.lg2{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu);margin-bottom:6px}
-.lg2 i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
-.lg2 i.o{background:var(--sl)}
-.chart{display:flex;align-items:flex-end;gap:3px;height:110px;border-bottom:1px solid var(--ln)}
-.col{flex:1;display:flex;flex-direction:column;height:100%;align-items:center;font-size:10px;color:var(--mu)}
-.stk{flex:1;width:100%;display:flex;flex-direction:column;justify-content:flex-end}
-.stk span{display:block;width:100%;border-radius:2px 2px 0 0}
-.sp{padding:10px 0;border-top:1px solid var(--ln);cursor:pointer}
-.sp .rl{margin-bottom:6px}
-.qc{cursor:pointer}
-.chips em{font-style:normal;font-size:11px;min-width:22px;display:inline-block;text-align:center;border:1px solid var(--fb);border-radius:4px;margin-left:3px;padding:1px 4px;color:var(--mu)}
-.chips em.on{background:var(--fb);color:#fff}
-.chips em.ad{background:var(--ad);border-color:var(--ad);color:#fff}
-.tl{font-size:12px;margin-top:5px}
-.nc{font-size:12px;margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(196,84,59,.14);color:var(--dep);font-weight:600}
-.nb{font-size:11px;font-weight:700;color:var(--dep);margin-right:6px}
-.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff}
-summary{cursor:pointer;list-style:none}
-summary::-webkit-details-marker{display:none}
-summary::after{content:"▾";float:right;color:var(--mu)}
-details[open] summary::after{content:"▴"}
-details .in{margin-top:8px;border-top:1px solid var(--ln);padding-top:2px}
-dialog{border:1px solid var(--ln);border-radius:14px;background:var(--card);color:var(--tx);width:min(560px,94vw);max-height:88vh;overflow:auto;padding:0}
-dialog::backdrop{background:rgba(0,0,0,.55)}
-.dh{position:sticky;top:0;background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--ln)}
-.db{padding:14px}
-.tb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.tb th,.tb td{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:right}
-.tb th:first-child,.tb td:first-child{text-align:left;color:var(--mu)}
-.df{color:var(--gc);font-weight:600}
-.th{font-weight:600;margin:12px 0 2px;font-size:14px}
-.tk{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln)}
-.ck{flex:none;width:22px;height:22px;border:2px solid var(--ln);border-radius:5px;display:grid;place-items:center;font-size:14px;color:#fff}
-.ck.on{background:var(--pose);border-color:var(--pose)}
-.ck.admin{background:var(--ad);border-color:var(--ad)}
-.ck.ec{background:var(--ec);border-color:var(--ec)}
-.ck.an{background:var(--mu);border-color:var(--mu)}
-.fl{cursor:pointer;border-radius:8px;padding:4px 6px;margin:8px 0}
-.fl.on{background:var(--sl)}
-.fl small{color:var(--fb);font-weight:700}
-.ss{padding:8px 4px;min-height:36px;cursor:pointer;border-radius:6px}
-.ss:active{background:var(--sl)}
-.admsearch{display:grid;gap:7px;margin-bottom:12px}.admsearch input{width:100%;min-width:0}.meta{font-size:12px;color:var(--mu);margin-top:4px}.tag{display:inline-block;border:1px solid var(--ln);border-radius:6px;padding:2px 6px;font-size:11px;margin:2px 3px 2px 0}
-  #rapport{display:none}
-@media print{
-  @page{size:A4;margin:11mm 11mm 13mm}
-  html,body{background:#fff!important;color:#1a232c!important;padding:0!important}
-  body>*:not(#rapport){display:none!important}
-  #rapport{display:block;font:10pt/1.35 system-ui,"Segoe UI",Roboto,Arial,sans-serif;color:#1a232c;--sx:#2f6f9f;--fb:#8a5fb0;--ad:#0e9aa7;--pose:#2f8f63;--ec:#e08a1e;--dep:#c4543b;--gc:#b7881a;--mu:#6b7884;--ln:#d9dee2;--sl:#e3e7ea;--tx:#1a232c;--card:#fff}
-  #rapport *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rh{background:#0b2545;color:#fff;padding:14px 16px;border-radius:6px;border-bottom:4px solid #f2c200;margin-bottom:12px}
-  .rh h1{font-size:17pt;margin:0}
-  .rh p{margin:3px 0 0;font-size:10pt;opacity:.85}
-  .rks{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
-  .rk{border:1px solid var(--ln);border-radius:6px;padding:8px 10px;break-inside:avoid}
-  .rk span{display:block;font-size:8pt;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
-  .rk b{display:block;font-size:20pt;line-height:1.15}
-  .rk small{display:block;font-size:8pt;color:var(--mu)}
-  .rs{margin:16px 0 6px;font-size:12pt;font-weight:700;border-bottom:2px solid var(--tx);padding-bottom:3px;break-after:avoid}
-  .rt{width:100%;border-collapse:collapse;font-size:9.5pt}
-  .rt th{text-align:left;font-size:8pt;color:var(--mu);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--tx);padding:4px}
-  .rt td{padding:5px 4px;border-bottom:1px solid var(--ln);vertical-align:middle}
-  .rt tr{break-inside:avoid}
-  .rt thead{display:table-header-group}
-  .rt .n{text-align:right;white-space:nowrap}
-  .rt small{display:block;font-size:8pt;color:var(--mu);margin-top:2px}
-  #rapport .row{break-inside:avoid}
-  #rapport .bar i{background-image:none}
-  .rf{margin-top:18px;padding-top:6px;border-top:1px solid var(--ln);font-size:8pt;color:var(--mu)}
-}
+  :root {
+    --navy: #0b2545; --jaune: #f2c200; --sx: #2f6f9f; --fb: #8a5fb0;
+    --pose: #2f8f63; --ec: #e08a1e; --dep: #c4543b; --gc: #b7881a;
+    --ad: #0e9aa7; --mu: #6b7884; --ln: #d9dee2; --sl: #eef1f3;
+    --tx: #1a232c; --card: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font: 15px/1.45 system-ui, "Segoe UI", Roboto, sans-serif;
+    background: var(--sl); color: var(--tx); padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  .hero {
+    background: var(--navy); color: #fff; border-radius: 12px;
+    padding: 28px 32px 24px; position: relative; overflow: hidden; margin-bottom: 20px;
+  }
+  .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--jaune); }
+  .hero h1 { font-size: 22px; letter-spacing: .3px; margin-bottom: 6px; }
+  .hero p { opacity: .85; font-size: 14px; }
+  .hero .meta { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; opacity: .75; }
+
+  /* Navigation chantiers */
+  .nav {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
+  }
+  .nav button {
+    font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 10px;
+    border: 1px solid var(--ln); background: var(--card); cursor: pointer; min-height: 42px;
+  }
+  .nav button.on {
+    background: var(--navy); color: #fff; border-color: var(--navy);
+  }
+  .nav button.primary-action {
+    background: var(--jaune); color: var(--navy); border-color: var(--jaune); margin-left: auto;
+  }
+
+  .kpis {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px;
+  }
+  @media (max-width: 720px) { .kpis { grid-template-columns: 1fr 1fr; } }
+  .kpi {
+    background: var(--card); border: 1px solid var(--ln); border-radius: 12px;
+    padding: 16px 18px; border-top: 4px solid var(--sx);
+  }
+  .kpi.fb { border-top-color: var(--fb); }
+  .kpi.gc { border-top-color: var(--gc); }
+  .kpi.pose { border-top-color: var(--pose); }
+  .kpi .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mu); margin-bottom: 6px; }
+  .kpi .val { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .kpi .sub { font-size: 12px; color: var(--mu); margin-top: 4px; }
+
+  section { margin-bottom: 28px; }
+  h2 {
+    font-size: 15px; font-weight: 700; border-bottom: 2px solid var(--tx);
+    padding-bottom: 6px; margin-bottom: 16px;
+  }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+  .col-card {
+    background: var(--card); border: 1px solid var(--ln); border-radius: 14px; padding: 20px;
+  }
+  .col-card h3 {
+    font-size: 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .col-card h3 .tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff;
+  }
+  .tag.reg { background: var(--sx); }
+  .tag.anc { background: var(--ad); }
+
+  .row-ind {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid var(--ln);
+  }
+  .row-ind:last-child { border-bottom: 0; }
+  .row-ind .lab { font-size: 13px; color: var(--mu); }
+  .row-ind .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .row-ind .sub { font-size: 12px; color: var(--mu); }
+  .prog { height: 8px; background: var(--sl); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .prog i { display: block; height: 100%; border-radius: 4px; }
+
+  .pies { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .pies { grid-template-columns: 1fr; } }
+  .pie-card {
+    background: var(--card); border: 1px solid var(--ln); border-radius: 14px;
+    padding: 18px 14px; text-align: center;
+  }
+  .pie-card svg { display: block; margin: 0 auto 10px; }
+  .pie-card .title { font-weight: 700; font-size: 13px; }
+  .pie-card .pct { font-size: 20px; font-weight: 700; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .pie-card .detail { font-size: 12px; color: var(--mu); }
+
+  .bigs { display: grid; gap: 12px; }
+  .big {
+    background: var(--card); border: 1px solid var(--ln); border-radius: 12px;
+    padding: 16px 20px; display: flex; align-items: center; gap: 18px;
+  }
+  .big .bar { width: 6px; align-self: stretch; border-radius: 3px; flex-shrink: 0; }
+  .big .content { flex: 1; min-width: 0; }
+  .big .lab { font-size: 12px; color: var(--mu); text-transform: uppercase; letter-spacing: .04em; }
+  .big .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .big .sub { font-size: 13px; color: var(--mu); margin-top: 2px; }
+  .big .right { text-align: right; font-size: 13px; color: var(--mu); white-space: nowrap; }
+
+  table {
+    width: 100%; border-collapse: collapse; background: var(--card);
+    border-radius: 12px; overflow: hidden; border: 1px solid var(--ln);
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--mu); padding: 12px; border-bottom: 1px solid var(--tx); background: #f8f9fa;
+  }
+  td { padding: 11px 12px; border-bottom: 1px solid var(--ln); font-size: 13px; }
+  tr:last-child td { border-bottom: 0; }
+  td.n { text-align: right; }
+  td.ok { color: var(--pose); font-weight: 600; }
+  td.bad { color: var(--dep); font-weight: 600; }
+
+  .foot {
+    margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--ln);
+    font-size: 12px; color: var(--mu); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  @media print {
+    @page { size: A4; margin: 11mm; }
+    body { background: #fff; padding: 0; }
+    .nav, .no-print { display: none !important; }
+    .hero, .col-card, .big, tr, .pie-card { break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
-<main>
-<div class="top">
-<header><div><h1>SUIVI_PCLE-MMM</h1><div id="st"></div></div><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button id="adm" type="button" style="display:none">🔐 Admin</button><button id="inst" type="button" style="display:none;font-weight:600">📲 Installer</button><button id="pdf" type="button" style="font-weight:600">📄 PDF</button><button id="rf" type="button">Actualiser</button></span></header>
-<nav><button type="button" data-t="syn" aria-pressed="true">Synthèse</button><button type="button" data-t="ch" aria-pressed="false">Chantiers</button><button type="button" data-t="qa" aria-pressed="false" id="nqa">Qualité</button><button type="button" data-t="arc" aria-pressed="false" id="narc">Archives FBM</button><button type="button" data-t="adm" aria-pressed="false" id="nadm" style="display:none">Admin</button><button type="button" onclick="location.href='synthese.html'" style="font-weight:600">📊 Synthèse</button></nav>
+<div class="wrap">
+
+  <header class="hero">
+    <h1 id="hero-title">SUIVI PCLE-MMM · Synthèse Direction</h1>
+    <p id="hero-sub">Avancement global — Supports classiques vs Supports Ancrage</p>
+    <div class="meta">
+      <span id="hero-meta">THOMERY · CEPOY · SAMOIS · BOIS LE ROI</span>
+      <span>Export 24/11/2026</span>
+      <span>TEST_BOB exclu</span>
+    </div>
+  </header>
+
+  <nav class="nav no-print">
+    <button type="button" data-ch="ALL" class="on">Tous les chantiers</button>
+    <button type="button" data-ch="THOMERY">THOMERY</button>
+    <button type="button" data-ch="CEPOY">CEPOY</button>
+    <button type="button" data-ch="SAMOIS">SAMOIS</button>
+    <button type="button" data-ch="BOIS LE ROI">BOIS LE ROI</button>
+    <button type="button" class="primary-action" onclick="window.print()">📄 PDF de cette vue</button>
+  </nav>
+
+  <div id="content"></div>
+
+  <div class="foot">
+    <span>SUIVI PCLE-MMM — Synthèse direction (standalone)</span>
+    <span>Supports Anc = n° contenant « Anc » · TEST_BOB exclu</span>
+  </div>
 </div>
-<div id="v"></div>
-</main>
-<dialog id="dlg"></dialog>
-  <div id="rapport"></div>
+
 <script>
-const SUPABASE_URL = "https://thbqkeugjvsxbryfnzuo.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_2-Ij-nrTPeK6rB-kSD-QTg_b42zNakq";
-
-const TYPES = ['GC','DEPOSE','POSE'];
-const TC = {GC:'--gc',DEPOSE:'--dep',POSE:'--pose','RELEVER CAT':'--sx'};
-const TL = {GC:'Génie civil',DEPOSE:'Dépose',POSE:'Pose','RELEVER CAT':'Relevés CAT'};
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const key = s => String(s || '').trim().toUpperCase();
-const pc = (v,t) => t ? Math.round(v/t*100) : 0;
-const nf = n => (Math.round(n*10)/10).toLocaleString('fr-FR');
-let D = null, tab = 'syn', sub = 'glob', qf = 'nc', sel = 'all', last = 0;
-let sutxType = 'all';
-let ADM = null, vp = 'all', admQ = '', supOuvert = null, cf = {}, OPEN = new Set();
-const ACCES_ARCHIVE = () => !!ADM;
-
-async function fetchAll(table, cols){
-  let out = [], from = 0; const step = 1000;
-  for(;;){
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${cols}&order=id.asc`, {
-      headers:{apikey:SUPABASE_ANON_KEY, 'Range-Unit':'items', Range:`${from}-${from+step-1}`}
-    });
-    if(!r.ok) throw new Error(`${table} : erreur ${r.status}`);
-    const a = await r.json();
-    out = out.concat(a);
-    if(a.length < step) break;
-    from += step;
+const DATA = {
+  "ALL": {
+    title: "Synthèse Direction — Tous les chantiers",
+    sub: "Avancement global — Supports classiques vs Supports Ancrage",
+    meta: "THOMERY · CEPOY · SAMOIS · BOIS LE ROI",
+    kpi: [
+      ["Fouilles (tous)", "66 %", "90 / 137", ""],
+      ["Supports matés", "53", "hors Anc (90 − 37 Anc)", "fb"],
+      ["Béton coulé", "349 m³", "219 + 130 (Anc)", "gc"],
+      ["Consoles de ligne", "11 %", "17 / 156 (classiques)", "pose"]
+    ],
+    class: { fouille: [53,90], matage: [53,90], beton: "219,1", prevu: "303,1", console: [17,156], armement: [0,168], double: [0,16], connexion: [0,143] },
+    anc:   { fouille: [37,47], matage: [37,47], beton: "129,8", prevu: "155,1" },
+    fkt: { armement: [0,94], at: [0,16], r1r2: [0,12], feeder: [0,6] },
+    showTable: true,
+    table: [
+      ["THOMERY", "terminé", "terminé", "45", "144,4 m³", "6 / 45", true],
+      ["CEPOY", "terminé", "terminé", "39", "161,6 m³", "11 / 22", true],
+      ["SAMOIS", "terminé", "terminé", "6", "43,0 m³", "0 / 7", true],
+      ["BOIS LE ROI", "0 / 37", "0 / 10", "0", "—", "0 / 82", false]
+    ],
+    attn: [
+      ["BOIS LE ROI", "Aucune fouille / matage démarré", "47 supports GC encore à 0 %", "dep"],
+      ["Pose des consoles de ligne", "Seulement 11 % réalisées", "17 sur 156 — uniquement supports classiques", "ec"],
+      ["Armements & Connexions", "0 réalisé", "0/168 armements · 0/16 doubles · 0/143 connexions", "dep"],
+      ["Poutres", "0 posée sur 13", "Aucune tâche « POUTRE » terminée", "mu"]
+    ]
+  },
+  "THOMERY": {
+    fkt: { armement: [0,28], at: [0,6], r1r2: [0,0], feeder: [0,0] },
+    title: "Synthèse Direction — THOMERY",
+    sub: "Détail du chantier THOMERY",
+    meta: "Chantier THOMERY",
+    kpi: [
+      ["Fouilles", "100 %", "45 / 45", ""],
+      ["Supports", "27", "hors Anc (45 − 18 Anc)", "fb"],
+      ["Béton coulé", "144 m³", "79,8 + 64,6 (Anc)", "gc"],
+      ["Consoles", "13 %", "6 / 45", "pose"]
+    ],
+    class: { fouille: [27,27], matage: [27,27], beton: "79,8", prevu: "—", console: [6,45], armement: [0,53], double: [0,6], connexion: [0,30] },
+    anc:   { fouille: [18,18], matage: [18,18], beton: "64,6", prevu: "—" },
+    showTable: false,
+    attn: [
+      ["GC terminé", "Fouilles & matages 100 %", "Supports classiques et Ancrage terminés", "pose"],
+      ["Pose en retard", "Consoles 6/45 · Armements 0 · Connexions 0", "La phase pose n’a quasiment pas démarré", "ec"]
+    ]
+  },
+  "CEPOY": {
+    fkt: { armement: [0,13], at: [0,6], r1r2: [0,9], feeder: [0,5] },
+    title: "Synthèse Direction — CEPOY",
+    sub: "Détail du chantier CEPOY",
+    meta: "Chantier CEPOY",
+    kpi: [
+      ["Fouilles", "100 %", "39 / 39", ""],
+      ["Supports", "22", "hors Anc (39 − 17 Anc)", "fb"],
+      ["Béton coulé", "162 m³", "108,6 + 53,0 (Anc)", "gc"],
+      ["Consoles", "50 %", "11 / 22", "pose"]
+    ],
+    class: { fouille: [22,22], matage: [22,22], beton: "108,6", prevu: "—", console: [11,22], armement: [0,25], double: [0,3], connexion: [0,59] },
+    anc:   { fouille: [17,17], matage: [17,17], beton: "53,0", prevu: "—" },
+    showTable: false,
+    attn: [
+      ["GC terminé", "Fouilles & matages 100 %", "Meilleur avancement pose (consoles 50 %)", "pose"],
+      ["Armements & Connexions", "Toujours à 0", "0/25 armements · 0/59 connexions", "ec"]
+    ]
+  },
+  "SAMOIS": {
+    fkt: { armement: [0,6], at: [0,0], r1r2: [0,3], feeder: [0,1] },
+    title: "Synthèse Direction — SAMOIS",
+    sub: "Détail du chantier SAMOIS",
+    meta: "Chantier SAMOIS",
+    kpi: [
+      ["Fouilles", "100 %", "6 / 6", ""],
+      ["Supports", "4", "hors Anc (6 − 2 Anc)", "fb"],
+      ["Béton coulé", "43 m³", "30,8 + 12,2 (Anc)", "gc"],
+      ["Consoles", "0 %", "0 / 7", "pose"]
+    ],
+    class: { fouille: [4,4], matage: [4,4], beton: "30,8", prevu: "—", console: [0,7], armement: [0,9], double: [0,3], connexion: [0,8] },
+    anc:   { fouille: [2,2], matage: [2,2], beton: "12,2", prevu: "—" },
+    showTable: false,
+    attn: [
+      ["GC terminé", "Fouilles & matages 100 %", "Petit chantier, GC achevé", "pose"],
+      ["Pose non démarrée", "0 console · 0 armement · 0 connexion", "Toute la phase pose reste à faire", "dep"]
+    ]
+  },
+  "BOIS LE ROI": {
+    fkt: { armement: [0,47], at: [0,4], r1r2: [0,0], feeder: [0,0] },
+    title: "Synthèse Direction — BOIS LE ROI",
+    sub: "Détail du chantier BOIS LE ROI",
+    meta: "Chantier BOIS LE ROI",
+    kpi: [
+      ["Fouilles", "0 %", "0 / 47", ""],
+      ["Supports", "0", "hors Anc", "fb"],
+      ["Béton coulé", "—", "non démarré", "gc"],
+      ["Consoles", "0 %", "0 / 82", "pose"]
+    ],
+    class: { fouille: [0,37], matage: [0,37], beton: "0", prevu: "—", console: [0,82], armement: [0,81], double: [0,4], connexion: [0,46] },
+    anc:   { fouille: [0,10], matage: [0,10], beton: "0", prevu: "—" },
+    showTable: false,
+    attn: [
+      ["Chantier non démarré", "Aucune fouille / matage", "37 supports classiques + 10 Anc à 0 %", "dep"],
+      ["Pose", "0 sur tout", "82 consoles · 81 armements · 46 connexions en attente", "mu"]
+    ]
   }
-  return out;
-}
-
-/* ---------- Calculs : T terminé, E en cours, A annulé, F à faire ---------- */
-const eff = r => r.Fait ? 'T' : r.admin_etat === 'TERMINE' ? 'T' : r.etat === 'EN_COURS' ? 'E' : r.etat === 'ANNULE' ? 'A' : r.admin_etat === 'EN_COURS' ? 'E' : r.admin_etat === 'ANNULE' ? 'A' : 'F';
-const viaAdmin = r => !r.Fait && (r.admin_etat === 'TERMINE' || (!!r.admin_etat && r.etat !== 'EN_COURS' && r.etat !== 'ANNULE'));
-const pctOf = r => r.etat === 'EN_COURS' ? (+r.pct_avancement || 0) : (+r.admin_pct || 0);
-const isFBM = r => key(r.type) === 'GC' && /fouille|beton|matage/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
-const ncOf = rows => rows.filter(r => r.conforme === false && r.nc_levee !== true).length;
-
-/* ---------- FKT : tâches « RELEVER CAT », seules les définitives comptent ---------- */
-const isRC = r => key(r.type) === 'RELEVER CAT';
-const isFKT = r => isRC(r) && !/^fkt/.test(String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim());
-function adminFktOf(r){ try{ return r.admin_fkt ? JSON.parse(r.admin_fkt) : null; }catch(e){ return null; } }
-function fktOf(r){
-  const f = key(r.fkt_etat), a = adminFktOf(r);
-  if(f === 'DEFINITIVE') return {s:'T', def:true, prov:false, num:r.fkt_num || ''};
-  if(a && a.etat === 'DEFINITIVE') return {s:'A', def:true, prov:false, num:a.num || ''};
-  if(f === 'PROVISOIRE') return {s:'T', def:false, prov:true, num:r.fkt_num || ''};
-  return {s:null, def:false, prov:false, num:''};
-}
-function aggK(rows){
-  const o = {n:0, T:0, A:0, P:0, none:0};
-  rows.filter(r => isFKT(r) && eff(r) !== 'A').forEach(r => { const k = fktOf(r); o.n++; if(k.def){ if(k.s === 'T') o.T++; else o.A++; } else if(k.prov) o.P++; else o.none++; });
-  o.d = o.T + o.A; o.p = o.n ? Math.round(o.d / o.n * 100) : 0;
-  return o;
-}
-function fktChip(r){
-  const k = fktOf(r);
-  if(k.def) return `<div class="nc" style="background:${k.s === 'A' ? 'rgba(14,154,167,.15)' : 'rgba(183,136,26,.15)'};color:var(${k.s === 'A' ? '--ad' : '--gc'})">📄 FKT définitive${k.num ? ' n° ' + esc(k.num) : ''}${k.s === 'A' ? ' · saisie par moi 📌' : ' · terrain'}</div>`;
-  if(k.prov) return `<div class="nc" style="background:rgba(107,120,132,.15);color:var(--mu)">📄 FKT provisoire${k.num ? ' n° ' + esc(k.num) : ''} · définitive à obtenir</div>`;
-  const d = r.date_fait || r.admin_le, late = eff(r) === 'T' && d && (Date.now() - new Date(String(d).slice(0,10) + 'T00:00:00')) > 4 * 86400000;
-  return `<div class="nc"${late ? '' : ' style="background:rgba(107,120,132,.15);color:var(--mu)"'}>📄 Pas de FKT${late ? ' · délai de 4 jours dépassé' : ''}</div>`;
-}
-function fktBlock(r){
-  const k = fktOf(r);
-  let h = fktChip(r);
-  if(ADM && !(k.def && k.s === 'T')){
-    const on = k.def && k.s === 'A';
-    h += `<label class="tg" style="margin-top:2px"><input type="checkbox" data-adm="k" data-id="${r.id}"${on ? ' checked' : ''}> 📌 FKT définitive reçue</label>`;
-    if(on) h += `<input type="text" data-adm="kn" data-id="${r.id}" value="${esc(k.num)}" placeholder="N° de FKT" style="min-height:36px;padding:4px 8px;width:100%">`;
-  }
-  return h;
-}
-
-function agg(rows){
-  const o = {n:rows.length, T:0, E:0, A:0, F:0, nc:0, v:0, w:0, adm:0, Ta:0};
-  rows.forEach(r => {
-    const e = eff(r); o[e]++; if(viaAdmin(r)) o.adm++; if(e === 'T' && viaAdmin(r)) o.Ta++;
-    if(r.conforme === false && r.nc_levee !== true) o.nc++;
-    if(e !== 'A'){ o.w++; o.v += e === 'T' ? 1 : e === 'E' ? pctOf(r) / 100 : 0; }
-  });
-  o.p = o.w ? Math.round(o.v / o.w * 100) : 0;
-  o.pA = o.w ? Math.min(o.p, Math.round(o.Ta / o.w * 100)) : 0;
-  return o;
-}
-
-const STEPK = ['fouille','beton','matage'];
-const stepsOf = p => p.b ? STEPK : STEPK.filter(k => p.fb.some(r => nz(r.Tache).includes(k)));
-function stepState(p, k){
-  const b = p.b, tk = p.fb.filter(r => nz(r.Tache).includes(k));
-  if((b && b['date_' + k]) || tk.some(r => r.Fait)) return 'T';
-  if((b && b['admin_date_' + k]) || tk.some(r => r.admin_etat === 'TERMINE')) return 'A';
-  return null;
-}
-const fbmSups = c => Object.values(c.s).filter(p => p.b || p.fb.length);
-const num = v => { if(v === null || v === undefined || v === '') return null; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; };
-const m3r = b => b ? (num(b.m3_reel) ?? num(b.admin_m3_reel)) : null;
-const PLG_SLUMP = {S1:[10,40], S2:[50,90], S3:[100,150], S4:[160,210]};
-/* Slump en mm : une valeur saisie en cm (ex. 20,5) est reconnue grâce à la plage de la classe S1-S4 */
-const slumpMm = (v, cl) => {
-  if(v === null || v === undefined) return null;
-  const p = PLG_SLUMP[cl];
-  if(!p) return Math.round(v < 50 ? v * 10 : v);
-  const dist = x => x < p[0] ? p[0] - x : x > p[1] ? x - p[1] : 0;
-  return Math.round(dist(v * 10) < dist(v) ? v * 10 : v);
 };
-const blInfo = b => {
-  const bls = ((D.blLiens && b) ? (D.blLiens.get(String(b.id)) || []) : []).map(x => ({...x, s: slumpMm(x.s, x.cl)}));
-  const types = [...new Set(bls.map(x => x.t).filter(Boolean))];
-  return {bls, types};
-};
-function aggF(ps){
-  const o = {n:ps.length, tot:ps.length, mp:0, mr:0, mpr:0, ec:0, sr:0, d:0, dT:0, dA:0, pE:0, s:{fouille:{T:0,A:0,n:0}, beton:{T:0,A:0,n:0}, matage:{T:0,A:0,n:0}}};
-  ps.forEach(p => {
-    if(p.b){
-      const pv = num(p.b.m3_prevu) || 0, rl = m3r(p.b);
-      o.mp += pv; o.mr += rl || 0;
-      if(stepState(p, 'beton')){ o.mpr += pv; if(rl !== null) o.ec += rl - pv; else o.sr++; }
-    }
-    const st = stepsOf(p), E = st.map(k => stepState(p, k));
-    st.forEach((k, i) => { const x = o.s[k]; x.n++; if(E[i] === 'T') x.T++; else if(E[i] === 'A') x.A++; });
-    if(st.length && E.every(Boolean)){ if(E.every(s => s === 'T')) o.dT++; else o.dA++; }
-    else if(E.some(Boolean)) o.pE++;
-  });
-  o.d = o.dT + o.dA;
-  o.p = o.tot ? Math.round(o.d / o.tot * 100) : 0;
-  o.pA = o.tot ? Math.min(o.p, Math.round(o.dA / o.tot * 100)) : 0;
-  return o;
-}
 
-// --- LISTE UNIQUE DES CHANTIERS DE TEST / EXCLUS ---
-const EXCLUS = ['TEST_BOB', 'MELUN'];
-
-function stats(sx, bl){
-  sx.forEach(r => { const t = key(r.type); if(t === 'POSE_SUPPORT' || t === 'POSE_ANC') r.type = 'POSE'; });
-  
-  const ch = {}, act = {}, qa = sx.filter(r => TYPES.includes(key(r.type)) || isRC(r));
-  const get = n => ch[key(n)] || (ch[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], rc:[], bl:[], s:{}});
-  const sp = (c,n) => c.s[key(n)] || (c.s[key(n)] = {k:key(n), name:String(n || '—').trim(), rows:[], fb:[], rc:[], b:null});
-  const add = (d,i) => { if(!d) return; (act[d] = act[d] || [0,0])[i]++; };
-  qa.forEach(r => {
-    const c = get(r.Chantier), p = sp(c, r.Support);
-    if(isRC(r)){ c.rc.push(r); p.rc.push(r); }
-    else if(isFBM(r)){ c.fb.push(r); p.fb.push(r); }
-    else { c.rows.push(r); p.rows.push(r); if(r.Fait) add(r.date_fait, 0); }
-  });
-  bl.forEach(r => { const c = get(r.chantier); c.bl.push(r); sp(c, r.support).b = r; add(r.date_fouille,1); add(r.date_beton,1); add(r.date_matage,1); });
-  return {ch:Object.values(ch).sort((a,b) => a.name.localeCompare(b.name,'fr')), act, all:qa.filter(r => !isRC(r) && !isFBM(r)), qa, fb:qa.filter(isFBM), rc:qa.filter(isRC), bl};
-}
-
-/* ---------- Composants visuels ---------- */
-const pbar = (p,c,h='') => `<div class="bar ${h}"><i style="width:${Math.min(100,p)}%;background-color:var(${c})"></i></div>`;
-const row = (l,v,t,c,h='') => `<div class="row"><div class="rl"><span>${l}</span><b>${v} / ${t} · ${pc(v,t)} %</b></div>${pbar(pc(v,t),c,h)}</div>`;
-const stk = a => { const n = a.n || 1, s = (v,c) => v ? `<i style="width:${v/n*100}%;background:var(${c})"></i>` : ''; return `<div class="sb">${s(a.T - (a.Ta || 0),'--pose')}${s(a.Ta || 0,'--ad')}${s(a.E,'--ec')}${s(a.A,'--mu')}</div>`; };
-const dbar = (t,a,n,h='',c='--fb') => `<div class="bar ${h}"><i style="width:${n ? t/n*100 : 0}%;background-color:var(${c})"></i><i style="width:${n ? a/n*100 : 0}%;background-color:var(--ad)"></i></div>`;
-const rowF = (l,x) => `<div class="row"><div class="rl"><span>${l}</span><b>${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %</b></div>${dbar(x.T, x.A, x.n)}<div class="mu tl">${x.T} relevé(s) terrain · ${x.A} saisi(s) par moi</div></div>`;
-const legend = () => `<div class="lg2"><span><i style="background:var(--pose)"></i>Terminé (terrain)</span><span><i style="background:var(--ad)"></i>Terminé par moi</span><span><i style="background:var(--ec)"></i>En cours</span><span><i style="background:var(--mu)"></i>Annulé</span><span><i class="o"></i>À faire</span></div>`;
-const sg = (at, opts, cur) => `<div class="seg">${opts.map(([k,l]) => `<button type="button" data-${at}="${k}" aria-pressed="${k === cur}">${l}</button>`).join('')}</div>`;
-const kpi = (l,v,s,c) => `<div class="kpi" style="border-left:4px solid var(${c})"><span class="mu">${l}</span><b>${v}</b><span class="mu tl" style="margin:0">${s}</span></div>`;
-const ring = (p,c,l,pa=0) => `<div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--sl)" stroke-width="12"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(${c})" stroke-width="12" stroke-dasharray="${(p-pa)*2.513} 251.3" transform="rotate(-90 50 50)"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--ad)" stroke-width="12" stroke-dasharray="${pa*2.513} 251.3" stroke-dashoffset="${-(p-pa)*2.513}" transform="rotate(-90 50 50)"/><text x="50" y="57" text-anchor="middle" font-size="22" font-weight="700" fill="var(--tx)">${p}%</text></svg>${l}</div>`;
-
-function vAct(act){
-  const days = []; let tx = 0, tf = 0;
-  for(let i = 13; i >= 0; i--){
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    const a = act[k] || [0,0];
-    tx += a[0]; tf += a[1];
-    days.push([d.getDate(), a[0], a[1]]);
-  }
-  const m = Math.max(1, ...days.map(d => d[1] + d[2]));
-  const cols = days.map(d => `<div class="col"><div class="stk"><span style="height:${d[2]/m*100}%;background:var(--fb)"></span><span style="height:${d[1]/m*100}%;background:var(--sx)"></span></div>${d[0]}</div>`).join('');
-  return `<div class="card"><h2>Activité des 14 derniers jours</h2><div class="chart">${cols}</div>
-  <div class="mu tl"><span style="color:var(--sx)">■</span> ${tx} tâches SUTX terminées &nbsp; <span style="color:var(--fb)">■</span> ${tf} étapes FBM</div></div>`;
-}
-
-/* ---------- Onglet Synthèse (sous-menus + choix du chantier) ---------- */
-function scope(){
-  const k = (tab === 'qa' && qCh) ? qCh : sel;
-  const c = k === 'all' ? null : D.ch.find(x => x.k === k);
-  if(!c && k === sel) sel = 'all';
-  return c ? {c, rows:c.rows, bl:c.bl, fb:c.fb, rc:c.rc, ps:fbmSups(c)} : {c:null, rows:D.all, bl:D.bl, fb:D.fb, rc:D.rc, ps:D.ch.flatMap(fbmSups)};
-}
-
-function actOf(rows, ps){
-  const a = {}, add = (d,i) => { if(!d) return; const k = String(d).slice(0,10); (a[k] = a[k] || [0,0])[i]++; };
-  rows.forEach(r => { if(r.Fait) add(r.date_fait, 0); else if(r.admin_etat === 'TERMINE') add(r.admin_le, 0); });
-  ps.forEach(p => STEPK.forEach(k => {
-    let d = p.b && (p.b['date_' + k] || p.b['admin_date_' + k]);
-    if(!d){ const r = p.fb.find(r => nz(r.Tache).includes(k) && (r.Fait || r.admin_etat === 'TERMINE')); if(r) d = r.Fait ? r.date_fait : r.admin_le; }
-    add(d, 1);
-  }));
-  return a;
-}
-
-function vSyn(){
-  const S = scope(), a = agg(S.rows), f = aggF(S.ps);
-  const pick = S.c ? `<button type="button" data-pick="all" style="width:100%;font-weight:600;margin:4px 0 0">← Tous les chantiers · ${esc(S.c.name)}</button>` : '';
-  const s = pick + sg('sub', [['glob','Vue d\'ensemble'],['sutx','SUTX'],['fbm','FBM']], sub);
-
-  const L = S.c
-    ? (sub === 'sutx' ? supListSutx(S.c, sutxType) : supList(S.c))
-    : null;
-  const nok = L ? L.filter(x => x.ok).length : 0;
-  const sup = L
-    ? `<div class="card">
-        <h2>Supports · ${nok} / ${L.length} terminés</h2>
-        ${L.map(x => sub === 'sutx' ? sRowSutx(x, S.c.k) : sRow(x, S.c.k)).join('') || '<div class="mu">Aucun support.</div>'}
-      </div>`
-    : '';
-
-  const parC = `<div class="card"><h2>Par chantier</h2><div class="lg">Touche un chantier pour le détailler.</div>${D.ch.map(c => { const x = agg(c.rows), y = aggF(fbmSups(c)); return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b><span style="color:var(--sx)">SUTX ${x.p} %</span> · <span style="color:var(--fb)">FBM ${y.p} %</span></b></div>${stk(x)}<div style="height:6px"></div>${dbar(y.dT, y.dA, y.tot)}</div>`; }).join('')}</div>`;
-  const lgd = `<div class="lg2" style="justify-content:center;margin:10px 0 0"><span><i style="background:var(--sx)"></i>Terrain SUTX</span><span><i style="background:var(--fb)"></i>Terrain FBM</span><span><i style="background:var(--ad)"></i>Saisi par moi</span></div>`;
-  // FKT prévues = lignes de la table qualite_pcle (catégorie FKT), scopées au chantier si sélectionné
-  const fktPrevuesList = (D.qualite || []).filter(q => (q.categorie || 'FKT') === 'FKT' && (!S.c || key(q.chantier) === S.c.k));
-  const fktPrevuesN = fktPrevuesList.length;
-  const fktCard = fktPrevuesN ? `<div class="card"><h2>FKT prévues</h2><div class="rl"><span>Nombre total</span><b>${fktPrevuesN}</b></div><div class="mu tl">Saisies dans la table qualite_pcle</div></div>` : '';
-
-  if(sub === 'glob') return s + `<div class="kpis">${kpi('SUTX', a.p + ' %', `${a.T - a.Ta} terrain · ${a.Ta} par moi / ${a.w}`, '--sx')}${kpi('FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets${f.pE ? ' · ' + f.pE + ' en cours' : ''}`, '--fb')}${kpi('En cours', a.E, 'tâches', '--ec')}${kpi('Non-conformités', a.nc + ncOf(S.fb) + ncOf(S.rc), 'à traiter', '--dep')}</div>
-    <div class="card"><div class="rings">${ring(a.p,'--sx','Avancement SUTX',a.pA)}${ring(f.p,'--fb','Avancement FBM',f.pA)}</div>${lgd}</div>
-    ${fktCard}
-    ${S.c ? '' : parC}
-    ${L ? `<div class="card"><h2>Supports terminés</h2><div class="rl"><span>${nok} / ${L.length}</span><b>${pc(nok, L.length)} %</b></div>${pbar(pc(nok, L.length),'--pose','big')}</div>` : ''}` + vAct(actOf(S.rows, S.ps));
-
-  if(sub === 'sutx'){
-    const types = TYPES.map(t => {
-      const x = agg(S.rows.filter(r => key(r.type) === t));
-      const actif = sutxType === t;
-      return `<div class="row fl${actif ? ' on' : ''}" role="button" tabindex="0"
-        data-sutx-type="${t}" aria-pressed="${actif}"
-        style="cursor:pointer;border-radius:8px;padding:8px;${actif ? 'outline:2px solid var(' + TC[t] + ');background:var(--card)' : ''}">
-        <div class="rl">
-          <span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span>
-          <b>${x.T}/${x.w} · ${x.p} %${x.Ta ? ' · ' + x.Ta + ' par moi' : ''}${actif ? ' ✓' : ''}</b>
-        </div>
-        ${stk(x)}
-      </div>`;
-    }).join('');
-
-    const chantiersSutx = D.ch.filter(c => {
-      const rows = sutxType === 'all' ? c.rows : c.rows.filter(r => key(r.type) === sutxType);
-      return rows.length > 0;
-    }).map(c => {
-      const rows = sutxType === 'all' ? c.rows : c.rows.filter(r => key(r.type) === sutxType);
-      const x = agg(rows);
-      return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}">
-        <div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${stk(x)}
-      </div>`;
-    }).join('');
-
-    return s + `<div class="card">
-      <h2>Par type · Filtre supplémentaire</h2>
-      ${types}
-      ${sutxType !== 'all' ? `<div class="mu" style="text-align:center">Filtre actif : ${TL[sutxType]} · <span data-sutx-type="all" role="button" tabindex="0" style="text-decoration:underline;cursor:pointer">Tout afficher</span></div>` : ''}
-    </div>` + (S.c ? sup : `<div class="card"><h2>Par chantier</h2>${legend()}${chantiersSutx || '<div class="mu">Aucun chantier pour ce type.</div>'}</div>`);
-  }
-
-  return s + `<div class="card"><h2>Étapes</h2>${rowF('Fouille', f.s.fouille)}${rowF('Béton', f.s.beton)}${rowF('Matage', f.s.matage)}${lgd}</div>
-    <div class="card"><h2>Volume béton (m³)</h2><div class="rl"><span>Prévu réalisé / prévu total</span><b>${nf(f.mpr)} / ${nf(f.mp)} · ${pc(f.mpr, f.mp)} %</b></div>${pbar(pc(f.mpr, f.mp),'--fb','big')}<div class="rl" style="margin-top:10px"><span>Béton réel coulé</span><b>${nf(f.mr)}</b></div><div class="rl"><span>Écart réel − prévu (supports bétonnés)</span><b>${f.ec > 0.049 ? '+' : ''}${nf(Math.abs(f.ec) < 0.05 ? 0 : f.ec)}</b></div>${f.sr ? `<div class="mu tl">${f.sr} support(s) bétonné(s) sans volume réel saisi : exclus de l'écart.</div>` : ''}</div>`
-    + (S.c ? fbmDetail(S.c) : `<div class="card"><h2>Par chantier</h2>${D.ch.filter(c => fbmSups(c).length).map(c => { const x = aggF(fbmSups(c)), q = k => x.s[k].T + x.s[k].A; return `<div class="row fl" role="button" tabindex="0" data-pick="${esc(c.k)}"><div class="rl"><span>${esc(c.name)}</span><b>${x.p} %</b></div>${dbar(x.dT, x.dA, x.tot)}<div class="mu tl">Fouille ${q('fouille')}/${x.s.fouille.n} · Béton ${q('beton')}/${x.s.beton.n} · Matage ${q('matage')}/${x.s.matage.n}</div></div>`; }).join('')}</div>`);
-}
-
-/* ---------- Onglet Chantiers ---------- */
-function supList(c){
-  return Object.values(c.s).map(p => {
-    const a = agg(p.rows), st = stepsOf(p), fd = st.filter(k => stepState(p, k)).length;
-    return {p, a, ok:(a.n + st.length) > 0 && a.T + a.A === a.n && fd === st.length};
-  }).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true})); // Inversé pour un tri croissant naturel
-}
-function supListSutx(c, typeFilter = 'all'){
-  return Object.values(c.s).map(p => {
-    const rows = typeFilter === 'all'
-      ? p.rows
-      : p.rows.filter(r => key(r.type) === typeFilter);
-    if(!rows.length) return null;
-    const a = agg(rows);
-    return {p, rows, a, ok:a.n > 0 && a.T + a.A === a.n};
-  }).filter(Boolean).sort((x,y) => x.p.name.localeCompare(y.p.name, 'fr', {numeric:true})); // Déjà en croissant ici
-}
-
-function sRowSutx(x, ck){
-  return `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}">
-    <div class="rl"><b>${esc(x.p.name)}</b><span>${x.ok ? '✅' : ''}</span></div>
-    ${stk(x.a)}
-    <div class="mu tl">${TYPES.filter(t => x.rows.some(r => key(r.type) === t)).map(t => {
-      const y = agg(x.rows.filter(r => key(r.type) === t));
-      return `${TL[t]} ${y.T}/${y.n}`;
-    }).join(' · ') || 'Pas de tâche SUTX'}</div>
+function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
+function pie(done, total, color, label) {
+  const p = pct(done, total);
+  const circ = 2 * Math.PI * 50;
+  const dash = (p / 100) * circ;
+  return `<div class="pie-card">
+    <svg width="130" height="130" viewBox="0 0 130 130">
+      <circle cx="65" cy="65" r="50" fill="none" stroke="#eef1f3" stroke-width="16"/>
+      <circle cx="65" cy="65" r="50" fill="none" stroke="${color}" stroke-width="16"
+        stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" transform="rotate(-90 65 65)"/>
+      <text x="65" y="62" text-anchor="middle" font-size="20" font-weight="700" fill="#1a232c">${p}%</text>
+      <text x="65" y="78" text-anchor="middle" font-size="10" fill="#6b7884">${label}</text>
+    </svg>
+    <div class="title">${label}</div>
+    <div class="pct" style="color:${color}">${done} / ${total}</div>
   </div>`;
 }
-const sRow = (x, ck) => `<div class="sp" role="button" tabindex="0" data-c="${esc(ck)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${(x.a.nc + ncOf(x.p.fb) + ncOf(x.p.rc)) ? '<span class="nb">⚠️ NC</span>' : ''}${stepsOf(x.p).length ? STEPK.map((k,i) => { const st = stepState(x.p, k); return `<em class="${st === 'T' ? 'on' : st === 'A' ? 'ad' : ''}">${'FBM'[i]}</em>`; }).join('') : ''}</span></div>
-  ${x.a.n ? stk(x.a) : ''}
-  <div class="mu tl">${TYPES.filter(t => x.p.rows.some(r => key(r.type) === t)).map(t => { const y = agg(x.p.rows.filter(r => key(r.type) === t)); return `<span style="${y.T === y.n ? 'color:var(--pose)' : ''}">${TL[t]} ${y.T}/${y.n}</span>`; }).join(' · ') || 'Pas de tâche SUTX'}</div></div>`;
 
-function fbmDetail(c){
-  const L = fbmSups(c).map(p => { const st = stepsOf(p).map(k => stepState(p, k)); return {p, st, n:st.filter(Boolean).length, ok:st.length > 0 && st.every(Boolean)}; })
-    .sort((a,b) => a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
-  const nok = L.filter(x => x.ok).length, lib = {fouille:'F', beton:'B', matage:'M'};
-  return `<div class="card"><h2>Supports FBM · ${nok} / ${L.length} complets</h2><div class="lg">F fouille · B béton · M matage. Un support compte pour 1 quand toutes ses étapes sont faites.</div>
-  ${L.map(x => `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(x.p.k)}"><div class="rl"><b>${esc(x.p.name)}</b><span class="chips">${stepsOf(x.p).map((k,i) => `<em class="${x.st[i] === 'T' ? 'on' : x.st[i] === 'A' ? 'ad' : ''}">${lib[k]}</em>`).join('')}${x.ok ? ' ✅' : ''}</span></div><div class="mu tl">${x.n} / ${x.st.length} étapes${betonTxt(x.p)}</div></div>`).join('') || '<div class="mu">Aucun support.</div>'}</div>`;
-}
-function betonTxt(p){
-  if(!stepsOf(p).includes('beton')) return '';
-  const b = p.b, pv = b ? num(b.m3_prevu) : null, rl = m3r(b), fait = stepState(p, 'beton') !== null, adm = !!b && num(b.m3_reel) === null && num(b.admin_m3_reel) !== null;
-  if(pv === null) return ' · béton : prévu non renseigné';
-  if(!fait) return ' · béton : prévu ' + nf(pv) + ' m³';
-  if(rl === null) return ' · béton fait : réel non saisi (prévu ' + nf(pv) + ' m³)';
-  const e = rl - pv;
-  return ' · béton : ' + nf(rl) + ' / ' + nf(pv) + ' m³' + (Math.abs(e) >= 0.05 ? ' (' + (e > 0 ? '+' : '') + nf(e) + ')' : '') + (adm ? ' 📌' : '');
-}
-const STEPS = {fouille:['Fouille'], beton:['Béton'], matage:['Matage']};
-function supMatch(p, f){
-  if(!f) return true;
-  const todo = f.m === 'todo';
-  if(STEPS[f.k]){ if(!stepsOf(p).includes(f.k)) return false; return (stepState(p, f.k) !== null) !== todo; }
-  const L = p.rows.filter(r => key(r.type) === f.k);
-  if(!L.length) return false;
-  const fin = L.every(r => { const e = eff(r); return e === 'T' || e === 'A'; });
-  return fin !== todo;
-}
-const frow = (c, k, label, right, bar) => { const f = cf[c.k], on = !!f && f.k === k; return `<div class="row fl${on ? ' on' : ''}" role="button" tabindex="0" data-cf="${k}" data-cc="${esc(c.k)}"><div class="rl"><span>${label}${on ? ' <small>· ' + (f.m === 'todo' ? 'à faire' : 'faits') + '</small>' : ''}</span><b>${right}</b></div>${bar}</div>`; };
+function render(key) {
+  const D = DATA[key];
+  document.getElementById("hero-title").textContent = D.title;
+  document.getElementById("hero-sub").textContent = D.sub;
+  document.getElementById("hero-meta").textContent = D.meta;
+  document.querySelectorAll(".nav button[data-ch]").forEach(b => b.classList.toggle("on", b.dataset.ch === key));
 
-function fill(){
-  const q = key($('#q').value);
-  const list = D.ch.filter(c => key(c.name).includes(q) || Object.values(c.s).some(p => key(p.name).includes(q)));
-  $('#list').innerHTML = list.length ? list.map(c => {
-    const a = agg(c.rows), f = aggF(fbmSups(c)), L = supList(c), byS = !!q && !key(c.name).includes(q), nok = L.filter(x => x.ok).length;
-    const fc = cf[c.k];
-    let shown = L.filter(x => supMatch(x.p, fc));
-    if($('#rest').checked) shown = shown.filter(x => !x.ok);
-    if(byS) shown = shown.filter(x => key(x.p.name).includes(q));
-    const fl = fc ? (STEPS[fc.k] ? STEPS[fc.k][0] : TL[fc.k]) + ' ' + (fc.m === 'todo' ? 'à faire' : 'faits') : '';
-    const steps = [['fouille','Fouille'],['beton','Béton'],['matage','Matage']];
-    return `<details class="card" data-k="${esc(c.k)}"${byS || OPEN.has(c.k) ? ' open' : ''}><summary>
-      <div class="rl"><b>${esc(c.name)}</b><span class="mu" style="margin-right:18px">${(a.nc + ncOf(c.fb) + ncOf(c.rc)) ? '<span class="nb">⚠️ ' + (a.nc + ncOf(c.fb) + ncOf(c.rc)) + ' NC</span>' : ''}<span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>
-      ${stk(a)}<div style="height:6px"></div>${dbar(f.dT, f.dA, f.tot)}</summary>
-      <div class="in"><button type="button" data-go="${esc(c.k)}" style="width:100%;margin:10px 0;font-weight:600">📊 Synthèse de ce chantier</button>${legend()}<div class="lg">Touche une ligne pour ne lister que les supports « à faire », puis « faits », puis tout.</div>${TYPES.filter(t => c.rows.some(r => key(r.type) === t)).map(t => { const y = agg(c.rows.filter(r => key(r.type) === t)); return frow(c, t, `<span style="color:var(${TC[t]});font-weight:600">${TL[t]}</span>`, `${y.T}/${y.w} · ${y.p} %`, stk(y)); }).join('')}
-      ${steps.filter(([k]) => f.s[k].n).map(([k,l]) => { const x = f.s[k]; return frow(c, k, l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, dbar(x.T, x.A, x.n)); }).join('')}
-      <h2 style="margin-top:16px">Supports : ${nok} / ${L.length} terminés</h2>
-      ${fc ? `<div class="lg"><b>Filtre : ${esc(fl)}</b> · ${shown.length} support(s)</div>` : ''}
-      ${shown.map(x => sRow(x, c.k)).join('') || '<div class="mu">Aucun support à afficher.</div>'}</div></details>`;
-  }).join('') : '<div class="card mu">Aucun chantier trouvé.</div>';
-}
+  const c = D.class, a = D.anc;
+  let html = "";
 
-/* ---------- Onglet Qualité : avancement terrain, NC et suivi FKT ---------- */
-const dt = d => d ? new Date(d.length > 10 ? d : d + 'T00:00:00').toLocaleDateString('fr-FR') : '—';
-const whoLavignon = r => nz([r.nom, r.prenom, r.admin_par].filter(Boolean).join(' ')).includes('lavignon');
-const qFktRow = r => (D.qualite || []).find(x => key(x.chantier) === key(r.Chantier) && key(x.support) === key(r.Support) && key(x.fkt_type) === key(r.Tache)) || null;
-const qualiteFktFor = (chantier,support) => (D.qualite || []).filter(x => key(x.chantier) === key(chantier) && key(x.support) === key(support)).sort((a,b)=>String(a.fkt_type).localeCompare(String(b.fkt_type),'fr'));
-const SQL_QUALITE = "Table qualite_pcle absente ou inaccessible. Dans Supabase > SQL Editor, exécute :\n\ncreate table if not exists public.qualite_pcle (id bigint generated by default as identity primary key, chantier text not null, support text not null, fkt_type text not null, fkt_edit text, fkt_amorti text, created_at timestamptz default now());\nalter table public.qualite_pcle enable row level security;\ndrop policy if exists \"qualite_pcle_app\" on public.qualite_pcle;\ncreate policy \"qualite_pcle_app\" on public.qualite_pcle for all to anon, authenticated using (true) with check (true);\ngrant select, update on public.qualite_pcle to anon, authenticated;\nnotify pgrst, 'reload schema';";
+  // KPIs
+  html += `<div class="kpis">`;
+  D.kpi.forEach(([lab, val, sub, cls]) => {
+    html += `<div class="kpi ${cls||""}"><div class="lab">${lab}</div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;
+  });
+  html += `</div>`;
 
-function qualityFktSupportBlock(c,p){
-  const rows=qualiteFktFor(c.name,p.name);
-  if(!rows.length) return '';
-  return `<section style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)"><h2>Suivi FKT par type</h2>${rows.map(q=>`<div style="padding:8px 0;border-bottom:1px solid var(--ln)"><b>${esc(q.fkt_type)}</b>
-    
-    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px">
-      <label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_edit" data-id="${q.id}"${q.fkt_edit?' checked':''}${ADM?'':' disabled'}> FKT reçue · à analyser</label>
-      <input type="date" data-qfkt-date="fkt_edit" data-id="${q.id}" value="${esc(q.fkt_edit||'')}"${ADM && q.fkt_edit ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%">
-    </div>
-    
-    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px">
-      <label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_amorti" data-id="${q.id}"${q.fkt_amorti?' checked':''}${ADM?'':' disabled'}> FKT analysée · amortie</label>
-      <input type="date" data-qfkt-date="fkt_amorti" data-id="${q.id}" value="${esc(q.fkt_amorti||'')}"${ADM && q.fkt_amorti ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%">
-    </div>
+  // Split class / anc
+  html += `<section><h2>Supports classiques / Supports Ancrage</h2><div class="split">`;
+  html += `<div class="col-card"><h3>Supports classiques <span class="tag reg">hors Anc</span></h3>
+    <div class="row-ind"><div><div class="lab">Fouilles</div><div class="prog"><i style="width:${pct(c.fouille[0],c.fouille[1])}%;background:var(--gc)"></i></div></div><div class="val">${c.fouille[0]} <span class="sub">/ ${c.fouille[1]}</span></div></div>
+    <div class="row-ind"><div><div class="lab">Supports (matage hors Anc)</div><div class="prog"><i style="width:${pct(c.matage[0],c.matage[1])}%;background:var(--fb)"></i></div></div><div class="val">${c.matage[0]} <span class="sub">/ ${c.matage[1]}</span></div></div>
+    <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${c.beton} m³</div></div>
+    <div class="row-ind"><div><div class="lab">Consoles de ligne</div><div class="prog"><i style="width:${pct(c.console[0],c.console[1])}%;background:var(--pose)"></i></div></div><div class="val">${c.console[0]} <span class="sub">/ ${c.console[1]}</span></div></div>
+    <div class="row-ind"><div><div class="lab">Armements</div><div class="prog"><i style="width:${pct(c.armement[0],c.armement[1])}%;background:var(--pose)"></i></div></div><div class="val">${c.armement[0]} <span class="sub">/ ${c.armement[1]}</span></div></div>
+    <div class="row-ind"><div><div class="lab">Armements doubles</div><div class="prog"><i style="width:${pct(c.double[0],c.double[1])}%;background:var(--pose)"></i></div></div><div class="val">${c.double[0]} <span class="sub">/ ${c.double[1]}</span></div></div>
+    <div class="row-ind"><div><div class="lab">Connexions</div><div class="prog"><i style="width:${pct(c.connexion[0],c.connexion[1])}%;background:var(--sx)"></i></div></div><div class="val">${c.connexion[0]} <span class="sub">/ ${c.connexion[1]}</span></div></div>
+  </div>`;
+  html += `<div class="col-card"><h3>Supports Ancrage <span class="tag anc">contient Anc</span></h3>
+    <div class="row-ind"><div><div class="lab">Fouilles</div><div class="prog"><i style="width:${pct(a.fouille[0],a.fouille[1])}%;background:var(--gc)"></i></div></div><div class="val">${a.fouille[0]} <span class="sub">/ ${a.fouille[1]}</span></div></div>
+    <div class="row-ind"><div><div class="lab">Supports Ancrage (matage)</div><div class="prog"><i style="width:${pct(a.matage[0],a.matage[1])}%;background:var(--fb)"></i></div></div><div class="val">${a.matage[0]} <span class="sub">/ ${a.matage[1]}</span></div></div>
+    <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${a.beton} m³</div></div>
+    <div class="row-ind"><div><div class="lab">Consoles / Armements / Connexions</div></div><div class="val" style="font-size:14px">— <span class="sub">non concernées</span></div></div>
+  </div></div></section>`;
 
-    <!-- Témoin Refus ajouté -->
-    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr);gap:8px;align-items:center;margin-top:6px">
-      <label class="tg" style="margin:0"><input type="checkbox" data-qfkt="fkt_refus" data-id="${q.id}"${q.fkt_refus?' checked':''}${ADM?'':' disabled'}> Refuser</label>
-      <input type="date" data-qfkt-date="fkt_refus" data-id="${q.id}" value="${esc(q.fkt_refus||'')}"${ADM && q.fkt_refus ? '' : ' disabled'} style="min-height:36px;padding:4px 6px;width:100%">
-    </div>
+  // Pies
+  html += `<section><h2>Avancement visuel</h2><div class="pies">
+    ${pie(c.fouille[0], c.fouille[1], "#2f6f9f", "Classiques")}
+    ${pie(a.fouille[0], a.fouille[1], "#0e9aa7", "Ancrages")}
+    ${pie(c.console[0], c.console[1], "#2f8f63", "Consoles")}
+  </div></section>`;
 
-  </div>`).join('')}${!D.hasQualite?'<div class="mu tl">Table qualite_pcle à créer.</div>':''}</section>`;
-}
+  // Pose section
+  html += `<section><h2>Pose — Armements & Connexions</h2><div class="bigs">
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements</div><div class="val">${c.armement[0]} / ${c.armement[1]}</div><div class="sub">tâches « ARMEMENT »</div></div><div class="right">${pct(c.armement[0],c.armement[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements doubles</div><div class="val">${c.double[0]} / ${c.double[1]}</div><div class="sub">tâches « ARMEMENT DOUBLE »</div></div><div class="right">${pct(c.double[0],c.double[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--sx)"></div><div class="content"><div class="lab">Connexions</div><div class="val">${c.connexion[0]} / ${c.connexion[1]}</div><div class="sub">tâches « CONNEXION »</div></div><div class="right">${pct(c.connexion[0],c.connexion[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Consoles de ligne</div><div class="val">${c.console[0]} / ${c.console[1]}</div><div class="sub">tâches contenant « CONSOLE DE LIGNE »</div></div><div class="right">${pct(c.console[0],c.console[1])} %</div></div>
+  </div></section>`;
 
-async function saveQualiteFkt(id, field, value){
-  if(!ADM || !ACCES_ARCHIVE()) return;
-  if(!D.hasQualite){ alert(SQL_QUALITE); return; }
-  const q=(D.qualite||[]).find(x=>String(x.id)===String(id));
-  if(!q){ alert('Ligne FKT introuvable dans qualite_pcle. Vérifie le chantier, le support et le type de FKT.'); return; }
-  const patch={[field]:value||null};
-  try{
-    const resp=await fetch(`${SUPABASE_URL}/rest/v1/qualite_pcle?id=eq.${q.id}`,{method:'PATCH',headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(patch)});
-    if(!resp.ok) throw new Error('Erreur '+resp.status+' — vérifie les droits RLS de qualite_pcle.');
-    const saved=await resp.json(), row=Array.isArray(saved)?saved[0]:null;
-    if(row) Object.assign(q,row); else Object.assign(q,patch);
-    rafraichirApres();
-  }catch(e){alert('Enregistrement FKT impossible : '+e.message);rafraichirApres();}
+  // FKT section (depuis tâches RELEVER CAT / FKT)
+  const fkt = D.fkt || { armement: [0,94], at: [0,16], r1r2: [0,12], feeder: [0,6] };
+  html += `<section><h2>Suivi FKT</h2><div class="bigs">
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Armement</div><div class="val">${fkt.armement[0]} / ${fkt.armement[1]}</div><div class="sub">tâches « FKT ARMEMENT »</div></div><div class="right">${pct(fkt.armement[0],fkt.armement[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Appareil tendeur</div><div class="val">${fkt.at[0]} / ${fkt.at[1]}</div><div class="sub">tâches « FKT APPAREIL TENDEUR »</div></div><div class="right">${pct(fkt.at[0],fkt.at[1])} %</div></div>
+  </div></section>`;
+
+  // Table globale only
+  if (D.showTable) {
+    html += `<section><h2>Synthèse par chantier</h2><table>
+      <thead><tr><th>Chantier</th><th class="n">Fouilles class.</th><th class="n">Fouilles Anc</th><th class="n">Supports</th><th class="n">Béton</th><th class="n">Consoles</th></tr></thead>
+      <tbody>`;
+    D.table.forEach(([n, fc, fa, m, b, c, ok]) => {
+      html += `<tr><td><strong>${n}</strong></td>
+        <td class="n ${ok?"ok":"bad"}">${fc}</td>
+        <td class="n ${ok?"ok":"bad"}">${fa}</td>
+        <td class="n ${ok?"ok":"bad"}">${m}</td>
+        <td class="n">${b}</td>
+        <td class="n">${c}</td></tr>`;
+    });
+    html += `</tbody></table></section>`;
+  }
+
+  // Attention
+  html += `<section><h2>Points d’attention</h2><div class="bigs">`;
+  D.attn.forEach(([lab, val, sub, col]) => {
+    html += `<div class="big"><div class="bar" style="background:var(--${col})"></div>
+      <div class="content"><div class="lab">${lab}</div><div class="val" style="font-size:17px">${val}</div><div class="sub">${sub}</div></div></div>`;
+  });
+  html += `</div></section>`;
+
+  document.getElementById("content").innerHTML = html;
 }
 
-function qrow(r, lifted=false){
-  const who = [r.prenom, r.nom].filter(Boolean).join(' ');
-  return `<div class="card qc">
-    <div class="rl"><b>${esc(r.Tache)}</b><span class="pill" style="background:${lifted ? 'var(--pose)' : 'var(--dep)'}">${lifted ? 'Levée' : 'Ouverte'}</span></div>
-    <div class="mu tl" style="margin:0 0 6px">${esc(r.Chantier)} › ${esc(r.Support)} · ${esc(TL[key(r.type)] || r.type || '')}</div>
-    <div class="nc"${lifted ? ' style="background:rgba(47,143,99,.15);color:var(--pose)"' : ''}>${lifted ? '✅ NC levée le ' + dt(r.nc_levee_le) + (r.nc_levee_expl ? ' — ' + esc(r.nc_levee_expl) : '') : '⚠️ ' + esc(r.nc_description || 'Description non renseignée')}</div>
-    <div class="mu tl">${esc(who) || '—'} · mise à jour ${dt(r.updated_at)}</div></div>`;
-}
-
-const QT = ['FKT_AT','FKT_ARMEMENT','FKT_FBM','FKT_DEROULAGE'];
-const QL = {FKT_AT:'FKT AT · appareil tendeur', FKT_ARMEMENT:'FKT armement', FKT_FBM:'FKT FBM', FKT_DEROULAGE:'FKT déroulage'};
-
-const WF = ['Analysées','Refusées','À analyser','Prévues'], WA = ['Amorties','Éditées','À éditer'], WP = ['Levées','Éditées','À éditer'];
-const qCat = q => key(q.categorie || 'FKT');
-const qCnt = L => ({
-  n: L.length, 
-  c: L.filter(q => q.fkt_amorti).length,
-  r: L.filter(q => q.fkt_refus).length, // Nombre exact de refusés
-  e: L.filter(q => q.fkt_edit && !q.fkt_amorti).length
+document.querySelectorAll(".nav button[data-ch]").forEach(b => {
+  b.addEventListener("click", () => render(b.dataset.ch));
 });
-const qSort = L => L.slice().sort((a,b) => String(a.support || a.numero || '').localeCompare(String(a.support || a.numero || ''), 'fr', {numeric:true}));
-const qBar = x => `<div class="sb"><i style="width:${x.n ? x.c / x.n * 100 : 0}%;background:var(--pose)"></i><i style="width:${x.n ? x.e / x.n * 100 : 0}%;background:var(--ec)"></i></div>`;
-const labF = q => esc(q.support), labN = q => esc(q.numero || '—') + (q.support ? ' (S' + esc(q.support) + ')' : '');
-
-function qLines(L, W, lab){
-  const g = new Map();
-  L.forEach(q => { const k = key(q.chantier); if(!g.has(k)) g.set(k, {name:q.chantier, rows:[]}); g.get(k).rows.push(q); });
-  return [...g.values()].sort((a,b) => String(a.name).localeCompare(String(b.name), 'fr')).map(c => {
-    const x = qCnt(c.rows);
-    // On garde les listes indépendantes pour que le support apparaisse partout où ses cases sont cochées
-    const parts = [
-      [W[0], q => q.fkt_amorti], 
-      [W[1], q => q.fkt_refus], 
-      [W[2], q => q.fkt_edit && !q.fkt_amorti], 
-      [W[3], q => !q.fkt_edit && !q.fkt_amorti && !q.fkt_refus]
-    ].map(([t, f]) => {
-      const v = qSort(c.rows.filter(f)).map(lab).join(', ');
-      return v ? `<div class="mu tl"><b>${t} :</b> ${v}</div>` : '';
-    }).join('');
-    return `<div class="sp" style="cursor:default"><div class="rl"><b>${esc(c.name)}</b><span>${x.c} / ${x.n} · ${pc(x.c, x.n)} %</span></div>${qBar(x)}${parts}</div>`;
-  }).join('');
-}
-
-
-const qBlock = (title, L, W, lab) => {
-  const x = qCnt(L);
-  // On affiche le nombre de refusés (x.r) dans l'en-tête
-  return `<details class="card"><summary><div class="rl"><b>${title}</b><span>${x.n} au total · ${x.r} refusées · ${x.e} ${W[2].toLowerCase()} · ${x.c} ${W[0].toLowerCase()}</span></div>${qBar(x)}</summary><div class="in">${qLines(L, W, lab) || '<div class="mu tl">Aucune ligne.</div>'}</div></details>`;
-};
-
-let qCh = '';
-function vQa(){
-  const QA = D.qualite || [];
-  const chn = {}; D.ch.forEach(c => chn[c.k] = c.name); QA.forEach(q => { const k = key(q.chantier); if(k && !chn[k]) chn[k] = String(q.chantier).trim(); });
-  const ks = Object.keys(chn).sort((a,b) => chn[a].localeCompare(chn[b], 'fr', {numeric:true}));
-  if(qCh && !ks.includes(qCh)) qCh = '';
-  const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true && (!qCh || key(r.Chantier) === qCh)).sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
-  const lv = D.qa.filter(r => r.conforme === false && r.nc_levee === true && (!qCh || key(r.Chantier) === qCh)).sort((a,b) => String(b.nc_levee_le || b.updated_at || '').localeCompare(String(a.nc_levee_le || a.updated_at || '')));
-  const Q = QA.filter(q => !qCh || key(q.chantier) === qCh), F = Q.filter(q => qCat(q) === 'FKT'), FA = Q.filter(q => qCat(q) === 'FA'), PA = Q.filter(q => qCat(q) === 'PA');
-  const types = QT.concat([...new Set(F.map(q => key(q.fkt_type)).filter(t => t && !QT.includes(t)))]).filter(t => !qCh || F.some(q => key(q.fkt_type) === t));
-  const has = (c, o, s) => PA.some(q => key(q.origine) === o && key(q.chantier) === c.k && key(q.support) === key(s));
-  let manq = 0;
-  D.ch.filter(c => !qCh || c.k === qCh).forEach(c => {
-    fbmSups(c).filter(p => stepsOf(p).includes('fouille')).forEach(p => { if(!has(c, 'FOUILLE', p.name)) manq++; });
-    F.filter(q => key(q.chantier) === c.k && key(q.fkt_type) === 'FKT_AT').forEach(q => { if(!has(c, 'FKT_AT', q.support)) manq++; });
-  });
-  const f = qCnt(F), a = qCnt(FA), p = qCnt(PA);
-  return `<section class="card"><h2>Synthèse qualité</h2>
-    <div class="admsearch"><select id="qch"><option value="">Tous les chantiers</option>${ks.map(k => `<option value="${esc(k)}"${k === qCh ? ' selected' : ''}>${esc(chn[k])}</option>`).join('')}</select></div>
-    <div class="kpis">${kpi('FKT', f.c + ' / ' + f.n, f.e + ' à analyser', '--sx')}${kpi('PA', p.c + ' / ' + p.n, p.e + ' éditée(s), non levée(s)', '--fb')}${kpi('FA', a.c + ' / ' + a.n, a.e + ' éditée(s), non amortie(s)', '--ec')}${kpi('PA obligatoires', manq, 'à créer (fouilles, FKT AT)', '--dep')}</div>${!D.hasQualite ? '<div class="nc">Table qualite_pcle absente ou inaccessible. Vérifie son accès dans Supabase.</div>' : ''}</section>
-    <section><h2>FKT</h2>${types.map(t => qBlock(QL[t] || esc(t), F.filter(q => key(q.fkt_type) === t), WF, labF)).join('') || '<div class="card mu">Aucune FKT.</div>'}</section>
-    <section><h2>PA</h2>${qBlock('Points d’arrêt', PA, WP, labN)}</section>
-    <section><h2>FA</h2>${qBlock('Fiches d’anomalie', FA, WA, labN)}</section>
-    <section><h2>Non-conformités ouvertes · ${nc.length}</h2>${nc.map(r => qrow(r, false)).join('') || '<div class="card mu">Aucune non-conformité ouverte.</div>'}</section>
-    <section><h2>Non-conformités levées · ${lv.length}</h2>${lv.map(r => qrow(r, true)).join('') || '<div class="card mu">Aucune non-conformité levée.</div>'}</section>`;
-}
-
-/* ---------- Mode admin : déclarations + veille ---------- */
-const jour = () => { const d = new Date(); if(d.getHours() < 6) d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
-const nz = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-async function verifAdmin(email){
-  try{
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/app_bob?email=eq.${encodeURIComponent(email)}&select=nom,prenom,admin`, {headers:{apikey:SUPABASE_ANON_KEY}});
-    if(!r.ok) return null;
-    const a = await r.json();
-    return a[0] && a[0].admin === true ? {email, nom:a[0].nom || '', prenom:a[0].prenom || ''} : null;
-  }catch(e){ return null; }
-}
-
-function majAdminUI(){
-  $('#adm').textContent = ADM ? '🔓 ' + (ADM.prenom || 'Admin') : '🔐 Admin';
-  $('#nadm').style.display = ADM ? '' : 'none';
-  if(!ADM && tab === 'adm') tab = 'syn';
-}
-
-async function connexionAdmin(){
-  if(ADM){
-    if(confirm('Quitter le mode admin ?')){ ADM = null; localStorage.removeItem('pcle_adm'); majAdminUI(); show(); }
-    return;
-  }
-  const email = (prompt('Email administrateur :', localStorage.getItem('pcle_adm') || localStorage.getItem('emailSutx') || '') || '').trim().toLowerCase();
-  if(!email) return;
-  const a = await verifAdmin(email);
-  if(!a){ alert("Accès refusé : cet email n'est pas administrateur."); return; }
-  ADM = a; localStorage.setItem('pcle_adm', email); tab = 'adm'; majAdminUI(); show();
-}
-
-async function patchTable(table, id, patch){
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {method:'PATCH', headers:{apikey:SUPABASE_ANON_KEY, 'Content-Type':'application/json', Prefer:'return=representation'}, body:JSON.stringify(patch)});
-  if(!r.ok) throw new Error(table + ' : erreur ' + r.status);
-  const a = await r.json().catch(() => []);
-  if(!Array.isArray(a) || !a.length) throw new Error(table + ' : aucune ligne modifiée (droit UPDATE / RLS à vérifier)');
-}
-
-function rafraichirApres(){
-  const sc = dlg.scrollTop;
-  show();
-  if(supOuvert && dlg.open){ openSup(supOuvert.ck, supOuvert.sk); dlg.scrollTop = sc; }
-}
-
-async function syncFbm(r, on, par){
-  if(!isFBM(r)) return;
-  const c = D.ch.find(x => x.k === key(r.Chantier)), p = c && c.s[key(r.Support)], b = p && p.b;
-  const t = nz(r.Tache), col = t.includes('fouille') ? 'fouille' : t.includes('beton') ? 'beton' : 'matage';
-  if(b && !b['date_' + col]){
-    const bp = {['admin_date_' + col]: on ? jour() : null, admin_par: par, admin_maj_le: new Date().toISOString()};
-    await patchTable('blindage', b.id, bp); Object.assign(b, bp);
-  }
-}
-
-const SQL_SOUS = "Colonne admin_sous absente. Dans Supabase > SQL Editor, exécute :\n\nalter table suivi_sutx_v2 add column if not exists admin_sous text;\nnotify pgrst, 'reload schema';\n\nPuis actualise l'app.";
-
-async function adminSave(r, sous){
-  const par = (ADM.prenom + ' ' + ADM.nom).trim(), e = Object.keys(sous).length ? sousEtat(r, sous) : {etat:null, pct:null};
-  const patch = {admin_sous:Object.keys(sous).length ? JSON.stringify(sous) : null, admin_etat:e.etat, admin_pct:e.pct, admin_le:e.etat ? jour() : null, admin_par:e.etat ? par : null};
-  try{ await patchTable('suivi_sutx_v2', r.id, patch); Object.assign(r, patch); await syncFbm(r, e.etat === 'TERMINE', par); }
-  catch(ex){ alert('Mise à jour impossible : ' + ex.message); }
-  rafraichirApres();
-}
-
-async function adminSous(tid, mid){
-  const r = D.qa.find(x => String(x.id) === String(tid));
-  if(!r || !ADM) return;
-  if(!D.hasSous){ alert(SQL_SOUS); return; }
-  const m = modsOf(r).find(x => String(x.id) === String(mid));
-  if(!m) return;
-  const cur = sousState(r, m);
-  if(cur === 'T' || cur === 'N') return;
-  const sous = adminSousOf(r);
-  if(cur === null) sous[m.id] = 'FAIT'; else if(cur === 'A') sous[m.id] = 'NON_CONCERNE'; else delete sous[m.id];
-  await adminSave(r, sous);
-}
-
-async function adminTache(id, val){
-  const r = D.qa.find(x => String(x.id) === String(id));
-  if(!r || !ADM) return;
-  if(modsOf(r).length){
-    if(!D.hasSous){ alert(SQL_SOUS); rafraichirApres(); return; }
-    const sous = {};
-    if(val !== 'CLEAR') modsOf(r).forEach(m => { const st = sousState(r, m); if(st === null || st === 'A') sous[m.id] = 'FAIT'; else if(st === 'AN') sous[m.id] = 'NON_CONCERNE'; });
-    return adminSave(r, sous);
-  }
-  const par = (ADM.prenom + ' ' + ADM.nom).trim();
-  const patch = val === 'CLEAR'
-    ? {admin_etat:null, admin_pct:null, admin_le:null, admin_par:null}
-    : {admin_etat:'TERMINE', admin_pct:null, admin_le:jour(), admin_par:par};
-  try{ await patchTable('suivi_sutx_v2', id, patch); Object.assign(r, patch); await syncFbm(r, val !== 'CLEAR', par); }
-  catch(e){ alert('Mise à jour impossible : ' + e.message); }
-  rafraichirApres();
-}
-
-const SQL_FKT = "Colonne admin_fkt absente. Dans Supabase > SQL Editor, exécute :\n\nalter table suivi_sutx_v2 add column if not exists admin_fkt text;\nalter table suivi_sutx_v2 add column if not exists fkt_etat text;\nalter table suivi_sutx_v2 add column if not exists fkt_num text;\nnotify pgrst, 'reload schema';\n\nPuis actualise l'app.";
-
-async function adminFkt(id, on, num){
-  const r = D.qa.find(x => String(x.id) === String(id));
-  if(!r || !ADM) return;
-  if(!D.hasFkt){ alert(SQL_FKT); rafraichirApres(); return; }
-  const cur = adminFktOf(r) || {};
-  const v = on ? {etat:'DEFINITIVE', num:num === null ? (cur.num || '') : String(num).trim(), le:cur.le || jour(), par:(ADM.prenom + ' ' + ADM.nom).trim()} : null;
-  const patch = {admin_fkt:v ? JSON.stringify(v) : null};
-  try{ await patchTable('suivi_sutx_v2', r.id, patch); Object.assign(r, patch); }
-  catch(e){ alert('Mise à jour impossible : ' + e.message); }
-  rafraichirApres();
-}
-
-async function adminFbm(id, col, val){
-  const b = D.bl.find(x => String(x.id) === String(id));
-  if(!b || !ADM) return;
-  const par = (ADM.prenom + ' ' + ADM.nom).trim();
-  const patch = {[col]: val || null, admin_par: par, admin_maj_le: new Date().toISOString()};
-  const mot = col.includes('fouille') ? 'fouille' : col.includes('beton') ? 'beton' : 'matage';
-  const c = supOuvert && D.ch.find(x => x.k === supOuvert.ck), p = c && c.s[supOuvert.sk];
-  const miroir = (p ? p.fb : []).filter(r => !r.Fait && nz(r.Tache).includes(mot));
-  const pm = val ? {admin_etat:'TERMINE', admin_pct:null, admin_le:val, admin_par:par} : {admin_etat:null, admin_pct:null, admin_le:null, admin_par:null};
-  try{
-    await patchTable('blindage', id, patch); Object.assign(b, patch);
-    for(const r of miroir){ await patchTable('suivi_sutx_v2', r.id, pm); Object.assign(r, pm); }
-  }catch(e){ alert('Mise à jour impossible : ' + e.message); }
-  rafraichirApres();
-}
-const SQL_M3 = "Colonne admin_m3_reel absente. Dans Supabase > SQL Editor, exécute :\n\nalter table blindage add column if not exists admin_m3_reel numeric;\nnotify pgrst, 'reload schema';\n\nPuis actualise l'app.";
-
-async function adminM3(id, val){
-  const b = D.bl.find(x => String(x.id) === String(id));
-  if(!b || !ADM) return;
-  if(!D.hasM3){ alert(SQL_M3); rafraichirApres(); return; }
-  const patch = {admin_m3_reel: num(val), admin_par: (ADM.prenom + ' ' + ADM.nom).trim(), admin_maj_le: new Date().toISOString()};
-  try{ await patchTable('blindage', id, patch); Object.assign(b, patch); }
-  catch(e){ alert('Mise à jour impossible : ' + e.message); }
-  rafraichirApres();
-}
-
-function m3Row(b){
-  const t = num(b.m3_reel), a = num(b.admin_m3_reel);
-  if(t !== null) return `<div class="rl"><span>Béton m³ : réel</span><b>${vv(t)}</b></div>`;
-  if(ADM) return `<div class="rl"><span>Béton m³ : réel${a !== null ? ' 📌' : ''}</span><input type="number" step="0.1" min="0" inputmode="decimal" data-adm="m" data-id="${b.id}" value="${a !== null ? a : ''}" placeholder="m³" style="min-height:36px;padding:4px 8px;width:110px;text-align:right"></div>`;
-  return `<div class="rl"><span>Béton m³ : réel</span><b>${a !== null ? vv(a) + ' 📌 admin' : '—'}</b></div>`;
-}
-
-const AS = {ch:null, dom:'FBM', mode:'date', date:'', from:'', to:'', q:''};
-const addD = (s, n) => { const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
-const dEnd = r => r.Fait ? String(r.date_fait || r.updated_at || '').slice(0,10) : r.admin_etat === 'TERMINE' ? String(r.admin_le || r.updated_at || '').slice(0,10) : null;
-const stepDay = (p, k) => {
-  const c = [];
-  if(p.b){ if(p.b['date_' + k]) c.push(String(p.b['date_' + k]).slice(0,10)); if(p.b['admin_date_' + k]) c.push(String(p.b['admin_date_' + k]).slice(0,10)); }
-  p.fb.filter(r => nz(r.Tache).includes(k)).forEach(r => { const d = dEnd(r); if(d !== null) c.push(d); });
-  return c.length ? c.sort()[0] : null;
-};
-const inP = (d, a, b) => !!d && d >= a && d <= b;
-const byName = (x, y) => x.name.localeCompare(y.name, 'fr', {numeric:true});
-const sutxAt = (rows, t) => { const w = rows.filter(r => eff(r) !== 'A'), x = w.filter(r => { const d = dEnd(r); return d !== null && d <= t; }).length; return {n:w.length, t:x, p:pc(x, w.length)}; };
-const stepsAt = (p, t) => STEPK.map(k => !stepsOf(p).includes(k) ? null : (d => d !== null && d <= t)(stepDay(p, k)));
-const fbmAt = (ps, t) => { const x = ps.filter(p => { const s = stepsAt(p, t); return s.every(v => v !== false) && s.some(v => v === true); }).length; return {n:ps.length, t:x, p:pc(x, ps.length)}; };
-const fbPer = p => stepsOf(p).filter(k => inP(stepDay(p, k), AS.from, AS.to));
-const sxPer = rows => rows.filter(r => inP(dEnd(r), AS.from, AS.to));
-
-function adminAvancementLavignon(){
-  const rows=D.qa.filter(r=>whoLavignon(r)&&!!r.updated_at).sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
-  const groups=new Map();
-  rows.forEach(r=>{const k=key(r.Chantier);if(!groups.has(k))groups.set(k,{name:r.Chantier,rows:[]});groups.get(k).rows.push(r);});
-  const html=[...groups.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),'fr')).map(g=>{
-    const done=g.rows.filter(r=>eff(r)==='T').length, enc=g.rows.filter(r=>eff(r)==='E').length;
-    return `<details class="card"><summary><div class="rl"><b>${esc(g.name)}</b><span>${done}/${g.rows.length} terminées · ${enc} en cours</span></div>${pbar(pc(done,g.rows.length),'--sx')}</summary><div class="in">${g.rows.map(r=>`<div class="sp"><div class="rl"><b>${esc(r.Support)} · ${esc(r.Tache)}</b><span class="mu">${eff(r)==='T'?'Terminé':eff(r)==='E'?'En cours '+pctOf(r)+' %':eff(r)==='A'?'Annulé':'À faire'}</span></div><div class="mu tl">Mise à jour ${dt(r.updated_at)} · ${esc([r.prenom,r.nom].filter(Boolean).join(' '))}</div></div>`).join('')}</div></details>`;
-  }).join('');
-  const fb=rows.filter(isFBM), supports=new Map();
-  fb.forEach(r=>{const k=key(r.Chantier)+'¦'+key(r.Support);if(!supports.has(k))supports.set(k,{chantier:r.Chantier,support:r.Support,rows:[]});supports.get(k).rows.push(r);});
-  const fbHtml=[...supports.values()].sort((a,b)=>String(a.chantier).localeCompare(String(b.chantier),'fr')||String(a.support).localeCompare(String(b.support),'fr',{numeric:true})).map(x=>{
-    const c=D.ch.find(z=>z.k===key(x.chantier)), p=c&&c.s[key(x.support)], b=p&&p.b||{};
-    const labels=[['fouille','F','Fouille'],['beton','B','Béton'],['matage','M','Matage']];
-    const chips=labels.map(([k,l])=>{const t=x.rows.some(r=>nz(r.Tache).includes(k)&&eff(r)==='T'), d=b['date_'+k]||b['admin_date_'+k];return `<em class="${t||d?'on':''}">${l}</em>`;}).join('');
-    return `<div class="sp"><div class="rl"><b>${esc(x.chantier)} · ${esc(x.support)}</b><span class="chips">${chips}</span></div><div class="mu tl">${x.rows.map(r=>`${esc(r.Tache)} : ${eff(r)==='T'?'terminé':eff(r)==='E'?'en cours '+pctOf(r)+' %':'à suivre'} (${dt(r.updated_at)})`).join(' · ')}</div></div>`;
-  }).join('');
-  return `<section class="card"><h2>Avancement relevé par LAVIGNON</h2><div class="mu tl">Consultation des mises à jour attribuées à LAVIGNON.</div><div class="kpis">${kpi('Tâches relevées',rows.length,'SUTX / GC','--sx')}${kpi('Supports FBM',supports.size,'fouilles mises à jour','--fb')}</div>${html||'<div class="mu tl">Aucune tâche SUTX attribuée à LAVIGNON trouvée.</div>'}<h3 style="margin-top:14px">Suivi FBM</h3>${fbHtml||'<div class="mu tl">Aucune fiche FBM attribuée à LAVIGNON trouvée.</div>'}</section>`;
-}
-
-function vAdm(){
-  if(!AS.date){ AS.date = AS.to = jour(); AS.from = addD(jour(), -6); }
-  const per = AS.mode === 'per', A = per ? AS.to : AS.date, c = AS.ch && D.ch.find(x => x.k === AS.ch);
-  if(AS.ch && !c) AS.ch = null;
-  const b = (a, t, on) => `<button type="button" data-an="${a}" aria-pressed="${!!on}">${t}</button>`;
-  const rows = c ? c.rows : D.all, ps = c ? fbmSups(c) : D.ch.flatMap(fbmSups);
-  const sx = sutxAt(rows, A), fb = fbmAt(ps, A), B = addD(AS.from, -1);
-  const sx0 = per ? sutxAt(rows, B) : null, fb0 = per ? fbmAt(ps, B) : null;
-  const nS = sxPer(rows).length, nF = ps.reduce((t, p) => t + fbPer(p).length, 0);
-  let h = '';
-  if(c) h += `<button type="button" data-an="ch|" style="width:100%;font-weight:600;margin:4px 0">← Tous les chantiers · ${esc(c.name)}</button><div class="seg">${b('dom|FBM', 'FBM', AS.dom === 'FBM')}${b('dom|SUTX', 'SUTX', AS.dom === 'SUTX')}</div>`;
-  h += `<div class="seg">${b('mode|date', 'À date', !per)}${b('mode|per', 'Période', per)}</div>`;
-  h += per
-    ? `<div class="admsearch"><div style="display:flex;gap:8px"><label class="mu tl" style="flex:1">Du<input type="date" id="a-from" value="${AS.from}"></label><label class="mu tl" style="flex:1">Au<input type="date" id="a-to" value="${AS.to}"></label></div><div style="display:flex;gap:8px">${b('we|', 'Week-end', 0)}${b('sem|', '7 jours', 0)}</div></div>`
-    : `<div class="admsearch"><div style="display:flex;gap:8px"><input type="date" id="a-date" value="${AS.date}">${b('today|', "Aujourd'hui", 0)}</div><div class="mu tl">Avancement des tâches terminées à cette date.</div></div>`;
-  h += `<div class="kpis">${kpi('SUTX', sx.p + ' %', `${sx.t} / ${sx.n} tâches${per ? ` · +${nS} sur la période (${sx0.p} → ${sx.p} %)` : ''}`, '--sx')}${kpi('FBM', fb.p + ' %', `${fb.t} / ${fb.n} supports complets${per ? ` · +${nF} étapes sur la période (${fb0.p} → ${fb.p} %)` : ''}`, '--fb')}</div>`;
-  h += `<button type="button" data-an="pdf|" style="width:100%;font-weight:600;margin-bottom:12px">📄 Exporter en PDF</button>`;
-  if(!c){
-    h += `<div class="admsearch"><input id="a-q" type="search" value="${esc(AS.q)}" placeholder="Rechercher un support, un BL, une FKT…"></div>`;
-    const q = nz(AS.q.trim());
-    if(q){
-      const L = D.ch.flatMap(x => Object.values(x.s).map(p => ({x, p}))).filter(({x, p}) => nz([x.name, p.name, p.b && p.b.bl_beton, p.rc.map(r => fktOf(r).num).join(' ')].join(' ')).includes(q));
-      h += L.slice(0, 60).map(({x, p}) => `<div class="card qc" role="button" tabindex="0" data-c="${esc(x.k)}" data-s="${esc(p.k)}"><div class="rl"><b>${esc(p.name)}</b><span class="mu">${esc(x.name)}</span></div>${p.b && p.b.bl_beton ? `<div class="meta">BL ${esc(p.b.bl_beton)}</div>` : ''}</div>`).join('') || '<div class="card mu">Aucun résultat.</div>';
-    } else h += D.ch.map(x => {
-      const a = sutxAt(x.rows, A), f = fbmAt(fbmSups(x), A);
-      return `<div class="card qc" role="button" tabindex="0" data-an="ch|${esc(x.k)}"><div class="rl"><b>${esc(x.name)}</b><span><span style="color:var(--sx)">SUTX ${a.p} %</span> · <span style="color:var(--fb)">FBM ${f.p} %</span></span></div>${pbar(a.p, '--sx')}<div style="height:6px"></div>${pbar(f.p, '--fb')}${per ? `<div class="mu tl">+${sxPer(x.rows).length} tâche(s) · +${fbmSups(x).reduce((t, p) => t + fbPer(p).length, 0)} étape(s) FBM sur la période</div>` : ''}</div>`;
-    }).join('');
-  } else if(AS.dom === 'FBM'){
-    const L = fbmSups(c).filter(p => !per || fbPer(p).length).sort(byName);
-    h += `<div class="card"><h2>Supports FBM · ${L.length}</h2>` + (L.map(p => { const s = stepsAt(p, A); return `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(p.k)}"><div class="rl"><b>${esc(p.name)}</b><span class="chips">${s.map((v, i) => v === null ? '' : `<em class="${v ? 'on' : ''}">${'FBM'[i]}</em>`).join('')}${s.every(v => v !== false) && s.some(v => v === true) ? ' ✅' : ''}</span></div>${per ? `<div class="mu tl">${fbPer(p).map(k => ({fouille:'Fouille', beton:'Béton', matage:'Matage'}[k])).join(', ')}</div>` : ''}</div>`; }).join('') || '<div class="mu">Aucun support.</div>') + '</div>';
-  } else {
-    const L = Object.values(c.s).filter(p => p.rows.length && (!per || sxPer(p.rows).length)).sort(byName);
-    h += `<div class="card"><h2>Supports SUTX · ${L.length}</h2>` + (L.map(p => { const x = sutxAt(p.rows, A); return `<div class="sp" role="button" tabindex="0" data-c="${esc(c.k)}" data-s="${esc(p.k)}"><div class="rl"><b>${esc(p.name)}</b><span>${x.t} / ${x.n}</span></div>${pbar(x.p, '--sx')}${per ? `<div class="mu tl">${sxPer(p.rows).map(r => esc(r.Tache)).join(' · ')}</div>` : ''}</div>`; }).join('') || '<div class="mu">Aucun support.</div>') + '</div>';
-  }
-  h += adminAvancementLavignon();
-  return h;
-}
-
-function admBind(){
-  const re = () => { $('#v').innerHTML = vAdm(); admBind(); };
-  document.querySelectorAll('#v [data-an]').forEach(el => el.onclick = () => {
-    const [k, v] = el.dataset.an.split('|');
-    if(k === 'ch') AS.ch = v || null;
-    else if(k === 'dom') AS.dom = v;
-    else if(k === 'mode') AS.mode = v;
-    else if(k === 'today') AS.date = jour();
-    else if(k === 'we'){ const w = new Date(jour() + 'T12:00:00').getDay(), sat = addD(jour(), w === 6 ? 0 : w === 0 ? -1 : -(w + 1)); AS.from = sat; AS.to = addD(sat, 1); }
-    else if(k === 'sem'){ AS.to = jour(); AS.from = addD(jour(), -6); }
-    else if(k === 'pdf'){ window.PDF_ADMIN = adminPdf; $('#pdf').click(); return; }
-    re(); if(k === 'ch') window.scrollTo(0, 0);
-  });
-  [['a-date', 'date'], ['a-from', 'from'], ['a-to', 'to']].forEach(([id, f]) => { const e = $('#' + id); if(e) e.onchange = () => { if(e.value){ AS[f] = e.value; re(); } }; });
-  const q = $('#a-q');
-  if(q) q.oninput = () => { AS.q = q.value; const pos = q.selectionStart; re(); const n = $('#a-q'); n.focus(); n.setSelectionRange(pos, pos); };
-}
-
-function adminPdf(){
-  const per = AS.mode === 'per', A = per ? AS.to : AS.date, c = AS.ch && D.ch.find(x => x.k === AS.ch);
-  const d = pdfDoc(), W = d.W, H = d.H, L = 32, R = W - 32, BOT = H - 46, K = {tx:'#1a232c', mu:'#6b7884', ln:'#d9dee2', navy:'#0b2545', j:'#f2c200', sx:'#2f6f9f', fb:'#8a5fb0'};
-  
-  const nowTime = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-  const quand = per ? `Période du ${dt(AS.from)} au ${dt(AS.to)} — Édité à ${nowTime}` : `Situation à la date du ${dt(AS.date)} à ${nowTime}`;
-  
-  const nom = c ? c.name : 'Tous les chantiers';
-  let y = 0;
-
-  const page = () => { d.page(); y = 40; };
-  const sectionTitle = (t) => {
-    if(y + 30 > BOT) page();
-    y += 10;
-    d.text(L, y + 10, t, 11, true, K.navy);
-    d.rect(L, y + 15, R - L, 1.2, K.navy);
-    y += 24;
-  };
-
-  page();
-  d.rect(L, 36, R - L, 55, K.navy); d.rect(L, 91, R - L, 3.5, K.j);
-  d.text(L + 16, 58, "RAPPORT D'AVANCEMENT — PCLE-MMM", 15, true, '#ffffff');
-  d.text(L + 16, 74, nom + '  |  ' + quand, 9, false, '#c9d3df');
-  y = 108;
-
-  const targetChantiers = c ? [c] : D.ch;
-
-  sectionTitle(per ? "1. ACTIVITÉ SUTX SUR LA PÉRIODE" : "1. ACTIVITÉ SUTX (CUMULÉE À DATE)");
-  
-  const activeSutxCh = targetChantiers.map(ch => {
-    const items = per ? sxPer(ch.rows) : ch.rows.filter(r => dEnd(r) && dEnd(r) <= A);
-    return { ch, items };
-  }).filter(item => item.items.length > 0);
-
-  if(!activeSutxCh.length){
-    d.text(L, y + 10, "Aucune tâche SUTX enregistrée pour cette échéance.", 9, false, K.mu);
-    y += 20;
-  } else {
-    activeSutxCh.forEach(({ ch, items }) => {
-      if(y + 25 > BOT) page();
-      
-      const sxStat = sutxAt(ch.rows, A);
-      const periodLabel = per ? `réalisé sur la période : ${items.length} tâche(s)` : `réalisé à date : ${items.length} tâche(s)`;
-      const titleText = `${ch.name}  —  Global : ${sxStat.p} %  |  ${periodLabel}`;
-      
-      d.text(L, y + 10, titleText, 9.5, true, K.tx);
-      d.text(R, y + 10, `${items.length} tâche(s)`, 9, true, K.sx, 'r');
-      d.rect(L, y + 16, R - L, 0.4, K.ln);
-      y += 20;
-
-      items.forEach(r => {
-        if(y + 16 > BOT) page();
-        d.text(L + 10, y + 10, pdfFit(`- [${r.Support || '—'}] ${r.Tache}`, 380, 8.5, false), 8.5, false, K.tx);
-        d.text(R, y + 10, dt(dEnd(r)), 8, false, K.mu, 'r');
-        y += 14;
-      });
-      y += 6;
-    });
-  }
-
-  sectionTitle(per ? "2. ACTIVITÉ FBM SUR LA PÉRIODE" : "2. ACTIVITÉ FBM (CUMULÉE À DATE)");
-
-  const activeFbmCh = targetChantiers.map(ch => {
-    const chPs = fbmSups(ch);
-    const supportedItems = chPs.map(p => {
-      const steps = per ? fbPer(p) : stepsOf(p).filter(k => stepDay(p, k) && stepDay(p, k) <= A);
-      return { p, steps };
-    }).filter(x => x.steps.length > 0);
-    return { ch, items: supportedItems };
-  }).filter(item => item.items.length > 0);
-
-  if(!activeFbmCh.length){
-    d.text(L, y + 10, "Aucun ouvrage FBM enregistré pour cette échéance.", 9, false, K.mu);
-    y += 20;
-  } else {
-    activeFbmCh.forEach(({ ch, items }) => {
-      if(y + 25 > BOT) page();
-      
-      const fbStat = fbmAt(fbmSups(ch), A);
-      let periodBeton = 0;
-      let periodStepsCount = 0;
-
-      fbmSups(ch).forEach(p => {
-        const steps = per ? fbPer(p) : stepsOf(p).filter(k => stepDay(p, k) && stepDay(p, k) <= A);
-        periodStepsCount += steps.length;
-        if(steps.includes('beton') && p.b){
-          const m3 = m3r(p.b);
-          if(m3 !== null) periodBeton += m3;
-        }
-      });
-
-      const titleText = `${ch.name}  —  Global : ${fbStat.p} %  |  Échéance : ${periodStepsCount} étape(s) — Béton : ${nf(periodBeton)} m³`;
-
-      d.text(L, y + 10, titleText, 9.5, true, K.tx);
-      const totalStepsCount = items.reduce((acc, i) => acc + i.steps.length, 0);
-      d.text(R, y + 10, `${totalStepsCount} étape(s)`, 9, true, K.fb, 'r');
-      d.rect(L, y + 16, R - L, 0.4, K.ln);
-      y += 20;
-
-      items.forEach(({ p, steps }) => {
-	    const bi = steps.includes('beton') && p.b ? blInfo(p.b) : {bls:[], types:[]};
-        const bt = [...bi.bls.map(x => 'BL ' + x.n + (x.dest === 'carotte' ? ' (carotte)' : '') + (x.q !== null ? ' ' + nf(x.q) + ' m³' : '') + (x.s !== null ? ' slump ' + x.s + ' mm' + (x.cl ? ' ' + x.cl : '') : '')), ...bi.types].join(' · ');
-        const btL = bt ? pdfWrap(bt, 440, 7.5, false) : [];
-        if(y + 16 + btL.length * 10 > BOT) page();
-        const stepLabels = steps.map(k => ({fouille:'Fouille', beton:'Béton', matage:'Matage'}[k])).join(', ');
-        d.text(L + 10, y + 10, pdfFit(`- Support ${p.name} : ${stepLabels}`, 340, 8.5, false), 8.5, false, K.tx);
-        if(steps.includes('beton') && p.b){
-          const m3Val = m3r(p.b);
-          d.text(R, y + 10, m3Val !== null ? `${nf(m3Val)} m³` : 'Volume non saisi', 8.5, true, K.fb, 'r');
-        }
-        y += 14;
-        btL.forEach(t => { d.text(L + 20, y + 7, t, 7.5, false, K.mu); y += 10; });
-      });
-      y += 6;
-    });
-  }
-
-  const n = d.count();
-  for(let i = 0; i < n; i++){ 
-    d.go(i); 
-    d.rect(L, H - 32, R - L, 0.5, K.ln); 
-    d.text(L, H - 20, 'SUIVI_PCLE-MMM — Édition professionnelle', 7.5, false, K.mu); 
-    d.text(R, H - 20, `Page ${i + 1} / ${n}`, 7.5, false, K.mu, 'r'); 
-  }
-
-  return {bytes:d.build(), name:'PCLE-MMM_Rapport_Activite_' + (c ? c.name.replace(/[^\w-]+/g, '_') : 'Tous') + '_' + (per ? AS.from + '_au_' + AS.to : AS.date) + '.pdf'};
-}
-
-/* ---------- Archives FBM ---------- */
-function archiveRowFor(chantier, support){
-  return (D.archives || []).filter(a =>
-    key(a.chantier) === key(chantier) && key(a.support) === key(support)
-  ).sort((a,b) => Number(b.id) - Number(a.id))[0] || null;
-}
-function archiveBlock(c, p){
-  const a = archiveRowFor(c.name, p.name) || {};
-  const b = p.b;
-  const date = (b && (b.date_fouille || b.admin_date_fouille)) || a.date_fouille || '';
-  const fields = [['fbm','FBM'],['carotte','Carotte'],['matage','Matage'],['beton','Béton']];
-  return `<section style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ln)">
-    <h2>Archive des opérations</h2>
-    <div class="mu tl">Informations conservées séparément de l'avancement des tâches.</div>
-    <div class="mu tl">Date de fouille : ${date ? dt(date) : '—'}</div>
-    ${fields.map(([k,l]) => `<label class="tg"><input type="checkbox" data-archive="${k}"${a[k] === true ? ' checked' : ''}${ADM ? '' : ' disabled'}> ${l}</label>`).join('')}
-    ${ADM ? '<div class="mu tl">Enregistrement automatique à chaque modification.</div>' : '<div class="mu tl">Consultation seule — accès Admin nécessaire pour modifier.</div>'}
-  </section>`;
-}
-function vArc(){
-  const rows = (D.archives || []).slice().sort((a,b) =>
-    key(a.chantier).localeCompare(key(b.chantier),'fr') ||
-    key(b.support).localeCompare(key(a.support),'fr',{numeric:true}) ||
-    String(b.date_fouille || '').localeCompare(String(a.date_fouille || ''))
-  );
-  return `<input id="archive-q" type="search" placeholder="Filtrer un chantier ou un support">
-    <div class="lg">${rows.length} archive(s) enregistrée(s)</div>
-    <div id="archive-list">${rows.map(a => `<div class="card">
-      <div class="rl"><b>${esc(a.chantier)} › ${esc(a.support)}</b><span class="mu">${dt(a.date_fouille)}</span></div>
-      <div class="chips">${[['fbm','FBM'],['carotte','Carotte'],['matage','Matage'],['beton','Béton']].map(([k,l]) => `<em class="${a[k] ? 'on' : ''}">${l}</em>`).join('')}</div>
-      <div class="mu tl">Créée le ${dt(a.created_at)}${a.updated_at ? ' · Modifiée le ' + dt(a.updated_at) : ''}</div>
-    </div>`).join('') || '<div class="card mu">Aucune archive FBM pour le moment.</div>'}</div>`;
-}
-async function saveArchive(ck, sk, field, value){
-  if(!ADM || !ACCES_ARCHIVE()) return;
-  const c = D.ch.find(x => x.k === ck), p = c && c.s[sk];
-  if(!c || !p) return;
-  const existing = archiveRowFor(c.name, p.name), b = p.b;
-  const patch = {
-    chantier:c.name, support:p.name,
-    date_fouille:(b && (b.date_fouille || b.admin_date_fouille)) || (existing && existing.date_fouille) || null,
-    [field]:!!value, updated_at:new Date().toISOString()
-  };
-  try{
-    const url = existing
-      ? `${SUPABASE_URL}/rest/v1/archives_fbm?id=eq.${existing.id}`
-      : `${SUPABASE_URL}/rest/v1/archives_fbm`;
-    const body = existing ? patch : {
-      ...patch,
-      fbm:field === 'fbm' ? !!value : false,
-      carotte:field === 'carotte' ? !!value : false,
-      matage:field === 'matage' ? !!value : false,
-      beton:field === 'beton' ? !!value : false
-    };
-    const r = await fetch(url,{
-      method:existing ? 'PATCH' : 'POST',
-      headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=representation'},
-      body:JSON.stringify(body)
-    });
-    if(!r.ok) throw new Error('Erreur ' + r.status + ' — vérifie les droits RLS de archives_fbm');
-    const data = await r.json();
-    const saved = Array.isArray(data) ? data[0] : null;
-    if(saved){
-      if(existing) Object.assign(existing,saved);
-      else D.archives.push(saved);
-    }
-    rafraichirApres();
-  }catch(e){
-    alert('Enregistrement de l’archive impossible : ' + e.message);
-    rafraichirApres();
-  }
-}
-
-function show(){
-  if(!D) return;
-  if(tab === 'arc' && !ACCES_ARCHIVE()) tab = 'syn';
-  $('#narc').style.display = ACCES_ARCHIVE() ? '' : 'none';
-  const n = ncOf(D.qa);
-  $('#nqa').textContent = 'Qualité' + (n ? ' (' + n + ')' : '');
-  document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === tab));
-  if(tab === 'syn') $('#v').innerHTML = vSyn();
-  else if(tab === 'qa') $('#v').innerHTML = vQa();
-  else if(tab === 'arc' && ACCES_ARCHIVE()) {
-    $('#v').innerHTML = vArc();
-    const aq = $('#archive-q');
-    if(aq) aq.addEventListener('input', () => {
-      const q = key(aq.value);
-      document.querySelectorAll('#archive-list .card').forEach(el =>
-        el.style.display = !q || key(el.textContent).includes(q) ? '' : 'none'
-      );
-    });
-  }
-  else if(tab === 'adm' && ADM){ $('#v').innerHTML = vAdm(); admBind(); }
-  else {
-    $('#v').innerHTML = '<input id="q" type="search" placeholder="Filtrer un chantier ou un support"><label class="tg"><input id="rest" type="checkbox"> Supports restants seulement</label><div class="lg">Pastilles FBM : F fouille, B béton, M matage (remplie = faite). Touche un support pour voir son détail.</div><div id="list"></div>';
-    $('#q').addEventListener('input', fill); $('#rest').addEventListener('change', fill); $('#list').addEventListener('toggle', e => { const d = e.target; if(!d.dataset || !d.dataset.k) return; if(d.open) OPEN.add(d.dataset.k); else OPEN.delete(d.dataset.k); }, true); fill();
-  }
-}
-
-/* ---------- Fenêtre support ---------- */
-const dlg = $('#dlg');
-const vv = v => (v === null || v === undefined || v === '') ? '—' : (typeof v === 'number' ? v.toLocaleString('fr-FR', {maximumFractionDigits:3}) : esc(v));
-const df = (a,b) => a != null && b != null && a !== '' && b !== '' && String(a) !== String(b);
-const PAIRS = [['I','i','i_reel'],['ECH','ech','ech_reel'],['AR','ar','ar_reel'],['ENC','enc','enc_reel'],['A','af','a_reel'],['B','b','b_reel'],['H','h','h_reel'],['F','f','f_reel'],['P','p','p_reel'],['SUP','sup','sup_reel']];
-
-function modsOf(r){
-  const nom = t => key(String(t || '').replace(/\s+AXE\s*\d+$/i, ''));
-  return (D.mod || []).filter(m => m.actif !== false && nom(m.tache) === nom(r.Tache)).sort((a,b) => (a.ordre || 0) - (b.ordre || 0) || a.id - b.id);
-}
-function adminSousOf(r){ try{ return r.admin_sous ? JSON.parse(r.admin_sous) : {}; }catch(e){ return {}; } }
-function sousState(r, m){
-  const st = (D.sidx.get(String(r.id)) || new Map()).get(String(m.id));
-  if(st === 'FAIT') return 'T';
-  if(st === 'NON_CONCERNE') return 'N';
-  const a = adminSousOf(r)[m.id];
-  return a === 'FAIT' ? 'A' : a === 'NON_CONCERNE' ? 'AN' : null;
-}
-function sousEtat(r, sous){
-  let w = 0, d = 0;
-  modsOf(r).forEach(m => {
-    const f = (D.sidx.get(String(r.id)) || new Map()).get(String(m.id));
-    const st = (f === 'FAIT' || f === 'NON_CONCERNE') ? f : sous[m.id];
-    if(st === 'NON_CONCERNE') return;
-    const q = +m.poids || 1; w += q; if(st === 'FAIT') d += q;
-  });
-  if(w && d >= w) return {etat:'TERMINE', pct:null};
-  if(d > 0) return {etat:'EN_COURS', pct:Math.round(d / w * 100)};
-  return {etat:null, pct:null};
-}
-
-function sousHtml(r){
-  const mods = modsOf(r);
-  if(!mods.length) return '';
-  return `<div class="tl" style="margin-top:6px">${mods.map(m => {
-    const st = sousState(r, m), nc = st === 'N' || st === 'AN', ad = st === 'A' || st === 'AN';
-    const txt = `${st === 'T' || st === 'A' ? '☑' : nc ? '⊘' : '☐'} ${esc(m.libelle)}${nc ? ' (N/C)' : ''}${ad ? ' 📌' : ''}`;
-    const sty = (ad ? 'color:var(--ad);font-weight:600;' : '') + (nc ? 'opacity:.55;' : '');
-    return `<div style="${sty}">${txt}</div>`;
-  }).join('')}</div>`;
-}
-
-function adminSel(r){
-  return `<label class="tg" style="margin-top:4px"><input type="checkbox" data-adm="t" data-id="${r.id}"${r.admin_etat === 'TERMINE' ? ' checked' : ''}> 📌 ${modsOf(r).length ? 'Tout terminé (sous-tâches)' : 'Terminé (déclaré admin)'}</label>`;
-}
-
-function stepRow(b, l, real, adm, col){
-  if(real) return `<div class="rl"><span>${l}</span><b>${dt(real)} ✔</b></div>`;
-  if(ADM) return `<div class="rl"><span>${l}${adm ? ' 📌' : ''}</span><input type="date" data-adm="f" data-id="${b.id}" data-col="${col}" value="${esc(adm || '')}" style="min-height:36px;padding:4px 8px"></div>`;
-  return `<div class="rl"><span>${l}</span><b>${adm ? dt(adm) + ' 📌 admin' : '—'}</b></div>`;
-}
-
-function task(r){
-  const e = eff(r), x = [];
-  if(e === 'E') x.push(`🟠 En cours ${pctOf(r)} %`);
-  if(e === 'A') x.push('🚫 Annulé');
-  if(viaAdmin(r)) x.push('📌 déclaré par ' + esc(r.admin_par || 'admin') + ' le ' + dt(r.admin_le));
-  if(+r.qt_prevu > 1) x.push(`Quantité ${r.qt_realisee ?? 0} / ${r.qt_prevu}`);
-  if(r.date_fait) x.push('Fait le ' + dt(r.date_fait));
-  const rl = ['R1','R2','R1R2'].includes(key(r.saisie).replace(/\s+/g, ''));
-  if(r.hauteur != null) x.push((rl ? 'R1 ' : 'Hauteur ') + vv(r.hauteur));
-  if(r.desaxement != null) x.push((rl ? 'R2 ' : 'Désaxement ') + vv(r.desaxement));
-  if(r.prevu1 || r.prevu2){
-    const a = esc(r.prevu1 || '—'), b = esc(r.prevu2 || '—');
-    const pend = String(r.Tache || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('pendulage');
-    x.push(pend ? `🎯 Prévu : ${a} ronds · ${b} plats` : rl ? `🎯 Prévu : R1 ${a} · R2 ${b}` : `🎯 Prévu : H ${a} · D ${b}`);
-  }
-  if(r.pend_prov) x.push('🔧 Provisoires : ' + esc(r.pend_prov) + ' posés · ' + esc(r.pend_prov_depose || 0) + ' déposés');
-  if(r.brh) x.push('BRH');
-  if(r.explication && e !== 'T') x.push(esc(r.explication));
-  if(r.Observation) x.push(esc(r.Observation));
-  return `<div class="tk"><span class="ck${e === 'T' ? (viaAdmin(r) ? ' admin' : ' on') : e === 'E' ? ' ec' : e === 'A' ? ' an' : ''}">${e === 'T' ? '✓' : e === 'E' ? '…' : e === 'A' ? '×' : ''}</span><div><b>${esc(r.Tache)}</b>${x.length ? `<div class="mu tl">${x.join(' · ')}</div>` : ''}${sousHtml(r)}${ADM && isFKT(r) && !(fktOf(r).def && fktOf(r).s === 'T') ? `<button type="button" data-fkt-open="${r.id}" style="margin-top:8px">📄 Saisir / mettre à jour la FKT</button>` : ''}${isFKT(r) ? fktChip(r) : ''}${r.conforme === false ? (r.nc_levee === true ? `<div class="nc" style="background:rgba(47,143,99,.15);color:var(--pose)">✅ NC levée le ${dt(r.nc_levee_le)} — ${esc(r.nc_levee_expl)}</div>` : `<div class="nc">⚠️ Non-conformité : ${esc(r.nc_description)}</div>`) : ''}</div></div>`;
-}
-
-function openFktEntry(id){
-  if(!ADM || !ACCES_ARCHIVE()) return;
-  const r=D.qa.find(x=>String(x.id)===String(id));
-  if(!r) return;
-  const f=adminFktOf(r)||{}, on=f.etat==='DEFINITIVE';
-  const c= D.ch.find(x=>x.k===key(r.Chantier));
-  dlg.innerHTML=`<div class="dh"><div><b>RELEVER CAT · Saisie FKT</b><div class="mu tl" style="margin:0">${esc(r.Chantier)} · Support ${esc(r.Support)}</div></div><button type="button" id="dx">Fermer</button></div>
-    <div class="db"><div class="card"><b>${esc(r.Tache)}</b><div class="mu tl">${esc(r.type||'RELEVER CAT')}</div></div>
-    <label class="tg"><input type="checkbox" id="fkt-def" ${on?'checked':''}> FKT définitive reçue</label>
-    <label class="mu tl" style="display:block;margin-top:10px">Numéro de FKT<input id="fkt-num" type="text" value="${esc(f.num||'')}" placeholder="N° de FKT" ${on?'':'disabled'} style="width:100%;min-height:40px;padding:8px"></label>
-    ${on&&f.le?`<div class="mu tl">Saisie le ${dt(f.le)} par ${esc(f.par||'Admin')}</div>`:''}
-    <div style="display:flex;gap:8px;margin-top:14px"><button type="button" id="fkt-save" style="flex:1">Enregistrer</button><button type="button" id="fkt-cancel">Retour au support</button></div></div>`;
-  $('#dx').onclick=()=>dlg.close();
-  $('#fkt-cancel').onclick=()=>{if(supOuvert)openSup(supOuvert.ck,supOuvert.sk);else dlg.close();};
-  $('#fkt-def').onchange=e=>{$('#fkt-num').disabled=!e.target.checked;};
-  $('#fkt-save').onclick=()=>adminFkt(r.id,$('#fkt-def').checked,$('#fkt-num').value);
-  if(!dlg.open) dlg.showModal();
-}
-
-function openSup(ck, sk){
-  supOuvert = {ck, sk};
-  const c = D.ch.find(x => x.k === ck), p = c && c.s[sk];
-  if(!p) return;
-  const b = p.b;
-  const cotes = b
-    ? `<table class="tb"><tr><th></th><th>Prévu</th><th>Réel</th></tr>${PAIRS.map(([l,a,r]) => `<tr><td>${l}</td><td>${vv(b[a])}</td><td class="${df(b[a],b[r]) ? 'df' : ''}">${vv(b[r])}</td></tr>`).join('')}</table>`
-    : '<div class="mu">Pas de fiche FBM pour ce support.</div>';
-  const beton = b ? `<h2 style="margin-top:16px">Béton et dates</h2>
-    <div class="rl"><span>Béton m³ : prévu</span><b>${vv(num(b.m3_prevu))}</b></div>
-    ${m3Row(b)}
-    ${(bi => (bi.types.length ? bi.types.map(t => `<div class="rl"><span>Type de béton</span><b>${esc(t)}</b></div>`).join('') : '<div class="rl"><span>Type de béton</span><b>—</b></div>') + (bi.bls.map(x => `<div class="rl"><span>BL ${esc(x.n)}${x.dest === 'carotte' ? ' (carotte)' : ''}</span><b>${x.q !== null ? nf(x.q) + ' m³' : ''}${x.s !== null ? ' · slump ' + x.s + ' mm' + (x.cl ? ' ' + esc(x.cl) : '') : ''}</b></div>`).join('') || '<div class="rl"><span>BL béton</span><b>—</b></div>'))(blInfo(b))}
-    ${stepRow(b, 'Fouille', b.date_fouille, b.admin_date_fouille, 'admin_date_fouille')}
-    ${stepRow(b, 'Béton', b.date_beton, b.admin_date_beton, 'admin_date_beton')}
-    ${stepRow(b, 'Matage', b.date_matage, b.admin_date_matage, 'admin_date_matage')}` : '';
-  const tk = (p.rows.length || p.fb.length || p.rc.length) ? TYPES.concat(['RELEVER CAT']).map(t => {
-    const L = p.rows.concat(p.fb, p.rc).filter(r => key(r.type) === t);
-    return L.length ? `<div class="th" style="color:var(${TC[t]})">${TL[t]}</div>` + L.map(task).join('') : '';
-  }).join('') : '<div class="mu">Aucune tâche SUTX.</div>';
-  dlg.innerHTML = `<div class="dh"><div><b>${esc(p.name)}</b><div class="mu tl" style="margin:0">${esc(c.name)}</div></div><button type="button" id="dx">Fermer</button></div>
-    <div class="db">${p.rows.length ? legend() + stk(agg(p.rows)) : ''}<h2 style="margin-top:14px">Cotes</h2>${cotes}${beton}<h2 style="margin-top:16px">Tâches SUTX</h2>${tk}</div>`;
-  if(!dlg.open) dlg.showModal();
-  $('#dx').onclick = () => dlg.close();
-}
-
-/* ---------- Chargement et événements ---------- */
-async function load(){
-  $('#st').textContent = 'Chargement…';
-  try{
-    const SXC = 'id,Chantier,Support,Tache,type,qt_prevu,qt_realisee,Fait,Observation,hauteur,desaxement,brh,date_fait,prevu1,prevu2,pend_prov,pend_prov_depose,nc_levee,nc_levee_le,nc_levee_expl,etat,pct_avancement,explication,conforme,nc_description,nom,prenom,updated_at,admin_etat,admin_pct,admin_le,admin_par';
-    const probe = c => fetch(`${SUPABASE_URL}/rest/v1/suivi_sutx_v2?select=${c}&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? c : null).catch(() => null);
-    const have = (await Promise.all(['admin_sous','admin_fkt','fkt_etat','fkt_num','saisie'].map(probe))).filter(Boolean);
-    const haveB = await fetch(`${SUPABASE_URL}/rest/v1/blindage?select=admin_m3_reel&limit=1`, {headers:{apikey:SUPABASE_ANON_KEY}}).then(r => r.ok ? ['admin_m3_reel'] : []).catch(() => []);
-    let hasQualite = true;
-    
-    let [sx, bl, archives, qualite] = await Promise.all([
-      fetchAll('suivi_sutx_v2', SXC + have.map(c => ',' + c).join('')),
-      fetchAll('blindage', 'id,chantier,support,m3_prevu,m3_reel,date_fouille,date_beton,date_matage,admin_date_fouille,admin_date_beton,admin_date_matage,admin_par,admin_maj_le,i,ech,ar,enc,af,b,h,f,p,sup,i_reel,ech_reel,ar_reel,enc_reel,a_reel,b_reel,h_reel,f_reel,p_reel,sup_reel,type_beton,slump,bl_beton' + haveB.map(c => ',' + c).join('')),
-      fetchAll('archives_fbm', 'id,chantier,support,date_fouille,fbm,carotte,matage,beton,created_at,updated_at').catch(() => []),
-      fetchAll('qualite_pcle', 'id,chantier,support,fkt_type,fkt_edit,fkt_amorti,fkt_refus,categorie,numero,libelle,origine,created_at').catch(() => { hasQualite = false; return []; })
-    ]);
-
-    // --- FILTRAGE GLOBAL : EXCLUSION DE MELUN ET TEST_BOB PARTOUT ---
-    sx = sx.filter(r => !EXCLUS.includes(key(r.Chantier)));
-    bl = bl.filter(r => !EXCLUS.includes(key(r.chantier)));
-    archives = archives.filter(a => !EXCLUS.includes(key(a.chantier)));
-    qualite = qualite.filter(q => !EXCLUS.includes(key(q.chantier)));
-	    let liens = await fetchAll('blindage_beton_bl_liaison', 'id,blindage_id,beton_bl_id,destination,date_coulage').catch(() => []);
-    const fiches = await fetchAll('beton_bl', 'id,chantier,numero_bl,type_beton,quantite_beton,slump,classe_slump').catch(() => []);
-    const fm = new Map(fiches.map(r => [String(r.id), r]));
-    const blLiens = new Map();
-    liens.forEach(l => {
-      const r = fm.get(String(l.beton_bl_id)); if(!r) return;
-      const k = String(l.blindage_id); if(!blLiens.has(k)) blLiens.set(k, []);
-      blLiens.get(k).push({n:r.numero_bl, q:num(r.quantite_beton), s:num(r.slump), cl:r.classe_slump || '', t:r.type_beton || '', dest:l.destination || 'massif', d:l.date_coulage || ''});
-    });
-    // -------------------------------------------------------------
-
-    const mod = await fetchAll('sous_travaux_modele', 'id,tache,ordre,libelle,poids,actif').catch(() => []);
-    const suivi = await fetchAll('sous_travaux_suivi', 'id,tache_id,modele_id,statut').catch(() => []);
-    
-    D = stats(sx, bl); 
-    D.archives = archives; 
-    D.qualite = qualite; 
-    D.hasQualite = hasQualite; 
-    last = Date.now();
-    D.mod = mod; 
-    D.hasSous = have.includes('admin_sous'); 
-    D.hasFkt = have.includes('admin_fkt'); 
-    D.sidx = new Map(); 
-    D.hasM3 = haveB.length > 0;
-	D.blLiens = blLiens;
-    
-    suivi.forEach(x => { const k = String(x.tache_id); if(!D.sidx.has(k)) D.sidx.set(k, new Map()); D.sidx.get(k).set(String(x.modele_id), x.statut); });
-    $('#st').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-    show();
-  }catch(e){
-    $('#st').textContent = 'Erreur de chargement';
-    $('#v').innerHTML = `<div class="card">Lecture impossible : ${esc(e.message)}<br><span class="mu">Vérifie la connexion, la lecture autorisée (RLS) sur blindage et suivi_sutx_v2, et que les colonnes etat, pct_avancement, explication, conforme et nc_description existent.</span></div>`;
-  }
-}
-
-document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.t; show(); window.scrollTo(0,0); }));
-$('#rf').addEventListener('click', load);
-$('#v').addEventListener('change', e => { if(e.target.id === 'selc'){ sel = e.target.value; show(); } });
-$('#v').addEventListener('change', e => { if(e.target.id === 'qch'){ qCh = e.target.value; show(); } });
-$('#v').addEventListener('click', e => {
-  const st = e.target.closest('[data-sutx-type]');
-  if(st){
-    sutxType = st.dataset.sutxType === 'all' || sutxType === st.dataset.sutxType ? 'all' : st.dataset.sutxType;
-    show();
-    return;
-  }
-  const pk = e.target.closest('[data-pick]');
-  if(pk){ sel = pk.dataset.pick; show(); window.scrollTo(0,0); return; }
-  const fl = e.target.closest('[data-cf]');
-  if(fl){ const ck = fl.dataset.cc, k = fl.dataset.cf, f = cf[ck]; if(!f || f.k !== k) cf[ck] = {k, m:'todo'}; else if(f.m === 'todo') f.m = 'done'; else delete cf[ck]; fill(); return; }
-  const g = e.target.closest('[data-go]');
-  if(g){ sel = g.dataset.go; tab = 'syn'; sub = 'glob'; show(); window.scrollTo(0,0); return; }
-  const b = e.target.closest('[data-sub],[data-qf],[data-vp]');
-  if(b){ if(b.dataset.sub) sub = b.dataset.sub; if(b.dataset.qf) qf = b.dataset.qf; if(b.dataset.vp) vp = b.dataset.vp; show(); return; }
-  const r = e.target.closest('[data-s]'); if(r) openSup(r.dataset.c, r.dataset.s);
-});
-$('#v').addEventListener('keydown', e => { const fq = e.target.closest('[data-cf],[data-pick],[data-sutx-type]'); if(fq && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fq.click(); return; } const r = e.target.closest('[data-s]'); if(r && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openSup(r.dataset.c, r.dataset.s); } });
-dlg.addEventListener('click', e => {
-  if(e.target === dlg){ dlg.close(); return; }
-  const f=e.target.closest('[data-fkt-open]');
-  if(f){ e.preventDefault(); openFktEntry(f.dataset.fktOpen); }
-});
-dlg.addEventListener('change', e => {
-  const el = e.target;
-  if(el.dataset.archive){
-    if(!ADM || !supOuvert) return;
-    saveArchive(supOuvert.ck, supOuvert.sk, el.dataset.archive, el.checked);
-    return;
-  }
-  if(el.dataset.qfkt){
-    const field=el.dataset.qfkt, dateEl=dlg.querySelector(`[data-qfkt-date="${field}"][data-id="${el.dataset.id}"]`);
-    if(dateEl){ dateEl.disabled=!el.checked; if(!el.checked) dateEl.value=''; else if(!dateEl.value) dateEl.value=jour(); }
-    saveQualiteFkt(el.dataset.id,field,el.checked?((dateEl&&dateEl.value)||jour()):null);
-    return;
-  }
-  if(el.dataset.qfktDate){
-    const field=el.dataset.qfktDate, check=dlg.querySelector(`[data-qfkt="${field}"][data-id="${el.dataset.id}"]`);
-    if(check&&check.checked) saveQualiteFkt(el.dataset.id,field,el.value||jour());
-    return;
-  }
-  if(el.dataset.adm === 'm') adminM3(el.dataset.id, el.value);
-  if(!ADM || !el.dataset) return;
-  if(el.dataset.adm === 'f') adminFbm(el.dataset.id, el.dataset.col, el.value);
-});
-localStorage.removeItem('pcle_adm');
-document.addEventListener('visibilitychange', () => { if(!document.hidden && Date.now() - last > 300000) load(); });
-load();
-
-/* ---------- Export PDF (impression A4 : « Enregistrer au format PDF ») ---------- */
-const PW_N = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
-const PW_B = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
-const PW_S = {'·':278,'›':333,'‹':333,'—':1000,'–':556,'…':1000,'’':250,'‘':250,'°':400,'«':556,'»':556,'œ':944,'€':556};
-const PW_X = {'’':0x92,'‘':0x91,'“':0x93,'”':0x94,'—':0x97,'–':0x96,'…':0x85,'›':0x9B,'‹':0x8B,'€':0x80,'œ':0x9C,'Œ':0x8C};
-function pdfW(s, size, bold){
-  const T = bold ? PW_B : PW_N; let w = 0;
-  for(const ch of String(s ?? '')){
-    const c = ch.charCodeAt(0);
-    if(c >= 32 && c < 127){ w += T[c - 32]; continue; }
-    if(ch === '²' || ch === '³'){ w += T[19] * 0.62; continue; }
-    const b = ch.normalize('NFD').charCodeAt(0);
-    w += (b >= 32 && b < 127) ? T[b - 32] : (PW_S[ch] || 556);
-  }
-  return w * size / 1000;
-}
-function pdfHex(s){
-  let o = '';
-  for(const ch of String(s ?? '')){ const c = ch.charCodeAt(0), b = PW_X[ch] ?? (c >= 32 && c < 256 ? c : 63); o += b.toString(16).padStart(2, '0'); }
-  return '<' + o + '>';
-}
-function pdfWrap(s, maxW, size, bold){
-  const out = []; let line = '';
-  String(s ?? '').split(/\s+/).filter(Boolean).forEach(w => {
-    const t = line ? line + ' ' + w : w;
-    if(!line || pdfW(t, size, bold) <= maxW) line = t; else { out.push(line); line = w; }
-  });
-  if(line) out.push(line);
-  return out.flatMap(l => {
-    if(pdfW(l, size, bold) <= maxW) return [l];
-    const r = []; let cur = '';
-    for(const ch of l){ if(pdfW(cur + ch, size, bold) > maxW){ r.push(cur); cur = ch; } else cur += ch; }
-    if(cur) r.push(cur);
-    return r;
-  });
-}
-const pdfFit = (s, maxW, size, bold) => { s = String(s ?? ''); if(pdfW(s, size, bold) <= maxW) return s; while(s.length > 1 && pdfW(s + '…', size, bold) > maxW) s = s.slice(0, -1); return s + '…'; };
-
-function pdfDoc(){
-  const W = 595.28, H = 841.89, P = []; let k = -1;
-  const col = h => [1, 3, 5].map(i => (parseInt(h.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
-  const o = s => P[k].push(s);
-  return {
-    W, H,
-    page(){ P.push([]); k = P.length - 1; },
-    go(i){ k = i; },
-    count: () => P.length,
-    rect(x, y, w, h, fill, stroke, lw){
-      if(w <= 0 || h <= 0) return;
-      o((fill ? col(fill) + ' rg ' : '') + (stroke ? col(stroke) + ' RG ' + (lw || 0.7) + ' w ' : '') + x.toFixed(2) + ' ' + (H - y - h).toFixed(2) + ' ' + w.toFixed(2) + ' ' + h.toFixed(2) + ' re ' + (fill && stroke ? 'B' : fill ? 'f' : 'S'));
-    },
-    text(x, y, s, size, bold, color, align){
-      const parts = String(s ?? '').split(/([²³])/).filter(Boolean), sup = p => p === '²' || p === '³';
-      const wp = p => pdfW(p, size, bold);
-      const tot = parts.reduce((t, p) => t + wp(p), 0);
-      if(align === 'r') x -= tot; else if(align === 'c') x -= tot / 2;
-      const emit = (px, py, str, sz) => o('BT /' + (bold ? 'F2' : 'F1') + ' ' + sz + ' Tf ' + col(color || '#1a232c') + ' rg ' + px.toFixed(2) + ' ' + (H - py).toFixed(2) + ' Td ' + pdfHex(str) + ' Tj ET');
-      parts.forEach(p => { if(sup(p)) emit(x, y - size * 0.38, p === '³' ? '3' : '2', size * 0.62); else emit(x, y, p, size); x += wp(p); });
-    },
-    build(){
-      const obj = [];
-      obj[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-      obj[2] = '<< /Type /Pages /Count ' + P.length + ' /Kids [' + P.map((_, i) => (5 + 2 * i) + ' 0 R').join(' ') + '] >>';
-      obj[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
-      obj[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
-      P.forEach((c, i) => {
-        const s = c.join('\n');
-        obj[5 + 2 * i] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + (6 + 2 * i) + ' 0 R >>';
-        obj[6 + 2 * i] = '<< /Length ' + s.length + ' >>\nstream\n' + s + '\nendstream';
-      });
-      let out = '%PDF-1.4\n'; const off = [];
-      for(let i = 1; i < obj.length; i++){ off[i] = out.length; out += i + ' 0 obj\n' + obj[i] + '\nendobj\n'; }
-      const x = out.length;
-      out += 'xref\n0 ' + obj.length + '\n0000000000 65535 f \n' + off.slice(1).map(v => String(v).padStart(10, '0') + ' 00000 n \n').join('');
-      out += 'trailer\n<< /Size ' + obj.length + ' /Root 1 0 R >>\nstartxref\n' + x + '\n%%EOF';
-      const u = new Uint8Array(out.length);
-      for(let i = 0; i < out.length; i++) u[i] = out.charCodeAt(i) & 255;
-      return u;
-    }
-  };
-}
-
-function rapportPdf(){
-  if(window.PDF_ADMIN){ const f = window.PDF_ADMIN; window.PDF_ADMIN = null; return f(); }
-  const S = scope(), a = agg(S.rows), f = aggF(S.ps);
-  const isGlob = (sub !== 'sutx' && sub !== 'fbm');
-  const isSutx = sub === 'sutx';
-  const isFbm = sub === 'fbm';
-  const vueLabel = isSutx ? 'SUTX' : isFbm ? 'FBM' : 'Vue d\'ensemble';
-  const inS = r => !S.c || key(r.Chantier) === S.c.k;
-  const inFktS = r => !S.c || key(r.chantier) === S.c.k;
-  // FKT prévues uniquement depuis qualite_pcle
-  let fktPrevuesList = (D.qualite || []).filter(q => (q.categorie || 'FKT') === 'FKT' && inFktS(q));
-  if(isFbm) fktPrevuesList = fktPrevuesList.filter(q => key(q.fkt_type) === 'FKT_FBM');
-  const fktPrevuesN = fktPrevuesList.length;
-  const nc = D.qa.filter(r => r.conforme === false && r.nc_levee !== true && inS(r));
-  const pv = D.all.filter(r => inS(r) && (parseInt(r.pend_prov, 10) || 0) > (parseInt(r.pend_prov_depose, 10) || 0)).length;
-  const now = new Date().toLocaleString('fr-FR', {dateStyle:'long', timeStyle:'short'});
-  const nomScope = S.c ? S.c.name : 'Tous les chantiers';
-  const C = {sx:'#2f6f9f', fb:'#8a5fb0', ad:'#0e9aa7', pose:'#2f8f63', ec:'#e08a1e', dep:'#c4543b', gc:'#b7881a', mu:'#6b7884', ln:'#d9dee2', sl:'#e3e7ea', tx:'#1a232c', navy:'#0b2545', jaune:'#f2c200'};
-  const d = pdfDoc(), W = d.W, H = d.H, L = 32, R = W - 32, CW = R - L, BOT = H - 46;
-  let y = 0;
-  const newPage = prem => { d.page(); y = 36; if(!prem){ d.text(L, 24, "SUIVI PCLE-MMM · " + vueLabel + " · " + nomScope, 7.5, false, C.mu); d.rect(L, 29, CW, 0.6, C.ln); y = 42; } };
-  const ensure = h => { if(y + h > BOT) newPage(false); };
-  const section = t => { ensure(44); y += 12; d.text(L, y + 9, t, 12, true, C.tx); d.rect(L, y + 14, CW, 1.6, C.tx); y += 24; };
-  const legend = items => { let x = L; items.forEach(([t, c]) => { d.rect(x, y - 1, 8, 8, c); d.text(x + 11, y + 6, t, 7.5, false, C.mu); x += 11 + pdfW(t, 7.5, false) + 12; }); y += 14; };
-  const bar = (x, yy, w, h, parts, n) => { d.rect(x, yy, w, h, C.sl); let cx = x; parts.forEach(([v, c]) => { if(v > 0 && n){ const pw = w * v / n; d.rect(cx, yy, pw, h, c); cx += pw; } }); };
-  const stkBar = (x, yy, w, h, s) => bar(x, yy, w, h, [[s.T, C.pose], [s.E, C.ec], [s.A, C.mu]], s.n);
-  const fbBar = (x, yy, w, h, t, ad, n) => bar(x, yy, w, h, [[t + ad, C.fb]], n);
-  const rowBar = (label, value, draw, color, sub) => { ensure(sub ? 40 : 31); d.text(L, y + 9, label, 9.5, true, color || C.tx); d.text(R, y + 9, value, 9.5, true, C.tx, 'r'); draw(L, y + 14, CW, 9); if(sub) d.text(L, y + 33, sub, 7.5, false, C.mu); y += sub ? 40 : 31; };
-  const head = cols => { d.rect(L, y + 12, CW, 0.8, C.tx); cols.forEach(([t, x, al]) => d.text(x, y + 9, t, 7, true, C.mu, al)); y += 16; };
-  const lgS = [['Terminé', C.pose], ['En cours', C.ec], ['Annulé', C.mu], ['À faire', C.sl]];
-  const lgF = [['Étapes FBM réalisées', C.fb]];
-
-  newPage(true);
-  d.rect(L, y, CW, 60, C.navy); d.rect(L, y + 56, CW, 4, C.jaune);
-  d.text(L + 14, y + 27, "SUIVI PCLE-MMM · " + vueLabel, 17, true, '#ffffff');
-  d.text(L + 14, y + 44, nomScope + ' · édité le ' + now, 9.5, false, '#c9d3df');
-  y += 74;
-
-  // KPIs selon la vue
-  const kpiItems = [];
-  if(isGlob || isSutx) kpiItems.push(['SUTX', a.p + ' %', `${a.T} tâches terminées / ${a.w}`, C.sx]);
-  if(isGlob || isFbm) kpiItems.push(['FBM', f.p + ' %', `${f.d} / ${f.tot} supports complets`, C.fb]);
-  if(isGlob || isFbm) kpiItems.push(['FKT PRÉVUES', fktPrevuesN ? String(fktPrevuesN) : '—', fktPrevuesN ? 'saisies dans qualite_pcle' : 'sans objet', C.gc]);
-  kpiItems.push(['NON-CONFORMITÉS', String(nc.length), 'ouvertes', C.dep]);
-  const kw = (CW - 24) / Math.max(kpiItems.length, 1);
-  kpiItems.forEach(([t, v, s, c], i) => {
-    const x = L + i * (kw + 8);
-    d.rect(x, y, kw, 66, '#ffffff', C.ln, 0.8); d.rect(x, y, kw, 3.5, c);
-    d.text(x + 9, y + 17, t, 7.5, true, C.mu);
-    d.text(x + 9, y + 40, v, 20, true, C.tx);
-    pdfWrap(s, kw - 18, 7.5, false).slice(0, 2).forEach((l, j) => d.text(x + 9, y + 52 + j * 9, l, 7.5, false, C.mu));
-  });
-  y += 74;
-
-  if(!S.c && isGlob){
-    section('Avancement par chantier');
-    legend(lgS); legend(lgF);
-    const cols = [['CHANTIER', L], ['SUTX', L + 130], ['FBM (SUPPORTS COMPLETS)', L + 310], ['NC', R, 'r']];
-    head(cols);
-    D.ch.forEach(c => {
-      const x = agg(c.rows), yv = aggF(fbmSups(c)), nn = x.nc + ncOf(c.fb) + ncOf(c.rc);
-      if(y + 32 > BOT){ newPage(false); head(cols); }
-      d.text(L, y + 12, pdfFit(c.name, 120, 9.5, true), 9.5, true, C.tx);
-      stkBar(L + 130, y + 5, 160, 9, x); d.text(L + 130, y + 25, x.p + ' %', 7.5, false, C.mu);
-      fbBar(L + 310, y + 5, 160, 9, yv.dT, yv.dA, yv.tot); d.text(L + 310, y + 25, `${yv.d} / ${yv.tot} · ${yv.p} %`, 7.5, false, C.mu);
-      d.text(R, y + 12, nn ? String(nn) : '—', 9.5, nn > 0, nn ? C.dep : C.mu, 'r');
-      d.rect(L, y + 30, CW, 0.5, C.ln); y += 32;
-    });
-  }
-  if(!S.c && isSutx){
-    section('Avancement SUTX par chantier');
-    legend(lgS);
-    const cols = [['CHANTIER', L], ['SUTX', L + 160], ['NC', R, 'r']];
-    head(cols);
-    D.ch.forEach(c => {
-      const x = agg(c.rows), nn = x.nc;
-      if(y + 32 > BOT){ newPage(false); head(cols); }
-      d.text(L, y + 12, pdfFit(c.name, 150, 9.5, true), 9.5, true, C.tx);
-      stkBar(L + 160, y + 5, 200, 9, x); d.text(L + 160, y + 25, x.p + ' %', 7.5, false, C.mu);
-      d.text(R, y + 12, nn ? String(nn) : '—', 9.5, nn > 0, nn ? C.dep : C.mu, 'r');
-      d.rect(L, y + 30, CW, 0.5, C.ln); y += 32;
-    });
-  }
-  if(!S.c && isFbm){
-    section('Avancement FBM par chantier');
-    legend(lgF);
-    const cols = [['CHANTIER', L], ['FBM (SUPPORTS COMPLETS)', L + 160], ['NC', R, 'r']];
-    head(cols);
-    D.ch.forEach(c => {
-      const yv = aggF(fbmSups(c)), nn = ncOf(c.fb) + ncOf(c.rc);
-      if(y + 32 > BOT){ newPage(false); head(cols); }
-      d.text(L, y + 12, pdfFit(c.name, 150, 9.5, true), 9.5, true, C.tx);
-      fbBar(L + 160, y + 5, 200, 9, yv.dT, yv.dA, yv.tot); d.text(L + 160, y + 25, `${yv.d} / ${yv.tot} · ${yv.p} %`, 7.5, false, C.mu);
-      d.text(R, y + 12, nn ? String(nn) : '—', 9.5, nn > 0, nn ? C.dep : C.mu, 'r');
-      d.rect(L, y + 30, CW, 0.5, C.ln); y += 32;
-    });
-  }
-
-  if(isGlob || isSutx){
-    section('SUTX par type de tâche');
-    if(S.c) legend(lgS);
-    const cT = {GC:C.gc, DEPOSE:C.dep, POSE:C.pose};
-    TYPES.forEach(t => { const x = agg(S.rows.filter(r => key(r.type) === t)); if(x.n) rowBar(TL[t], `${x.T} / ${x.w} · ${x.p} %`, (bx, by, bw, bh) => stkBar(bx, by, bw, bh, x), cT[t]); });
-  }
-
-  if((isGlob || isFbm) && f.tot){
-    section('FBM : fouille, béton, matage');
-    legend(lgF);
-    rowBar('Supports complets (étapes toutes faites)', `${f.d} / ${f.tot} · ${f.p} %`, (bx, by, bw) => fbBar(bx, by, bw, 12, f.dT, f.dA, f.tot));
-    [['fouille', 'Fouille'], ['beton', 'Béton'], ['matage', 'Matage']].forEach(([k, l]) => { const x = f.s[k]; if(x.n) rowBar(l, `${x.T + x.A} / ${x.n} · ${pc(x.T + x.A, x.n)} %`, (bx, by, bw, bh) => fbBar(bx, by, bw, bh, x.T, x.A, x.n), null, `${x.T + x.A} réalisation(s)`); });
-    [['Volume théorique des supports bétonnés', `${nf(f.mpr)} m³ / ${nf(f.mp)} m³ prévus au total`], ['Volume réel de béton coulé / renseigné', `${nf(f.mr)} m³`], ['Écart réel − théorique (supports bétonnés avec réel saisi)', `${f.ec > 0.049 ? '+' : ''}${nf(Math.abs(f.ec) < 0.05 ? 0 : f.ec)} m³`]].forEach(([t, v]) => { ensure(18); d.text(L, y + 9, t, 9.5, false, C.tx); d.text(R, y + 9, v, 9.5, true, C.tx, 'r'); d.rect(L, y + 14, CW, 0.5, C.ln); y += 18; });
-
-    const betonRows = S.ps
-      .filter(p => p.b && stepsOf(p).includes('beton'))
-      .map(p => {
-        const b = p.b, pv = num(b.m3_prevu), rl = m3r(b);
-        return {p, b, pv, rl, ec: pv !== null && rl !== null ? rl - pv : null,
-          date: b.date_beton || b.admin_date_beton || ''};
-      })
-      .sort((a,b) => String(a.b.chantier || '').localeCompare(String(b.b.chantier || ''), 'fr') || b.p.name.localeCompare(a.p.name, 'fr', {numeric:true}));
-
-    if(betonRows.length){
-      ensure(60);
-      y += 8;
-      d.text(L, y + 9, 'Détail des quantités par support', 10.5, true, C.tx);
-      y += 18;
-      const bx = [L, L+104, L+150, L+256, L+392, L+447, R];
-      const bh = [['SUPPORT',bx[0]],['DATE BÉTON',bx[1]],['BL',bx[2]],['TYPE / SLUMP',bx[3]],['THÉORIQUE',bx[4],'r'],['RÉEL COULÉ',bx[5],'r'],['ÉCART',bx[6],'r']];
-      const hd = () => { d.rect(L, y + 12, CW, 0.8, C.tx); bh.forEach(([t,x,al]) => d.text(x, y + 9, t, 6.5, true, C.mu, al)); y += 16; };
-      const fe = v => (v > 0.049 ? '+' : '') + nf(Math.abs(v) < 0.05 ? 0 : v);
-      const T = () => ({pv:0, rl:0, ec:0, nPv:0, nRl:0, nEc:0});
-      const add = (t, pv, rl, ec) => { if(pv !== null){ t.pv += pv; t.nPv++; } if(rl !== null){ t.rl += rl; t.nRl++; } if(ec !== null){ t.ec += ec; t.nEc++; } };
-      const ligneTot = (lib, t, big) => {
-        const f = big ? 8 : 7.5, o = big ? 12 : 10;
-        d.text(L, y + o, lib, f, true, big ? C.tx : C.fb);
-        d.text(bx[4], y + o, t.nPv ? nf(t.pv) : '—', f, true, C.tx, 'r');
-        d.text(bx[5], y + o, t.nRl ? nf(t.rl) : '—', f, true, C.tx, 'r');
-        d.text(bx[6], y + o, t.nEc ? fe(t.ec) : '—', f, true, C.tx, 'r');
-      };
-      hd();
-      const parCh = new Map();
-      betonRows.forEach(r => { const k = String(r.b.chantier || (S.c && S.c.name) || '—').trim(); if(!parCh.has(k)) parCh.set(k, []); parCh.get(k).push(r); });
-      const tot = T();
-      [...parCh.keys()].sort((a, b) => a.localeCompare(b, 'fr', {numeric:true})).forEach(chNom => {
-        const lst = parCh.get(chNom).sort((a, b) => a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
-        const st = T();
-        if(!S.c){
-          if(y + 51 > BOT){ newPage(false); hd(); }
-          y += 4;
-          d.rect(L, y, CW, 13, '#efe6ee'); d.rect(L, y, 3, 13, C.fb);
-          d.text(L + 8, y + 9.2, chNom, 9, true, C.fb);
-          d.text(R - 4, y + 9.2, lst.length + ' support(s)', 7.5, false, C.mu, 'r');
-          y += 15;
-        }
-        lst.forEach(({p, b, pv, rl, ec, date}) => {
-          const bi = blInfo(b);
-          const blL = bi.bls.length ? bi.bls.flatMap(x => pdfWrap(x.n + (x.dest === 'carotte' ? ' (carotte)' : '') + (x.q !== null ? ' · ' + nf(x.q) + ' m³' : ''), 100, 7.2, false)) : ['—'];
-          const slL = bi.bls.filter(x => x.s !== null).flatMap(x => pdfWrap('Slump ' + x.s + ' mm' + (x.cl ? ' · ' + x.cl : '') + (bi.bls.length > 1 ? ' (…' + String(x.n).slice(-4) + ')' : ''), 112, 6.8, true));
-          const tyL = bi.types.length ? bi.types.flatMap(t => pdfWrap(t, 112, 7, false)) : ['—'];
-          const h = Math.max(blL.length, slL.length + tyL.length, 2) * 9 + 9;
-          if(y + h > BOT){
-            newPage(false);
-            d.text(L, y + 9, 'Détail des quantités béton par support (suite)' + (S.c ? '' : ' · ' + chNom), 9.5, true, C.tx);
-            y += 13; hd();
-          }
-          d.text(bx[0], y + 10, pdfFit(p.name, 98, 7.5, true), 7.5, true, C.tx);
-          d.text(bx[1], y + 10, date ? dt(date) : '—', 7.2, false, C.tx);
-          blL.forEach((t, i) => d.text(bx[2], y + 10 + i * 9, t, 7.2, false, C.tx));
-          tyL.forEach((t, i) => d.text(bx[3], y + 10 + i * 9, t, 7, false, C.tx));
-          slL.forEach((t, i) => d.text(bx[3], y + 10 + (tyL.length + i) * 9, t, 6.8, true, C.fb));
-          d.text(bx[4], y + 10, pv === null ? '—' : nf(pv), 7.5, false, C.tx, 'r');
-          d.text(bx[5], y + 10, rl === null ? '—' : nf(rl), 7.5, true, C.tx, 'r');
-          d.text(bx[6], y + 10, ec === null ? '—' : fe(ec), 7.5, true, ec !== null && Math.abs(ec) >= 0.05 ? C.dep : C.tx, 'r');
-          d.rect(L, y + h - 2, CW, 0.5, C.ln);
-          y += h;
-          add(st, pv, rl, ec); add(tot, pv, rl, ec);
-        });
-        if(!S.c){ ensure(16); ligneTot('Sous-total ' + chNom, st, false); y += 16; }
-      });
-      ensure(20);
-      d.rect(L, y + 1, CW, 0.8, C.tx);
-      ligneTot('TOTAL · ' + betonRows.length + ' support(s)', tot, true);
-      y += 20;
-      d.text(L, y + 8, 'Volumes en m³ · réel = valeur terrain prioritaire, sinon valeur saisie par admin. Écart calculé uniquement si théorique et réel sont renseignés.', 6.8, false, C.mu);
-      y += 12;
-    }
-  }
-
-  // --- SECTION SUIVI FKT / QUALITÉ INTÉGRÉE ---
-  // Affiché en Vue d'ensemble et en FBM. En FBM on ne garde que les FKT_FBM.
-  const QA = D.qualite || [];
-  let fktList = QA.filter(q => (q.categorie || 'FKT') === 'FKT' && inFktS(q));
-  if(isFbm) fktList = fktList.filter(q => key(q.fkt_type) === 'FKT_FBM');
-  if(isSutx) fktList = []; // pas de FKT dans la vue SUTX pure
-
-  if((isGlob || isFbm) && fktList.length){
-    section(isFbm ? 'Suivi FKT FBM / Qualité' : 'Suivi FKT / Qualité');
-    
-    const totFkt = fktList.length;
-    const editFkt = fktList.filter(q => q.fkt_edit && !q.fkt_amorti && !q.fkt_refus).length;
-    const refFkt = fktList.filter(q => q.fkt_refus).length;
-    const amortFkt = fktList.filter(q => q.fkt_amorti).length;
-    const prevFkt = fktList.filter(q => !q.fkt_edit && !q.fkt_amorti && !q.fkt_refus).length;
-
-    rowBar('FKT FBM / Qualité (Amorties)', `${amortFkt} / ${totFkt} · ${pc(amortFkt, totFkt)} %`, (bx, by, bw) => {
-      d.rect(bx, by, bw, 12, C.sl);
-      let cx = bx;
-      if(amortFkt){ const w = bw * amortFkt / totFkt; d.rect(cx, by, w, 12, C.pose); cx += w; }
-      if(editFkt){ const w = bw * editFkt / totFkt; d.rect(cx, by, w, 12, C.ec); cx += w; }
-    });
-
-    const statsFkt = [
-      ['FKT analysées (amorties)', `${amortFkt}`],
-      ['FKT refusées', `${refFkt}`],
-      ['FKT reçues (à analyser)', `${editFkt}`],
-      ['FKT prévues (non reçues)', `${prevFkt}`]
-    ];
-
-    statsFkt.forEach(([label, val]) => {
-      ensure(18);
-      d.text(L, y + 9, label, 9.5, false, C.tx);
-      d.text(R, y + 9, val, 9.5, true, label.includes('refusées') && refFkt > 0 ? C.dep : C.tx, 'r');
-      d.rect(L, y + 14, CW, 0.5, C.ln);
-      y += 18;
-    });
-
-    if(refFkt > 0){
-      const supsRef = fktList.filter(q => q.fkt_refus).map(q => q.support).filter(Boolean).join(', ');
-      ensure(22);
-      d.text(L, y + 9, 'Supports refusés : ' + pdfFit(supsRef, CW - 120, 8.5, false), 8.5, true, C.dep);
-      y += 16;
-    }
-    if(editFkt > 0){
-      const supsEdit = fktList.filter(q => q.fkt_edit && !q.fkt_amorti && !q.fkt_refus).map(q => q.support).filter(Boolean).join(', ');
-      ensure(22);
-      d.text(L, y + 9, 'Supports à analyser : ' + pdfFit(supsEdit, CW - 130, 8.5, false), 8.5, false, C.tx);
-      y += 16;
-    }
-  }
-
-  if(S.c && isGlob){
-    const Ls = supList(S.c);
-    section(`Détail des supports : ${Ls.filter(x => x.ok).length} / ${Ls.length} terminés`);
-    const cols = [['SUPPORT', L], ['SUTX', L + 120], ['FBM', L + 330]];
-    head(cols);
-    Ls.forEach(x => {
-      if(y + 28 > BOT){ newPage(false); head(cols); }
-      const st = stepsOf(x.p);
-      d.text(L, y + 12, pdfFit(x.p.name, 110, 9.5, true), 9.5, true, C.tx);
-      if(x.a.n){ stkBar(L + 120, y + 5, 170, 8, x.a); d.text(L + 120, y + 22, `${x.a.T} / ${x.a.n}`, 7.5, false, C.mu); } else d.text(L + 120, y + 12, '—', 8, false, C.mu);
-      if(st.length) STEPK.forEach((k, i) => { const s = stepState(x.p, k), cx = L + 330 + i * 16; if(s) d.rect(cx, y + 3, 13, 13, s === 'T' ? C.fb : C.ad); else d.rect(cx, y + 3, 13, 13, '#ffffff', C.fb, 0.7); d.text(cx + 6.5, y + 12.5, 'FBM'[i], 7.5, true, s ? '#ffffff' : C.mu, 'c'); });
-      else d.text(L + 330, y + 12, '—', 8, false, C.mu);
-      d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
-    });
-  }
-  if(S.c && isSutx){
-    const Ls = supListSutx(S.c, 'all');
-    section(`Détail des supports SUTX : ${Ls.filter(x => x.ok).length} / ${Ls.length} terminés`);
-    const cols = [['SUPPORT', L], ['SUTX', L + 160]];
-    head(cols);
-    Ls.forEach(x => {
-      if(y + 28 > BOT){ newPage(false); head(cols); }
-      d.text(L, y + 12, pdfFit(x.p.name, 150, 9.5, true), 9.5, true, C.tx);
-      if(x.a.n){ stkBar(L + 160, y + 5, 220, 8, x.a); d.text(L + 160, y + 22, `${x.a.T} / ${x.a.n}`, 7.5, false, C.mu); } else d.text(L + 160, y + 12, '—', 8, false, C.mu);
-      d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
-    });
-  }
-  if(S.c && isFbm){
-    const Ls = fbmSups(S.c).map(p => { const st = stepsOf(p).map(k => stepState(p, k)); return {p, st, n:st.filter(Boolean).length, ok:st.length > 0 && st.every(Boolean)}; }).sort((a,b) => a.p.name.localeCompare(b.p.name, 'fr', {numeric:true}));
-    section(`Détail des supports FBM : ${Ls.filter(x => x.ok).length} / ${Ls.length} complets`);
-    const cols = [['SUPPORT', L], ['FBM', L + 200]];
-    head(cols);
-    Ls.forEach(x => {
-      if(y + 28 > BOT){ newPage(false); head(cols); }
-      d.text(L, y + 12, pdfFit(x.p.name, 180, 9.5, true), 9.5, true, C.tx);
-      STEPK.forEach((k, i) => { const s = x.st[i], cx = L + 200 + i * 20; if(s) d.rect(cx, y + 3, 16, 16, s === 'T' ? C.fb : C.ad); else d.rect(cx, y + 3, 16, 16, '#ffffff', C.fb, 0.7); d.text(cx + 8, y + 14, 'FBM'[i], 8, true, s ? '#ffffff' : C.mu, 'c'); });
-      d.rect(L, y + 27, CW, 0.5, C.ln); y += 28;
-    });
-  }
-
-  section("Points d'attention");
-  const attn = [['Non-conformités ouvertes', nc.length, true]];
-  if(isGlob || isFbm) attn.push(['FKT prévues', fktPrevuesN]);
-  if(isGlob || isSutx) attn.push(['Pendules provisoires à déposer', pv]);
-  attn.forEach(([t, v, rouge]) => {
-    ensure(18); d.text(L, y + 9, t, 9.5, false, C.tx); d.text(R, y + 9, String(v), 9.5, true, rouge && v ? C.dep : C.tx, 'r'); d.rect(L, y + 14, CW, 0.5, C.ln); y += 18;
-  });
-  if(nc.length){
-    y += 8;
-    const cols = [['CHANTIER › SUPPORT', L], ['TÂCHE', L + 140], ['NON-CONFORMITÉ', L + 280]];
-    ensure(50); head(cols);
-    nc.slice(0, 40).forEach(r => {
-      const l1 = pdfWrap(`${r.Chantier} › ${r.Support}`, 130, 8.5, false), l2 = pdfWrap(r.Tache, 130, 8.5, false), l3 = pdfWrap(r.nc_description || '—', R - L - 280, 8.5, false);
-      const h = Math.max(l1.length, l2.length, l3.length) * 10.5 + 8;
-      if(y + h > BOT){ newPage(false); head(cols); }
-      [[l1, L], [l2, L + 140], [l3, L + 280]].forEach(([ls, x]) => ls.forEach((t, i) => d.text(x, y + 11 + i * 10.5, t, 8.5, false, C.tx)));
-      d.rect(L, y + h - 1, CW, 0.5, C.ln); y += h;
-    });
-    if(nc.length > 40){ ensure(16); d.text(L, y + 10, `… et ${nc.length - 40} autres (voir l'onglet Qualité)`, 8, false, C.mu); y += 16; }
-  }
-  ensure(34); y += 14;
-  pdfWrap("Document généré par SUIVI_PCLE-MMM.", CW, 7.5, false).forEach((t, i) => d.text(L, y + 8 + i * 9, t, 7.5, false, C.mu));
-
-  const n = d.count();
-  for(let i = 0; i < n; i++){ d.go(i); d.rect(L, H - 34, CW, 0.6, C.ln); d.text(L, H - 22, 'SUIVI_PCLE-MMM · édité le ' + now, 7.5, false, C.mu); d.text(R, H - 22, `Page ${i + 1} / ${n}`, 7.5, false, C.mu, 'r'); }
-  const vueFile = isSutx ? 'SUTX' : isFbm ? 'FBM' : 'Ensemble';
-  return {bytes:d.build(), name:'PCLE-MMM_' + vueFile + '_' + (S.c ? S.c.name.replace(/[^\w-]+/g, '_') : 'Tous_chantiers') + '_' + jour() + '.pdf'};
-}
-
-
-$('#pdf').addEventListener('click', () => {
-  if(!D) return;
-  let r;
-  try{ r = rapportPdf(); }catch(e){ alert('Création du PDF impossible : ' + e.message); return; }
-  const blob = new Blob([r.bytes], {type:'application/pdf'}), file = new File([blob], r.name, {type:'application/pdf'});
-  const peutPartager = !!(navigator.canShare && navigator.canShare({files:[file]}));
-  dlg.innerHTML = `<div class="dh"><b>📄 Rapport prêt</b><button type="button" id="dx">Fermer</button></div><div class="db"><div style="font-weight:600;overflow-wrap:anywhere">${esc(r.name)}</div><div class="mu tl">${Math.max(1, Math.round(blob.size / 1024))} Ko · PDF A4</div>
-    <button type="button" id="pdf-save" style="width:100%;margin-top:14px;min-height:48px;font-weight:600">⬇️ Enregistrer sur le téléphone</button>
-    ${peutPartager ? '<button type="button" id="pdf-share" style="width:100%;margin-top:8px;min-height:48px;font-weight:600">📤 Partager…</button>' : ''}
-    <div class="mu tl" id="pdf-msg"></div></div>`;
-  if(!dlg.open) dlg.showModal();
-  $('#dx').onclick = () => dlg.close();
-  $('#pdf-save').onclick = () => { const a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = r.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000); $('#pdf-msg').textContent = 'Enregistré dans le dossier Téléchargements.'; };
-  if(peutPartager) $('#pdf-share').onclick = () => navigator.share({files:[file], title:r.name}).catch(e => { if(e.name !== 'AbortError') $('#pdf-msg').textContent = 'Partage impossible : ' + e.message; });
-});
-
-let invitation = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); invitation = e; $('#inst').style.display = ''; });
-window.addEventListener('appinstalled', () => { invitation = null; $('#inst').style.display = 'none'; });
-$('#inst').addEventListener('click', async () => { if(!invitation) return; invitation.prompt(); await invitation.userChoice; invitation = null; $('#inst').style.display = 'none'; });
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+render("ALL");
 </script>
 </body>
 </html>
