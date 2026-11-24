@@ -348,23 +348,23 @@ function render(key) {
 
   // Pose section
   html += `<section><h2>Pose — Armements & Connexions</h2><div class="bigs">
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements</div><div class="val">${c.armement[0]} / ${c.armement[1]}</div><div class="sub">tâches « ARMEMENT »</div></div><div class="right">${pct(c.armement[0],c.armement[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements doubles</div><div class="val">${c.double[0]} / ${c.double[1]}</div><div class="sub">tâches « ARMEMENT DOUBLE »</div></div><div class="right">${pct(c.double[0],c.double[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--sx)"></div><div class="content"><div class="lab">Connexions</div><div class="val">${c.connexion[0]} / ${c.connexion[1]}</div><div class="sub">tâches « CONNEXION »</div></div><div class="right">${pct(c.connexion[0],c.connexion[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements</div><div class="val">${c.armement[0]} / ${c.armement[1]}</div></div><div class="right">${pct(c.armement[0],c.armement[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Armements doubles</div><div class="val">${c.double[0]} / ${c.double[1]}</div></div><div class="right">${pct(c.double[0],c.double[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--sx)"></div><div class="content"><div class="lab">Connexions</div><div class="val">${c.connexion[0]} / ${c.connexion[1]}</div></div><div class="right">${pct(c.connexion[0],c.connexion[1])} %</div></div>
     <div class="big"><div class="bar" style="background:var(--pose)"></div><div class="content"><div class="lab">Consoles de ligne</div><div class="val">${c.console[0]} / ${c.console[1]}</div></div><div class="right">${pct(c.console[0],c.console[1])} %</div></div>
   </div></section>`;
 
   // FKT section (depuis tâches RELEVER CAT / FKT)
   const fkt = D.fkt || { armement: [0,94], at: [0,16], r1r2: [0,12], feeder: [0,6] };
   html += `<section><h2>Suivi FKT</h2><div class="bigs">
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Armement</div><div class="val">${fkt.armement[0]} / ${fkt.armement[1]}</div><div class="sub">tâches « FKT ARMEMENT »</div></div><div class="right">${pct(fkt.armement[0],fkt.armement[1])} %</div></div>
-    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Appareil tendeur</div><div class="val">${fkt.at[0]} / ${fkt.at[1]}</div><div class="sub">tâches « FKT APPAREIL TENDEUR »</div></div><div class="right">${pct(fkt.at[0],fkt.at[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Armement</div><div class="val">${fkt.armement[0]} / ${fkt.armement[1]}</div></div><div class="right">${pct(fkt.armement[0],fkt.armement[1])} %</div></div>
+    <div class="big"><div class="bar" style="background:var(--gc)"></div><div class="content"><div class="lab">FKT Appareil tendeur</div><div class="val">${fkt.at[0]} / ${fkt.at[1]}</div></div><div class="right">${pct(fkt.at[0],fkt.at[1])} %</div></div>
   </div></section>`;
 
   // Table globale only
   if (D.showTable) {
     html += `<section><h2>Synthèse par chantier</h2><table>
-      <thead><tr><th>Chantier</th><th class="n">Fouilles class.</th><th class="n">Fouilles Anc</th><th class="n">Supports</th><th class="n">Béton</th><th class="n">Consoles</th></tr></thead>
+      <thead><tr><th>Chantier</th><th class="n">Fouilles Support.</th><th class="n">Fouilles Anc</th><th class="n">Supports</th><th class="n">Béton</th><th class="n">Consoles</th></tr></thead>
       <tbody>`;
     D.table.forEach(([n, fc, fa, m, b, c, ok]) => {
       html += `<tr><td><strong>${n}</strong></td>
