@@ -94,7 +94,36 @@
   .detail-panel .ok{color:var(--pose);font-weight:600}
   .detail-panel .ko{color:var(--mu)}
   .detail-panel .more{margin-top:8px;font-size:12px;color:var(--mu)}
+  .detail-panel .item .meta{font-size:11px;color:var(--mu);margin-top:2px}
+  .date-bar{
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    background:var(--card);border:1px solid var(--ln);border-radius:12px;
+    padding:12px 16px;margin-bottom:20px
+  }
+  .date-bar label{font-size:13px;font-weight:600;color:var(--mu)}
+  .date-bar input[type=date]{
+    font:inherit;padding:8px 12px;border:1px solid var(--ln);border-radius:8px;min-height:40px
+  }
+  .date-bar button{
+    font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;
+    border:1px solid var(--ln);background:#fff;cursor:pointer;min-height:40px
+  }
+  .date-bar button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .date-results{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:16px;margin-bottom:24px}
+  .date-results h3{font-size:14px;margin-bottom:12px}
+  .date-results .item{
+    display:grid;grid-template-columns:1fr 1fr 1.2fr auto;gap:8px;
+    padding:8px 0;border-bottom:1px solid var(--ln);font-size:13px;font-variant-numeric:tabular-nums
+  }
+  .date-results .item:last-child{border-bottom:0}
+  .date-results .head{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mu);font-weight:700}
+  @media(max-width:600px){
+    .date-results .item{grid-template-columns:1fr 1fr;gap:4px}
+    .date-results .head{display:none}
+  }
   @media print{
+    .date-bar{display:none!important}
+
     .clickable .lab::after{content:none}
     .detail-panel{display:none!important}
 
@@ -146,11 +175,11 @@ const isAnc = s => /anc/i.test(String(s || ""));
 const done = r => r.Fait === true || r.Fait === "true" || r.admin_etat === "TERMINE" || r.etat === "TERMINE";
 const key = s => String(s || "").trim().toUpperCase();
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
-const nf = n => (Math.round(n * 10) / 10).toLocaleString("fr-FR");
+const nf = n => (Math.round(n * 100) / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 async function fetchAll() {
   let out = [], from = 0, step = 1000;
-  const cols = "id,Chantier,Support,Tache,type,Fait,etat,admin_etat,beton_prevu,beton_coule";
+  const cols = "id,Chantier,Support,Tache,type,Fait,etat,admin_etat,beton_prevu,beton_coule,date_fait";
   for (;;) {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/suivi_sutx_v2?select=${cols}&order=id.asc`, {
       headers: {
@@ -193,16 +222,15 @@ function metrics(rows) {
   const fAnc = cnt(rows, r => fouille(r) && isAnc(r.Support));
   const mReg = cnt(rows, r => matage(r) && !isAnc(r.Support));
   const mAnc = cnt(rows, r => matage(r) && isAnc(r.Support));
-  const console_ = cnt(rows, r => key(r.type) === "POSE" && /CONSOLE DE LIGNE/i.test(r.Tache || ""));
-  const armement = cnt(rows, r => key(r.type) === "POSE" && key(r.Tache) === "ARMEMENT");
-  const double_ = cnt(rows, r => key(r.type) === "POSE" && key(r.Tache) === "ARMEMENT DOUBLE");
+  const console_ = cnt(rows, r => key(r.type) === "POSE" && (/CONSOLE DE LIGNE/i.test(r.Tache || "") || /\bPOUTRE\b/i.test(r.Tache || "")));
+  const armement = cnt(rows, r => key(r.type) === "POSE" && (key(r.Tache) === "ARMEMENT" || key(r.Tache) === "ARMEMENT DOUBLE"));
   const connexion = cnt(rows, r => key(r.type) === "POSE" && key(r.Tache) === "CONNEXION");
   const de = cnt(rows, r => key(r.Tache) === "DE" && key(r.type) === "GC");
   const goudron = cnt(rows, r => key(r.Tache) === "GOUDRON");
   const ardrox = cnt(rows, r => key(r.Tache) === "ARDROX");
   const fktArm = cnt(rows, r => key(r.Tache) === "FKT ARMEMENT");
   const fktAt = cnt(rows, r => key(r.Tache) === "FKT APPAREIL TENDEUR");
-  const hauban = cnt(rows, r => /HAUBAN ANCRAGE/i.test(r.Tache || "") && isAnc(r.Support));
+  const hauban = cnt(rows, r => key(r.type) === "POSE" && /HAUBAN ANCRAGE/i.test(r.Tache || "") && isAnc(r.Support));
   const ardroxAnc = cnt(rows, r => key(r.Tache) === "ARDROX" && isAnc(r.Support));
   const ardroxReg = cnt(rows, r => key(r.Tache) === "ARDROX" && !isAnc(r.Support));
   return {
@@ -210,7 +238,7 @@ function metrics(rows) {
     betonReg: volBeton(rows, false),
     betonAnc: volBeton(rows, true),
     betonAll: volBeton(rows, null),
-    console: console_, armement, double: double_, connexion,
+    console: console_, armement, connexion,
     de, goudron, ardrox, ardroxAnc, ardroxReg, hauban, fktArm, fktAt,
     _rows: rows
   };
@@ -219,9 +247,8 @@ function metrics(rows) {
 function metricsDepose(rows) {
   const dep = rows.filter(r => key(r.type) === "DEPOSE");
   return {
-    console: cnt(dep, r => /CONSOLE DE LIGNE/i.test(r.Tache || "")),
-    armement: cnt(dep, r => key(r.Tache) === "ARMEMENT"),
-    double: cnt(dep, r => key(r.Tache) === "ARMEMENT DOUBLE"),
+    console: cnt(dep, r => /CONSOLE DE LIGNE/i.test(r.Tache || "") || /\bPOUTRE\b/i.test(r.Tache || "")),
+    armement: cnt(dep, r => key(r.Tache) === "ARMEMENT" || key(r.Tache) === "ARMEMENT DOUBLE"),
     connexion: cnt(dep, r => key(r.Tache) === "CONNEXION"),
     de: cnt(dep, r => key(r.Tache) === "DE"),
     massif: cnt(dep, r => /MASSIF/i.test(r.Tache || ""))
@@ -229,28 +256,108 @@ function metricsDepose(rows) {
 }
 
 
+function fmtDate(d) {
+  if (!d) return "—";
+  // date_fait often "2026-10-26" or ISO
+  const s = String(d).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
+  const [y,m,day] = s.split("-");
+  return day + "/" + m + "/" + y;
+}
+
 function listSupports(rows, pred, onlyDone) {
+  // key = support + tache so ARMEMENT and ARMEMENT DOUBLE on same support both appear
   const map = new Map();
   rows.filter(pred).forEach(r => {
     const s = r.Support || "—";
-    if (!map.has(s)) map.set(s, { support: s, done: false, tache: r.Tache });
-    if (done(r)) map.get(s).done = true;
+    const t = r.Tache || "";
+    const k = s + "||" + t;
+    if (!map.has(k)) map.set(k, { support: s, done: false, tache: t, date: r.date_fait || null, chantier: r.Chantier });
+    if (done(r)) {
+      map.get(k).done = true;
+      if (r.date_fait) map.get(k).date = r.date_fait;
+    }
   });
-  let list = [...map.values()].sort((a,b) => a.support.localeCompare(b.support, "fr"));
+  let list = [...map.values()].sort((a,b) => {
+    const c = a.support.localeCompare(b.support, "fr");
+    return c !== 0 ? c : String(a.tache).localeCompare(String(b.tache), "fr");
+  });
   if (onlyDone) list = list.filter(x => x.done);
   return list;
 }
 
-function detailHtml(title, list) {
+function detailHtml(title, list, showTache) {
   if (!list.length) return `<div class="detail-panel open"><div class="dh">${title}</div><div class="ko">Aucun support</div></div>`;
-  const max = 40;
+  const max = 50;
   const shown = list.slice(0, max);
-  const items = shown.map(x =>
-    `<div class="item"><span>${x.support}</span><span class="${x.done?"ok":"ko"}">${x.done?"Fait":"À faire"}</span></div>`
-  ).join("");
+  const items = shown.map(x => {
+    const label = showTache && x.tache
+      ? `${x.support} <span style="color:var(--mu);font-weight:500">· ${x.tache}</span>`
+      : x.support;
+    const dt = x.done ? `<div class="meta">Date fait : ${fmtDate(x.date)}</div>` : "";
+    return `<div class="item"><div><span>${label}</span>${dt}</div><span class="${x.done?"ok":"ko"}">${x.done?"Fait":"À faire"}</span></div>`;
+  }).join("");
   const more = list.length > max ? `<div class="more">… et ${list.length - max} autres</div>` : "";
   const doneN = list.filter(x => x.done).length;
   return `<div class="detail-panel open"><div class="dh">${title} · ${doneN}/${list.length}</div>${items}${more}</div>`;
+}
+
+function byDate(rows, ymd) {
+  // ymd = YYYY-MM-DD
+  return rows.filter(r => done(r) && r.date_fait && String(r.date_fait).slice(0,10) === ymd)
+    .sort((a,b) => {
+      const c = String(a.Chantier).localeCompare(String(b.Chantier),"fr");
+      if (c) return c;
+      const s = String(a.Support).localeCompare(String(b.Support),"fr");
+      if (s) return s;
+      return String(a.Tache).localeCompare(String(b.Tache),"fr");
+    });
+}
+
+function dateFilterBar() {
+  return `<div class="date-bar no-print">
+    <label for="filter-date">Faits le</label>
+    <input type="date" id="filter-date" />
+    <button type="button" class="primary" id="btn-date-go">Voir</button>
+    <button type="button" id="btn-date-clear">Effacer</button>
+  </div>
+  <div id="date-results" class="no-print"></div>`;
+}
+
+function showDateResults(ymd) {
+  const box = document.getElementById("date-results");
+  if (!box) return;
+  if (!ymd) { box.innerHTML = ""; return; }
+  const rows = filterCh(ROWS, CURRENT_CH);
+  const list = byDate(rows, ymd);
+  if (!list.length) {
+    box.innerHTML = `<div class="date-results"><h3>Rien de terminé le ${fmtDate(ymd)}</h3>
+      <p style="color:var(--mu);font-size:13px">Aucune tâche avec date_fait = ${fmtDate(ymd)} sur cette vue.</p></div>`;
+    return;
+  }
+  const items = list.map(r =>
+    `<div class="item">
+      <span><strong>${r.Chantier || "—"}</strong></span>
+      <span>${r.Support || "—"}</span>
+      <span>${r.Tache || "—"} <span style="color:var(--mu)">(${r.type || ""})</span></span>
+      <span class="ok">${fmtDate(r.date_fait)}</span>
+    </div>`
+  ).join("");
+  box.innerHTML = `<div class="date-results">
+    <h3>${list.length} tâche(s) terminée(s) le ${fmtDate(ymd)}</h3>
+    <div class="item head"><span>Chantier</span><span>Support</span><span>Tâche</span><span>Date</span></div>
+    ${items}
+  </div>`;
+}
+
+function bindDateFilter() {
+  const go = document.getElementById("btn-date-go");
+  const clear = document.getElementById("btn-date-clear");
+  const inp = document.getElementById("filter-date");
+  if (!go || !inp) return;
+  go.onclick = () => showDateResults(inp.value || "");
+  clear.onclick = () => { inp.value = ""; showDateResults(""); };
+  inp.onchange = () => { if (inp.value) showDateResults(inp.value); };
 }
 
 function bindClicks(root, rows) {
@@ -273,19 +380,17 @@ function bindClicks(root, rows) {
       let pred;
       if (task === "fouille") pred = r => key(r.Tache)==="FOUILLE" && key(r.type)==="GC";
       else if (task === "matage") pred = r => key(r.Tache)==="MATAGE" && key(r.type)==="GC";
-      else if (task === "console") pred = r => key(r.type)==="POSE" && /CONSOLE DE LIGNE/i.test(r.Tache||"");
-      else if (task === "armement") pred = r => key(r.type)==="POSE" && key(r.Tache)==="ARMEMENT";
-      else if (task === "double") pred = r => key(r.type)==="POSE" && key(r.Tache)==="ARMEMENT DOUBLE";
+      else if (task === "console") pred = r => key(r.type)==="POSE" && (/CONSOLE DE LIGNE/i.test(r.Tache||"") || /\bPOUTRE\b/i.test(r.Tache||""));
+      else if (task === "armement") pred = r => key(r.type)==="POSE" && (key(r.Tache)==="ARMEMENT" || key(r.Tache)==="ARMEMENT DOUBLE");
       else if (task === "connexion") pred = r => key(r.type)==="POSE" && key(r.Tache)==="CONNEXION";
       else if (task === "de") pred = r => key(r.Tache)==="DE" && key(r.type)==="GC";
       else if (task === "goudron") pred = r => key(r.Tache)==="GOUDRON";
       else if (task === "ardrox") pred = r => key(r.Tache)==="ARDROX";
-      else if (task === "hauban") pred = r => /HAUBAN ANCRAGE/i.test(r.Tache||"");
+      else if (task === "hauban") pred = r => key(r.type) === "POSE" && /HAUBAN ANCRAGE/i.test(r.Tache||"");
       else if (task === "fktArm") pred = r => key(r.Tache)==="FKT ARMEMENT";
       else if (task === "fktAt") pred = r => key(r.Tache)==="FKT APPAREIL TENDEUR";
-      else if (task === "dep-console") pred = r => key(r.type)==="DEPOSE" && /CONSOLE DE LIGNE/i.test(r.Tache||"");
-      else if (task === "dep-armement") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="ARMEMENT";
-      else if (task === "dep-double") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="ARMEMENT DOUBLE";
+      else if (task === "dep-console") pred = r => key(r.type)==="DEPOSE" && (/CONSOLE DE LIGNE/i.test(r.Tache||"") || /\bPOUTRE\b/i.test(r.Tache||""));
+      else if (task === "dep-armement") pred = r => key(r.type)==="DEPOSE" && (key(r.Tache)==="ARMEMENT" || key(r.Tache)==="ARMEMENT DOUBLE");
       else if (task === "dep-connexion") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="CONNEXION";
       else if (task === "dep-de") pred = r => key(r.type)==="DEPOSE" && key(r.Tache)==="DE";
       else if (task === "dep-massif") pred = r => key(r.type)==="DEPOSE" && /MASSIF/i.test(r.Tache||"");
@@ -296,7 +401,8 @@ function bindClicks(root, rows) {
 
       const list = listSupports(rows, pred, false);
       const title = el.querySelector(".lab")?.textContent?.replace(/\s*›\s*$/,"").trim() || task;
-      const htmlPanel = detailHtml(title, list);
+      const showTache = task === "armement" || task === "dep-armement" || task === "console" || task === "dep-console";
+      const htmlPanel = detailHtml(title, list, showTache);
       if (panel && panel.classList.contains("detail-panel")) {
         panel.outerHTML = htmlPanel;
       } else {
@@ -357,11 +463,11 @@ function renderPose(ch) {
   document.getElementById("btn-pose").classList.add("on");
   document.getElementById("btn-depose").classList.remove("on");
 
-  let html = `<div class="kpis">
+  let html = dateFilterBar() + `<div class="kpis">
     <div class="kpi"><div class="lab">Fouilles (tous)</div><div class="val">${pct(fouilleAll,fouilleTot)} %</div><div class="sub">${fouilleAll} / ${fouilleTot}</div></div>
     <div class="kpi fb"><div class="lab">Supports (hors Anc)</div><div class="val">${supportDone}</div><div class="sub">matage − Anc · ${supportDone}/${supportTot}</div></div>
     <div class="kpi gc"><div class="lab">Béton coulé</div><div class="val">${nf(m.betonAll)} m³</div><div class="sub">${nf(m.betonReg)} + ${nf(m.betonAnc)} Anc</div></div>
-    <div class="kpi pose"><div class="lab">Consoles de ligne</div><div class="val">${pct(m.console[0],m.console[1])} %</div><div class="sub">${m.console[0]} / ${m.console[1]}</div></div>
+    <div class="kpi pose"><div class="lab">Console / Poutre</div><div class="val">${pct(m.console[0],m.console[1])} %</div><div class="sub">${m.console[0]} / ${m.console[1]}</div></div>
   </div>`;
 
   html += `<section><h2>Supports classiques / Supports Ancrage</h2><div class="split">
@@ -369,9 +475,8 @@ function renderPose(ch) {
       ${rowInd("Fouilles", m.fReg, "var(--gc)", "fouille", "reg")}
       ${rowInd("Supports (matage hors Anc)", m.mReg, "var(--fb)", "matage", "reg")}
       <div class="row-ind"><div><div class="lab">Béton coulé</div></div><div class="val">${nf(m.betonReg)} m³</div></div>
-      ${rowInd("Consoles de ligne", m.console, "var(--pose)", "console", "reg")}
+      ${rowInd("Console / Poutre", m.console, "var(--pose)", "console", "reg")}
       ${rowInd("Armements", m.armement, "var(--pose)", "armement", "reg")}
-      ${rowInd("Armements doubles", m.double, "var(--pose)", "double", "reg")}
       ${rowInd("Connexions", m.connexion, "var(--sx)", "connexion", "reg")}
     </div>
     <div class="col-card"><h3>Supports Ancrage <span class="tag anc">contient Anc</span></h3>
@@ -386,13 +491,12 @@ function renderPose(ch) {
   html += `<section><h2>Avancement visuel</h2><div class="pies">
     ${pie(m.fReg[0], m.fReg[1], "#2f6f9f", "Classiques")}
     ${pie(m.fAnc[0], m.fAnc[1], "#0e9aa7", "Ancrages")}
-    ${pie(m.console[0], m.console[1], "#2f8f63", "Consoles")}
+    ${pie(m.console[0], m.console[1], "#2f8f63", "Console/Poutre")}
   </div></section>`;
 
   html += `<section><h2>Pose — Avancement</h2><div class="bigs">
-    ${big("Consoles de ligne", m.console, "type POSE — cliquer pour la liste", "var(--pose)", "console")}
-    ${big("Armements", m.armement, "type POSE", "var(--pose)", "armement")}
-    ${big("Armements doubles", m.double, "type POSE", "var(--pose)", "double")}
+    ${big("Console / Poutre", m.console, "POSE · CONSOLE DE LIGNE + POUTRE", "var(--pose)", "console")}
+    ${big("Armements", m.armement, "POSE · ARMEMENT + ARMEMENT DOUBLE", "var(--pose)", "armement")}
     ${big("Connexions", m.connexion, "type POSE", "var(--sx)", "connexion")}
     ${big("DE", m.de, "type GC — hors dépose", "var(--gc)", "de")}
     ${big("Goudron", m.goudron, "tâches GOUDRON", "var(--gc)", "goudron")}
@@ -422,13 +526,14 @@ function renderPose(ch) {
 
   document.getElementById("content").innerHTML = html;
   bindClicks(document.getElementById("content"), rows);
+  bindDateFilter();
 }
 
 function renderDepose(ch) {
   const rows = filterCh(ROWS, ch);
   const d = metricsDepose(rows);
-  const totalT = d.console[1]+d.armement[1]+d.double[1]+d.connexion[1]+d.de[1]+d.massif[1];
-  const totalD = d.console[0]+d.armement[0]+d.double[0]+d.connexion[0]+d.de[0]+d.massif[0];
+  const totalT = d.console[1]+d.armement[1]+d.connexion[1]+d.de[1]+d.massif[1];
+  const totalD = d.console[0]+d.armement[0]+d.connexion[0]+d.de[0]+d.massif[0];
 
   document.getElementById("hero-title").textContent =
     ch === "ALL" ? "Synthèse Direction — Dépose" : "Dépose — " + ch;
@@ -440,17 +545,16 @@ function renderDepose(ch) {
   document.getElementById("btn-pose").classList.remove("on");
   document.getElementById("btn-depose").classList.add("on");
 
-  let html = `<div class="kpis">
+  let html = dateFilterBar() + `<div class="kpis">
     <div class="kpi"><div class="lab">Dépose totale</div><div class="val">${pct(totalD,totalT)} %</div><div class="sub">${totalD} / ${totalT} tâches suivies</div></div>
-    <div class="kpi fb"><div class="lab">Consoles déposées</div><div class="val">${d.console[0]}</div><div class="sub">/ ${d.console[1]}</div></div>
+    <div class="kpi fb"><div class="lab">Console / Poutre déposées</div><div class="val">${d.console[0]}</div><div class="sub">/ ${d.console[1]}</div></div>
     <div class="kpi gc"><div class="lab">Massifs</div><div class="val">${d.massif[0]}</div><div class="sub">/ ${d.massif[1]}</div></div>
     <div class="kpi pose"><div class="lab">Armements déposés</div><div class="val">${d.armement[0]}</div><div class="sub">/ ${d.armement[1]}</div></div>
   </div>`;
 
   html += `<section><h2>Dépose — Avancement</h2><div class="bigs">
-    ${big("Consoles de ligne", d.console, "dépose CONSOLE DE LIGNE (+ variantes)", "var(--pose)", "dep-console")}
-    ${big("Armements", d.armement, "dépose ARMEMENT", "var(--pose)", "dep-armement")}
-    ${big("Armements doubles", d.double, "dépose ARMEMENT DOUBLE", "var(--pose)", "dep-double")}
+    ${big("Console / Poutre", d.console, "dépose CONSOLE DE LIGNE + POUTRE", "var(--pose)", "dep-console")}
+    ${big("Armements", d.armement, "dépose ARMEMENT + ARMEMENT DOUBLE", "var(--pose)", "dep-armement")}
     ${big("Connexions", d.connexion, "dépose CONNEXION", "var(--sx)", "dep-connexion")}
     ${big("DE", d.de, "dépose DE", "var(--gc)", "dep-de")}
     ${big("Massif / Haut massif", d.massif, "MASSIF + HAUT MASSIF", "var(--dep)", "dep-massif")}
@@ -458,6 +562,7 @@ function renderDepose(ch) {
 
   document.getElementById("content").innerHTML = html;
   bindClicks(document.getElementById("content"), rows);
+  bindDateFilter();
 }
 
 function go() {
